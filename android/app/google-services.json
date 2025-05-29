@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "580144489871",
+    "project_id": "charruabus-cd310",
+    "storage_bucket": "charruabus-cd310.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:580144489871:android:7d68f1cb5707b5cb8c57fa",
+        "android_client_info": {
+          "package_name": "com.charruabusmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDo6unPjbeILveinWS0SaO7scp44suvVzM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

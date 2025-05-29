@@ -1,28 +1,44 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { login as loginService, logout as logoutService } from '../services/authService';
 
 type AuthContextType = {
   isAuthenticated: boolean;
-  login: (email: string, password: string) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  token: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
-  const login = (email: string, password: string) => {
-    //Falta la llamada al backend para la autenticación
-    setIsAuthenticated(true);
+  const login = async (email: string, password: string) => {
+    const newToken = await loginService(email, password);
+    await AsyncStorage.setItem('authToken', newToken);
+    setToken(newToken);
   };
 
-  const logout = () => {
-    //Falta la lógica de cierre de sesión (revocar token, etc.)
-    setIsAuthenticated(false);
+  const logout = async () => {
+    await logoutService();
+    await AsyncStorage.removeItem('authToken');
+    setToken(null);
   };
+
+  const checkToken = async () => {
+    const storedToken = await AsyncStorage.getItem('authToken');
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  };
+
+  useEffect(() => {
+    checkToken();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!token, login, logout, token }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import HomeScreen from '../screens/HomeScreen';
+import TripSelectionScreen from '../screens/TripSelectionScreen';
 import { useAuth } from '../context/AuthContext';
+import { useUser } from '../hooks/useUser';
 
 const BottomTabsNavigator = () => {
   const { logout } = useAuth();
+  const { user, loading } = useUser(); //Usa el hook para obtener datos del usuario
   const [activeTab, setActiveTab] = useState("inicio");
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -14,7 +18,45 @@ const BottomTabsNavigator = () => {
 
   const handleTabPress = (tab: string) => {
     setActiveTab(tab);
-    console.log(`Navigate to ${tab}`);
+  };
+
+  const toggleMenu = () => {
+    setMenuVisible(!menuVisible);
+  };
+
+  const handleMenuItemPress = (action: string) => {
+    setMenuVisible(false);
+    
+    switch (action) {
+      case 'editProfile':
+        console.log('Ir a editar perfil');
+        break;
+      case 'changePassword':
+        console.log('Ir a cambiar contraseña');
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      default:
+        break;
+    }
+  };
+
+  //Función para obtener el nombre completo del usuario
+  const getDisplayName = (user: any) => {
+    if (!user) return 'Usuario';
+    
+    //Si tiene nombre y apellido, muestra ambos
+    if (user.name && user.apellido) {
+      return `${user.name} ${user.apellido}`;
+    }
+    
+    //Si solo tiene nombre, muestra solo el nombre
+    if (user.name) {
+      return user.name;
+    }
+    
+    return 'Usuario';
   };
 
   const renderContent = () => {
@@ -22,54 +64,102 @@ const BottomTabsNavigator = () => {
       case "inicio":
         return <HomeScreen />;
       case "viajes":
-        return (
-          <View style={styles.contentContainer}>
-            <View style={styles.welcomeCard}>
-              <Icon name="search" size={48} color="#3B82F6" style={styles.welcomeIcon} />
-              <Text style={styles.contentTitle}>Listado de Viajes</Text>
-              <Text style={styles.contentText}>
-                Aquí encontrarás todos los viajes disponibles y podrás buscar por destino y fecha.
-              </Text>
-            </View>
-          </View>
-        );
+        return <TripSelectionScreen activeTab={activeTab} onTabPress={handleTabPress} />;
       case "compra":
-        return (
-          <View style={styles.contentContainer}>
-            <View style={styles.welcomeCard}>
-              <Icon name="shopping-cart" size={48} color="#3B82F6" style={styles.welcomeIcon} />
-              <Text style={styles.contentTitle}>Compra de Pasajes</Text>
-              <Text style={styles.contentText}>
-                Selecciona tu viaje y completa la compra de tus pasajes de forma segura.
-              </Text>
-            </View>
-          </View>
-        );
+        return <TripSelectionScreen activeTab={activeTab} onTabPress={handleTabPress} />;
       default:
         return <HomeScreen />;
     }
   };
 
+  const MenuDropdown = () => (
+    <Modal
+      visible={menuVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setMenuVisible(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay} 
+        activeOpacity={1} 
+        onPress={() => setMenuVisible(false)}
+      >
+        <View style={styles.menuContainer}>
+          {/* Header del menú con saludo y avatar */}
+          <View style={styles.menuHeader}>
+            <View style={styles.avatarContainer}>
+              {/* Puedes reemplazar este View con una Image si tienes foto de perfil */}
+              <View style={styles.avatarPlaceholder}>
+                <Icon name="person" size={24} color="#3B82F6" />
+              </View>
+            </View>
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.greetingText}>
+                ¡Hola, {loading ? 'Cargando...' : getDisplayName(user)}!
+              </Text>
+              <Text style={styles.userEmailText}>
+                {loading ? '' : (user?.email || '')}
+              </Text>
+            </View>
+          </View>
+
+          {/* Línea separadora */}
+          <View style={styles.menuDivider} />
+
+          {/* Opciones del menú */}
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => handleMenuItemPress('editProfile')}
+            activeOpacity={0.7}
+          >
+            <Icon name="edit" size={20} color="#49454F" style={styles.menuIcon} />
+            <Text style={styles.menuText}>Editar Perfil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => handleMenuItemPress('changePassword')}
+            activeOpacity={0.7}
+          >
+            <Icon name="lock" size={20} color="#49454F" style={styles.menuIcon} />
+            <Text style={styles.menuText}>Cambiar Contraseña</Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => handleMenuItemPress('logout')}
+            activeOpacity={0.7}
+          >
+            <Icon name="logout" size={20} color="#F44336" style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: '#F44336' }]}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
 
-      {/* Barra Superior - Material 3 Top App Bar */}
+      {/* Barra Superior*/}
       <View style={styles.topAppBar}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.userEmail} numberOfLines={1}>
-            Nombre de Usuario
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
-          <Icon name="logout" size={24} color="white" />
+        {/* Botón de Menú Hamburguesa */}
+        <TouchableOpacity 
+          style={styles.menuButton} 
+          onPress={toggleMenu} 
+          activeOpacity={0.7}
+        >
+          <Icon name="menu" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
       {/* Contenido Principal */}
       <View style={styles.mainContent}>{renderContent()}</View>
 
-      {/* Barra Inferior de Navegación - Material 3 Navigation Bar */}
+      {/* Barra Inferior de Navegación*/}
       <View style={styles.navigationBar}>
         <TouchableOpacity
           style={[styles.navigationItem, activeTab === "inicio" && styles.activeNavigationItem]}
@@ -104,6 +194,9 @@ const BottomTabsNavigator = () => {
           <Text style={[styles.navigationLabel, activeTab === "compra" && styles.activeNavigationLabel]}>Compra</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Menú Desplegable */}
+      <MenuDropdown />
     </SafeAreaView>
   );
 };
@@ -129,7 +222,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
   },
-  logoutButton: {
+  menuButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -137,58 +230,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 8,
   },
+  logoutButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
   titleContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingLeft: 16,
+    paddingHorizontal: 16,
   },
   userEmail: {
     color: "white",
     fontSize: 16,
     fontWeight: "500",
-    textAlign: "left",
+    textAlign: "center",
   },
   mainContent: {
     flex: 1,
     backgroundColor: "#FFFBFE",
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  welcomeCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 32,
-    alignItems: "center",
-    width: "100%",
-    maxWidth: 400,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  welcomeIcon: {
-    marginBottom: 16,
-  },
-  contentTitle: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#1C1B1F",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  contentText: {
-    fontSize: 16,
-    color: "#49454F",
-    textAlign: "center",
-    lineHeight: 24,
   },
   navigationBar: {
     backgroundColor: "#FEF7FF",
@@ -234,6 +297,80 @@ const styles = StyleSheet.create({
   activeNavigationLabel: {
     color: "#3B82F6",
     fontWeight: "600",
+  },
+  //Estilos para el menú desplegable
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    marginTop: 64, //Altura de la barra superior
+    marginLeft: 16,
+    marginRight: 80,
+    borderRadius: 12,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    paddingVertical: 8,
+  },
+  //Estilos para el header del menú
+  menuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  avatarContainer: {
+    marginRight: 12,
+  },
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8F0FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userInfoContainer: {
+    flex: 1,
+  },
+  greetingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1B1F',
+    marginBottom: 2,
+  },
+  userEmailText: {
+    fontSize: 14,
+    color: '#49454F',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuIcon: {
+    marginRight: 16,
+    width: 20,
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#49454F',
+    fontWeight: '400',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#E7E0EC',
+    marginVertical: 8,
+    marginHorizontal: 16,
   },
 });
 

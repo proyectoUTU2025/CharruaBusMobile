@@ -1,6 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
 
 react {
     
@@ -46,7 +47,10 @@ android {
 
 dependencies {
     implementation("com.facebook.react:react-android")
-
+    implementation('com.google.firebase:firebase-bom:32.2.0')
+    implementation('com.google.firebase:firebase-analytics')
+    implementation project(':react-native-firebase_app')
+    implementation project(':react-native-firebase_messaging')
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

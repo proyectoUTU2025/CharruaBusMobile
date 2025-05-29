@@ -50,13 +50,13 @@ const styles = StyleSheet.create({
   contentTitle: {
     fontSize: 24,
     fontWeight: "600",
-    color: "#1C1B1F", // Material 3 on-surface
+    color: "#1C1B1F",
     marginBottom: 16,
     textAlign: "center",
   },
   contentText: {
     fontSize: 16,
-    color: "#49454F", // Material 3 on-surface-variant
+    color: "#49454F",
     textAlign: "center",
     lineHeight: 24,
   },
