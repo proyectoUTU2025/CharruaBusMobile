@@ -1,227 +1,204 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  ImageBackground,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useState } from "react"
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ImageBackground } from "react-native"
+import { RoundTrip } from "./RoundTrip"
+import { OneWayTrip } from "./OneWayTrip"
+import Icon from "react-native-vector-icons/MaterialIcons"
+
+type TipoViaje = "ida" | "ida-vuelta" | null
 
 interface TripSelectionScreenProps {
-  activeTab: string;
-  onTabPress: (tab: string) => void;
+  activeTab?: string;
+  onTabPress?: (tab: string) => void;
 }
 
-const TripSelectionScreen: React.FC<TripSelectionScreenProps> = ({ activeTab, onTabPress }) => {
-  const [selectedTripType, setSelectedTripType] = useState<string | null>(null);
+export function TripSelectionScreen({ activeTab, onTabPress }: TripSelectionScreenProps) {
+  const [tipoViaje, setTipoViaje] = useState<TipoViaje>(null)
+  const [mostrarFormulario, setMostrarFormulario] = useState(false)
 
-  const handleTripTypeSelection = (tripType: string) => {
-    setSelectedTripType(tripType);
-  };
+  const handleContinuar = () => {
+    if (tipoViaje) {
+      setMostrarFormulario(true)
+    }
+  }
+
+  const handleVolver = () => {
+    setMostrarFormulario(false)
+  }
+
+  if (mostrarFormulario && tipoViaje === "ida-vuelta") {
+    return <RoundTrip onVolver={handleVolver} />
+  }
+
+  if (mostrarFormulario && tipoViaje === "ida") {
+    return <OneWayTrip onVolver={handleVolver} />
+  }
 
   return (
     <ImageBackground 
-      source={require("../assets/background.png")} 
-      style={styles.backgroundImage} 
+      source={require('../assets/background.png')} 
+      style={styles.container}
       resizeMode="cover"
     >
-      <View style={styles.mainContent}>
-        <View style={styles.cardContainer}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.headerTitle}>Seleccionar tipo de viaje</Text>
-          </View>
+      <StatusBar backgroundColor="#4285F4" barStyle="light-content" />
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
+      {/* Content */}
+      <View style={styles.content}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Seleccionar tipo de viaje</Text>
+
+          {/* Opción Ida */}
+          <TouchableOpacity
+            style={[styles.optionButton, tipoViaje === "ida" ? styles.optionSelected : styles.optionUnselected]}
+            onPress={() => setTipoViaje("ida")}
+          >
+            <Icon
+              name="arrow-forward"
+              size={32}
+              color={tipoViaje === "ida" ? "white" : "#4285F4"}
+              style={styles.optionIcon}
+            />
+            <Text
               style={[
-                styles.tripButton, 
-                selectedTripType === 'ida' && styles.tripButtonSelected
-              ]} 
-              activeOpacity={0.8} 
-              onPress={() => handleTripTypeSelection('ida')}
+                styles.optionTitle,
+                tipoViaje === "ida" ? styles.optionTitleSelected : styles.optionTitleUnselected,
+              ]}
             >
-              <View style={styles.buttonContent}>
-                <Icon 
-                  name="trending-flat" 
-                  size={32} 
-                  color={selectedTripType === 'ida' ? "white" : "#3B82F6"} 
-                  style={styles.buttonIcon}
-                />
-                <Text style={[
-                  styles.tripButtonText,
-                  selectedTripType === 'ida' && styles.tripButtonTextSelected
-                ]}>
-                  Ida
-                </Text>
-                <Text style={[
-                  styles.tripButtonSubtext,
-                  selectedTripType === 'ida' && styles.tripButtonSubtextSelected
-                ]}>
-                  Viaje de solo ida
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
+              Ida
+            </Text>
+            <Text
               style={[
-                styles.tripButton, 
-                selectedTripType === 'ida_vuelta' && styles.tripButtonSelected
-              ]} 
-              activeOpacity={0.8} 
-              onPress={() => handleTripTypeSelection('ida_vuelta')}
+                styles.optionSubtitle,
+                tipoViaje === "ida" ? styles.optionSubtitleSelected : styles.optionSubtitleUnselected,
+              ]}
             >
-              <View style={styles.buttonContent}>
-                <Icon 
-                  name="sync-alt" 
-                  size={32} 
-                  color={selectedTripType === 'ida_vuelta' ? "white" : "#3B82F6"} 
-                  style={styles.buttonIcon}
-                />
-                <Text style={[
-                  styles.tripButtonText,
-                  selectedTripType === 'ida_vuelta' && styles.tripButtonTextSelected
-                ]}>
-                  Ida y Vuelta
-                </Text>
-                <Text style={[
-                  styles.tripButtonSubtext,
-                  selectedTripType === 'ida_vuelta' && styles.tripButtonSubtextSelected
-                ]}>
-                  Viaje de ida y regreso
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+              Viaje de solo ida
+            </Text>
+          </TouchableOpacity>
 
-          {selectedTripType && (
-            <TouchableOpacity 
-              style={styles.continueButton} 
-              activeOpacity={0.8}
-              onPress={() => console.log('Continuar con:', selectedTripType)}
+          {/* Opción Ida y Vuelta */}
+          <TouchableOpacity
+            style={[styles.optionButton, tipoViaje === "ida-vuelta" ? styles.optionSelected : styles.optionUnselected]}
+            onPress={() => setTipoViaje("ida-vuelta")}
+          >
+            <Icon
+              name="swap-horiz"
+              size={32}
+              color={tipoViaje === "ida-vuelta" ? "white" : "#4285F4"}
+              style={styles.optionIcon}
+            />
+            <Text
+              style={[
+                styles.optionTitle,
+                tipoViaje === "ida-vuelta" ? styles.optionTitleSelected : styles.optionTitleUnselected,
+              ]}
             >
-              <Text style={styles.continueButtonText}>Continuar</Text>
-              <Icon name="arrow-forward" size={20} color="white" style={styles.continueButtonIcon} />
-            </TouchableOpacity>
-          )}
+              Ida y Vuelta
+            </Text>
+            <Text
+              style={[
+                styles.optionSubtitle,
+                tipoViaje === "ida-vuelta" ? styles.optionSubtitleSelected : styles.optionSubtitleUnselected,
+              ]}
+            >
+              Viaje de ida y regreso
+            </Text>
+          </TouchableOpacity>
+
+          {/* Botón Continuar */}
+          <TouchableOpacity
+            style={[styles.continueButton, !tipoViaje && styles.continueButtonDisabled]}
+            onPress={handleContinuar}
+            disabled={!tipoViaje}
+          >
+            <Text style={styles.continueButtonText}>Continuar</Text>
+            <Icon name="arrow-forward" size={20} color="white" style={styles.continueIcon} />
+          </TouchableOpacity>
         </View>
       </View>
     </ImageBackground>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
-  //Estilos del contenido principal (del RegisterScreen)
-  backgroundImage: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
-  mainContent: {
+  content: {
     flex: 1,
-    width: "100%",
-    justifyContent: "center",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 32,
   },
-  cardContainer: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 16,
+  card: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)", // Agregamos transparencia para que se vea el fondo
+    borderRadius: 24,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    alignSelf: "center",
+    marginHorizontal: 8,
   },
-  headerContainer: {
-    alignItems: "center",
+  title: {
+    fontSize: 20,
+    fontWeight: "500",
+    color: "#333",
+    textAlign: "center",
     marginBottom: 32,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#374151",
-    textAlign: "center",
-  },
-  //Estilos específicos para los botones de tipo de viaje
-  buttonContainer: {
-    gap: 16,
-  },
-  tripButton: {
-    backgroundColor: "white",
-    borderRadius: 12,
+  optionButton: {
+    padding: 24,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: "#3B82F6",
-    padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  tripButtonSelected: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
-  },
-  buttonContent: {
+    marginBottom: 16,
     alignItems: "center",
   },
-  buttonIcon: {
+  optionSelected: {
+    backgroundColor: "#4285F4",
+    borderColor: "#4285F4",
+  },
+  optionUnselected: {
+    backgroundColor: "white",
+    borderColor: "#4285F4",
+  },
+  optionIcon: {
     marginBottom: 12,
   },
-  tripButtonText: {
+  optionTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#3B82F6",
     marginBottom: 4,
   },
-  tripButtonTextSelected: {
+  optionTitleSelected: {
     color: "white",
   },
-  tripButtonSubtext: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
+  optionTitleUnselected: {
+    color: "#4285F4",
   },
-  tripButtonSubtextSelected: {
+  optionSubtitle: {
+    fontSize: 14,
+  },
+  optionSubtitleSelected: {
     color: "rgba(255, 255, 255, 0.8)",
   },
+  optionSubtitleUnselected: {
+    color: "#666",
+  },
   continueButton: {
-    backgroundColor: "#10B981",
-    height: 50,
-    borderRadius: 8,
+    backgroundColor: "#4CAF50",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 24,
-    shadowColor: "#10B981",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    marginTop: 32,
+  },
+  continueButtonDisabled: {
+    backgroundColor: "#CCCCCC",
   },
   continueButtonText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "500",
     marginRight: 8,
   },
-  continueButtonIcon: {
+  continueIcon: {
     marginLeft: 4,
   },
-});
-
-export default TripSelectionScreen;
+})

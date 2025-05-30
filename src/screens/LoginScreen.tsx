@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -13,6 +13,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -25,8 +27,24 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, loading, error, clearError, isAuthenticated } = useAuth();
+
+  //Redirige si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      //Navega a la pantalla principal o dashboard
+      navigation.replace('Main'); // Ajusta según tu estructura de navegación
+    }
+  }, [isAuthenticated, navigation]);
+
+  //Limpia errores cuando el componente se monta o cuando cambian los inputs
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+  }, [email, password]);
 
   const validateEmail = (value: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,14 +52,49 @@ export default function LoginScreen({ navigation }: Props) {
     setEmail(value);
   };
 
-  const handleLogin = () => {
-    if (!emailError && email && password) {
-      login(email, password);
-    }
+  const validatePassword = (value: string) => {
+    setPasswordError(value.length < 1 ? "La contraseña es obligatoria" : "");
+    setPassword(value);
   };
 
+  const handleLogin = async () => {
+    clearError();
+
+    //Validaciones locales
+    let hasErrors = false;
+
+    if (!email.trim()) {
+      setEmailError("El correo electrónico es obligatorio");
+      hasErrors = true;
+    } else if (emailError) {
+      hasErrors = true;
+    }
+
+    if (!password.trim()) {
+      setPasswordError("La contraseña es obligatoria");
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      return;
+    }
+
+    try {
+      await login(email.trim(), password);
+    } catch (error) {
+      console.log('Login failed:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  };
   const handleRegister = () => {
     navigation.navigate("Register");
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert(
+      "Recuperar contraseña",
+      "Esta funcionalidad estará disponible próximamente.",
+      [{ text: "OK" }]
+    );
   };
 
   return (
@@ -68,6 +121,14 @@ export default function LoginScreen({ navigation }: Props) {
 
               <Text style={styles.welcomeText}>Bienvenido</Text>
 
+              {/* Mostrar error general si existe */}
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Icon name="error-outline" size={20} color="#EF4444" />
+                  <Text style={styles.generalErrorText}>{error}</Text>
+                </View>
+              )}
+
               <View style={styles.formContainer}>
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Correo electrónico</Text>
@@ -80,13 +141,14 @@ export default function LoginScreen({ navigation }: Props) {
                     autoCorrect={false}
                     value={email}
                     onChangeText={validateEmail}
+                    editable={!loading}
                   />
                   {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Contraseña</Text>
-                  <View style={styles.passwordContainer}>
+                  <View style={[styles.passwordContainer, passwordError && styles.inputInvalid]}>
                     <TextInput
                       style={styles.passwordInput}
                       placeholder="Contraseña"
@@ -94,24 +156,42 @@ export default function LoginScreen({ navigation }: Props) {
                       secureTextEntry={!showPassword}
                       autoCorrect={false}
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={validatePassword}
+                      editable={!loading}
                     />
-                    <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+                    <TouchableOpacity 
+                      style={styles.eyeIcon} 
+                      onPress={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                    >
                       <Icon name={showPassword ? "visibility-off" : "visibility"} size={24} color="#6B7280" />
                     </TouchableOpacity>
                   </View>
+                  {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                 </View>
 
-                <TouchableOpacity style={styles.loginButton} activeOpacity={0.8} onPress={handleLogin}>
-                  <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+                <TouchableOpacity 
+                  style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+                  activeOpacity={0.8} 
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="small" color="white" />
+                      <Text style={[styles.loginButtonText, styles.loadingText]}>Iniciando sesión...</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+                  )}
                 </TouchableOpacity>
 
                 <View style={styles.footerContainer}>
-                  <TouchableOpacity onPress={handleRegister}>
-                    <Text style={styles.footerLink}>Registrarse</Text>
+                  <TouchableOpacity onPress={handleRegister} disabled={loading}>
+                    <Text style={[styles.footerLink, loading && styles.disabledLink]}>Registrarse</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => {}}>
-                    <Text style={styles.footerLink}>¿Olvidaste tu contraseña?</Text>
+                  <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
+                    <Text style={[styles.footerLink, loading && styles.disabledLink]}>¿Olvidaste tu contraseña?</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -163,6 +243,23 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 24,
     textAlign: "center",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    width: "100%",
+    borderLeftWidth: 4,
+    borderLeftColor: "#EF4444",
+  },
+  generalErrorText: {
+    color: "#EF4444",
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
   },
   formContainer: {
     width: "100%",
@@ -229,10 +326,22 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  loginButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   loginButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginLeft: 8,
   },
   footerContainer: {
     flexDirection: "row",
@@ -243,5 +352,8 @@ const styles = StyleSheet.create({
     color: "#3B82F6",
     fontSize: 14,
     fontWeight: "500",
+  },
+  disabledLink: {
+    color: "#9CA3AF",
   },
 });
