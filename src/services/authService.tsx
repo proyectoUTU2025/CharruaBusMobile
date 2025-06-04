@@ -1,6 +1,6 @@
 import { getFCMToken } from './notificationService';
 
-const API_BASE_URL = 'http://192.168.1.23:8080';
+const API_BASE_URL = 'http://192.168.1.2:8080';
 
 //Función para obtener el token de dispositivo usando el servicio de notificaciones
 const getDeviceToken = async (): Promise<string> => {

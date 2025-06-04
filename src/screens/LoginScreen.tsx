@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+"use client"
+
+import { useState, useEffect } from "react"
 import {
   StyleSheet,
   View,
@@ -15,96 +17,162 @@ import {
   Keyboard,
   Alert,
   ActivityIndicator,
-} from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../navigation/AppNavigator";
-import { useAuth } from "../context/AuthContext";
+} from "react-native"
+import Icon from "react-native-vector-icons/MaterialIcons"
+import type { NativeStackScreenProps } from "@react-navigation/native-stack"
+import type { RootStackParamList } from "../navigation/AppNavigator"
+import { useAuth } from "../context/AuthContext"
 
-type Props = NativeStackScreenProps<RootStackParamList, "Login">;
+type Props = NativeStackScreenProps<RootStackParamList, "Login">
 
 export default function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const { login, loading, error, clearError, isAuthenticated } = useAuth();
+  const [email, setEmail] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [password, setPassword] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [networkError, setNetworkError] = useState("")
 
-  //Redirige si ya está autenticado
+  const { login, loading, error, clearError, isAuthenticated } = useAuth()
+
+  // Redirige si ya está autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      //Navega a la pantalla principal o dashboard
-      navigation.replace('Main'); // Ajusta según tu estructura de navegación
+      // Navega a la pantalla principal o dashboard
+      navigation.replace("Main") // Ajusta según tu estructura de navegación
     }
-  }, [isAuthenticated, navigation]);
+  }, [isAuthenticated, navigation])
 
-  //Limpia errores cuando el componente se monta o cuando cambian los inputs
+  // Limpia errores cuando el componente se monta o cuando cambian los inputs
   useEffect(() => {
     if (error) {
-      clearError();
+      clearError()
     }
-  }, [email, password]);
+    if (networkError) {
+      setNetworkError("")
+    }
+  }, [email, password])
 
   const validateEmail = (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmailError(emailRegex.test(value) ? "" : "Formato de correo no válido");
-    setEmail(value);
-  };
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    setEmailError(emailRegex.test(value) ? "" : "Formato de correo no válido")
+    setEmail(value)
+  }
 
   const validatePassword = (value: string) => {
-    setPasswordError(value.length < 1 ? "La contraseña es obligatoria" : "");
-    setPassword(value);
-  };
+    setPasswordError(value.length < 1 ? "La contraseña es obligatoria" : "")
+    setPassword(value)
+  }
+
+  const handleNetworkError = (error: any): string => {
+    console.error("Error de red en login:", error)
+
+    if (error.message?.includes("Network request failed")) {
+      return "Error de conexión. Verifica tu internet y vuelve a intentar."
+    }
+
+    if (error.message?.includes("timeout")) {
+      return "La conexión tardó demasiado. Intenta nuevamente."
+    }
+
+    if (error.message?.includes("401")) {
+      return "Credenciales incorrectas. Verifica tu email y contraseña."
+    }
+
+    if (error.message?.includes("403")) {
+      return "Cuenta bloqueada o sin permisos. Contacta al soporte."
+    }
+
+    if (error.message?.includes("404")) {
+      return "Usuario no encontrado. Verifica tu email o regístrate."
+    }
+
+    if (error.message?.includes("500")) {
+      return "Error del servidor. Intenta más tarde."
+    }
+
+    if (error.message?.includes("Too many requests")) {
+      return "Demasiados intentos. Espera unos minutos antes de intentar nuevamente."
+    }
+
+    return error.message || "Error desconocido. Intenta nuevamente."
+  }
 
   const handleLogin = async () => {
-    clearError();
+    clearError()
+    setNetworkError("")
 
-    //Validaciones locales
-    let hasErrors = false;
+    // Validaciones locales
+    let hasErrors = false
 
     if (!email.trim()) {
-      setEmailError("El correo electrónico es obligatorio");
-      hasErrors = true;
+      setEmailError("El correo electrónico es obligatorio")
+      hasErrors = true
     } else if (emailError) {
-      hasErrors = true;
+      hasErrors = true
     }
 
     if (!password.trim()) {
-      setPasswordError("La contraseña es obligatoria");
-      hasErrors = true;
+      setPasswordError("La contraseña es obligatoria")
+      hasErrors = true
     }
 
     if (hasErrors) {
-      return;
+      return
     }
+
+    setIsLoading(true)
 
     try {
-      await login(email.trim(), password);
-    } catch (error) {
-      console.log('Login failed:', error instanceof Error ? error.message : 'Unknown error');
+      await login(email.trim(), password)
+      // Si llegamos aquí, el login fue exitoso
+      // La navegación se manejará automáticamente por el useEffect que escucha isAuthenticated
+    } catch (error: any) {
+      console.log("Login failed:", error instanceof Error ? error.message : "Unknown error")
+
+      const errorMessage = handleNetworkError(error)
+      setNetworkError(errorMessage)
+
+      // Mostrar alerta con opción de reintentar para errores de red
+      if (error.message?.includes("Network request failed") || error.message?.includes("timeout")) {
+        Alert.alert("Error de conexión", errorMessage, [
+          {
+            text: "Reintentar",
+            onPress: () => handleLogin(),
+          },
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+        ])
+      } else {
+        // Para otros errores, solo mostrar el mensaje
+        Alert.alert("Error de inicio de sesión", errorMessage, [{ text: "OK" }])
+      }
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
+
   const handleRegister = () => {
-    navigation.navigate("Register");
-  };
+    if (!isLoading && !loading) {
+      navigation.navigate("Register")
+    }
+  }
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      "Recuperar contraseña",
-      "Esta funcionalidad estará disponible próximamente.",
-      [{ text: "OK" }]
-    );
-  };
+    if (!isLoading && !loading) {
+      Alert.alert("Recuperar contraseña", "Esta funcionalidad estará disponible próximamente.", [{ text: "OK" }])
+    }
+  }
+
+  const isFormDisabled = isLoading || loading
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <ImageBackground
-        source={require("../assets/background.png")}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
+      <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -112,20 +180,16 @@ export default function LoginScreen({ navigation }: Props) {
           >
             <View style={styles.cardContainer}>
               <View style={styles.logoContainer}>
-                <Image
-                  source={require("../assets/CharruaBusLogo.png")}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
+                <Image source={require("../assets/CharruaBusLogo.png")} style={styles.logoImage} resizeMode="contain" />
               </View>
 
               <Text style={styles.welcomeText}>Bienvenido</Text>
 
               {/* Mostrar error general si existe */}
-              {error && (
+              {(error || networkError) && (
                 <View style={styles.errorContainer}>
                   <Icon name="error-outline" size={20} color="#EF4444" />
-                  <Text style={styles.generalErrorText}>{error}</Text>
+                  <Text style={styles.generalErrorText}>{error || networkError}</Text>
                 </View>
               )}
 
@@ -133,7 +197,7 @@ export default function LoginScreen({ navigation }: Props) {
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Correo electrónico</Text>
                   <TextInput
-                    style={[styles.input, emailError && styles.inputInvalid]}
+                    style={[styles.input, emailError && styles.inputInvalid, isFormDisabled && styles.inputDisabled]}
                     placeholder="Correo electrónico"
                     placeholderTextColor="#9CA3AF"
                     keyboardType="email-address"
@@ -141,14 +205,20 @@ export default function LoginScreen({ navigation }: Props) {
                     autoCorrect={false}
                     value={email}
                     onChangeText={validateEmail}
-                    editable={!loading}
+                    editable={!isFormDisabled}
                   />
                   {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Contraseña</Text>
-                  <View style={[styles.passwordContainer, passwordError && styles.inputInvalid]}>
+                  <View
+                    style={[
+                      styles.passwordContainer,
+                      passwordError && styles.inputInvalid,
+                      isFormDisabled && styles.inputDisabled,
+                    ]}
+                  >
                     <TextInput
                       style={styles.passwordInput}
                       placeholder="Contraseña"
@@ -157,29 +227,35 @@ export default function LoginScreen({ navigation }: Props) {
                       autoCorrect={false}
                       value={password}
                       onChangeText={validatePassword}
-                      editable={!loading}
+                      editable={!isFormDisabled}
                     />
-                    <TouchableOpacity 
-                      style={styles.eyeIcon} 
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
                       onPress={() => setShowPassword(!showPassword)}
-                      disabled={loading}
+                      disabled={isFormDisabled}
                     >
-                      <Icon name={showPassword ? "visibility-off" : "visibility"} size={24} color="#6B7280" />
+                      <Icon
+                        name={showPassword ? "visibility-off" : "visibility"}
+                        size={24}
+                        color={isFormDisabled ? "#D1D5DB" : "#6B7280"}
+                      />
                     </TouchableOpacity>
                   </View>
                   {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                 </View>
 
-                <TouchableOpacity 
-                  style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
-                  activeOpacity={0.8} 
+                <TouchableOpacity
+                  style={[styles.loginButton, isFormDisabled && styles.loginButtonDisabled]}
+                  activeOpacity={0.8}
                   onPress={handleLogin}
-                  disabled={loading}
+                  disabled={isFormDisabled}
                 >
-                  {loading ? (
+                  {isFormDisabled ? (
                     <View style={styles.loadingContainer}>
                       <ActivityIndicator size="small" color="white" />
-                      <Text style={[styles.loginButtonText, styles.loadingText]}>Iniciando sesión...</Text>
+                      <Text style={[styles.loginButtonText, styles.loadingText]}>
+                        {isLoading ? "Iniciando sesión..." : "Cargando..."}
+                      </Text>
                     </View>
                   ) : (
                     <Text style={styles.loginButtonText}>Iniciar sesión</Text>
@@ -187,11 +263,13 @@ export default function LoginScreen({ navigation }: Props) {
                 </TouchableOpacity>
 
                 <View style={styles.footerContainer}>
-                  <TouchableOpacity onPress={handleRegister} disabled={loading}>
-                    <Text style={[styles.footerLink, loading && styles.disabledLink]}>Registrarse</Text>
+                  <TouchableOpacity onPress={handleRegister} disabled={isFormDisabled}>
+                    <Text style={[styles.footerLink, isFormDisabled && styles.disabledLink]}>Registrarse</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
-                    <Text style={[styles.footerLink, loading && styles.disabledLink]}>¿Olvidaste tu contraseña?</Text>
+                  <TouchableOpacity onPress={handleForgotPassword} disabled={isFormDisabled}>
+                    <Text style={[styles.footerLink, isFormDisabled && styles.disabledLink]}>
+                      ¿Olvidaste tu contraseña?
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -200,7 +278,7 @@ export default function LoginScreen({ navigation }: Props) {
         </TouchableWithoutFeedback>
       </ImageBackground>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -287,6 +365,11 @@ const styles = StyleSheet.create({
   inputInvalid: {
     borderColor: "#EF4444",
   },
+  // Nuevo estilo para campos deshabilitados
+  inputDisabled: {
+    backgroundColor: "#F9FAFB",
+    opacity: 0.6,
+  },
   errorText: {
     color: "#EF4444",
     fontSize: 12,
@@ -356,4 +439,4 @@ const styles = StyleSheet.create({
   disabledLink: {
     color: "#9CA3AF",
   },
-});
+})

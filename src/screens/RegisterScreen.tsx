@@ -1,4 +1,6 @@
-import React, { useState } from "react"
+"use client"
+
+import { useState } from "react"
 import {
   StyleSheet,
   View,
@@ -15,13 +17,14 @@ import {
   ScrollView,
   Modal,
   Alert,
+  ActivityIndicator,
 } from "react-native"
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker"
 import Icon from "react-native-vector-icons/MaterialIcons"
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { registerUser } from '../services/authService';
+import { useNavigation } from "@react-navigation/native"
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import type { RootStackParamList } from "../navigation/AppNavigator"
+import { registerUser } from "../services/authService"
 
 const PasswordRequirements = ({ password }: { password: string }) => {
   const requirements = [
@@ -29,32 +32,27 @@ const PasswordRequirements = ({ password }: { password: string }) => {
     { text: "Al menos una minúscula", valid: /[a-z]/.test(password) },
     { text: "Al menos una mayúscula", valid: /[A-Z]/.test(password) },
     { text: "Al menos un número", valid: /\d/.test(password) },
-    { text: "Al menos un carácter especial", valid: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) }
-  ];
+    { text: "Al menos un carácter especial", valid: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) },
+  ]
 
-  if (!password) return null;
+  if (!password) return null
 
   return (
     <View style={styles.passwordRequirements}>
       {requirements.map((req, index) => (
         <View key={index} style={styles.requirementRow}>
-          <Icon 
-            name={req.valid ? "check-circle" : "cancel"} 
-            size={16} 
-            color={req.valid ? "#10B981" : "#EF4444"} 
-          />
-          <Text style={[styles.requirementText, req.valid && styles.requirementValid]}>
-            {req.text}
-          </Text>
+          <Icon name={req.valid ? "check-circle" : "cancel"} size={16} color={req.valid ? "#10B981" : "#EF4444"} />
+          <Text style={[styles.requirementText, req.valid && styles.requirementValid]}>{req.text}</Text>
         </View>
       ))}
     </View>
-  );
-};
+  )
+}
 
 export default function RegisterScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 
+  // Estados del formulario
   const [nombre, setNombre] = useState("")
   const [nombreError, setNombreError] = useState("")
   const [apellido, setApellido] = useState("")
@@ -74,70 +72,72 @@ export default function RegisterScreen() {
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [passwordError, setPasswordError] = useState("") // Solo para el campo de contraseña
-  const [confirmPasswordError, setConfirmPasswordError] = useState("") // Para el campo de confirmación
+  const [passwordError, setPasswordError] = useState("")
+  const [confirmPasswordError, setConfirmPasswordError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Estados de carga
+  const [isLoading, setIsLoading] = useState(false)
 
   const situacionesLaborales = ["Jubilado", "Estudiante", "Otro"]
 
   const validatePasswordRequirements = (password: string): string[] => {
-    const errors: string[] = [];
-    
+    const errors: string[] = []
+
     if (password.length < 8) {
-      errors.push("Mínimo 8 caracteres");
+      errors.push("Mínimo 8 caracteres")
     }
-    
+
     if (!/[a-z]/.test(password)) {
-      errors.push("Al menos una letra minúscula");
+      errors.push("Al menos una letra minúscula")
     }
-    
+
     if (!/[A-Z]/.test(password)) {
-      errors.push("Al menos una letra mayúscula");
+      errors.push("Al menos una letra mayúscula")
     }
-    
+
     if (!/\d/.test(password)) {
-      errors.push("Al menos un número");
+      errors.push("Al menos un número")
     }
-    
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      errors.push("Al menos un carácter especial");
+
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+      errors.push("Al menos un carácter especial")
     }
-    
-    return errors;
-  };
+
+    return errors
+  }
 
   const calcularDigitoVerificador = (cedula: string): number => {
-    if (cedula.length < 7) return -1;
-    
-    const numeros = cedula.substring(0, 7).split('').map(Number);
-    const multiplicadores = [2, 9, 8, 7, 6, 3, 4];
-    
-    let suma = 0;
+    if (cedula.length < 7) return -1
+
+    const numeros = cedula.substring(0, 7).split("").map(Number)
+    const multiplicadores = [2, 9, 8, 7, 6, 3, 4]
+
+    let suma = 0
     for (let i = 0; i < 7; i++) {
-      suma += numeros[i] * multiplicadores[i];
+      suma += numeros[i] * multiplicadores[i]
     }
-    
-    const resto = suma % 10;
-    return resto === 0 ? 0 : 10 - resto;
-  };
+
+    const resto = suma % 10
+    return resto === 0 ? 0 : 10 - resto
+  }
 
   const validarCedulaUruguaya = (cedula: string): boolean => {
-    if (cedula.length !== 8) return false;
-    
-    const digitoCalculado = calcularDigitoVerificador(cedula);
-    const digitoIngresado = parseInt(cedula[7]);
-    
-    return digitoCalculado === digitoIngresado;
-  };
+    if (cedula.length !== 8) return false
 
-  //Función para formatear cédula con puntos (formato uruguayo: X.XXX.XXX-X)
+    const digitoCalculado = calcularDigitoVerificador(cedula)
+    const digitoIngresado = Number.parseInt(cedula[7])
+
+    return digitoCalculado === digitoIngresado
+  }
+
   const formatearCedula = (cedula: string): string => {
-    if (cedula.length <= 1) return cedula;
-    if (cedula.length <= 4) return `${cedula.substring(0, 1)}.${cedula.substring(1)}`;
-    if (cedula.length <= 7) return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4)}`;
-    return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4, 7)}-${cedula.substring(7)}`;
-  };
+    if (cedula.length <= 1) return cedula
+    if (cedula.length <= 4) return `${cedula.substring(0, 1)}.${cedula.substring(1)}`
+    if (cedula.length <= 7) return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4)}`
+    return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4, 7)}-${cedula.substring(7)}`
+  }
 
   const handleBackToLogin = () => {
     navigation.navigate("Login")
@@ -150,98 +150,96 @@ export default function RegisterScreen() {
   }
 
   const validateNombre = (value: string) => {
-    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
+    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")
     setNombre(onlyLetters)
     setNombreError(onlyLetters.trim() === "" ? "El nombre es obligatorio" : "")
   }
 
   const validateApellido = (value: string) => {
-    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
+    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")
     setApellido(onlyLetters)
     setApellidoError(onlyLetters.trim() === "" ? "El apellido es obligatorio" : "")
   }
 
   const validateEmail = (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmail(value);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    setEmail(value)
     if (!value.trim()) {
-      setEmailError("El correo electrónico es obligatorio");
+      setEmailError("El correo electrónico es obligatorio")
     } else if (!emailRegex.test(value)) {
-      setEmailError("Formato de correo no válido");
+      setEmailError("Formato de correo no válido")
     } else {
-      setEmailError("");
+      setEmailError("")
     }
-  };
+  }
 
   const validateCedula = (value: string) => {
-    const onlyNumbers = value.replace(/\D/g, '');
-    
+    const onlyNumbers = value.replace(/\D/g, "")
+
     if (onlyNumbers.length <= 8) {
-      setCedula(onlyNumbers);
-      
+      setCedula(onlyNumbers)
+
       if (onlyNumbers.length === 0) {
-        setCedulaError("La cédula es obligatoria");
+        setCedulaError("La cédula es obligatoria")
       } else if (onlyNumbers.length < 8) {
-        setCedulaError("La cédula debe tener 8 dígitos");
+        setCedulaError("La cédula debe tener 8 dígitos")
       } else if (onlyNumbers.length === 8) {
         if (validarCedulaUruguaya(onlyNumbers)) {
-          setCedulaError("");
+          setCedulaError("")
         } else {
-          const digitoCalculado = calcularDigitoVerificador(onlyNumbers);
-          setCedulaError(`Dígito verificador incorrecto. Debería ser: ${digitoCalculado}`);
+          const digitoCalculado = calcularDigitoVerificador(onlyNumbers)
+          setCedulaError(`Dígito verificador incorrecto. Debería ser: ${digitoCalculado}`)
         }
       }
     }
   }
 
   const validatePassword = (pass: string) => {
-    setPassword(pass);
-    
+    setPassword(pass)
+
     if (!pass.trim()) {
-      setPasswordError("La contraseña es obligatoria");
-      return;
+      setPasswordError("La contraseña es obligatoria")
+      return
     }
-    
-    //Valida requisitos de la contraseña
-    const passwordErrors = validatePasswordRequirements(pass);
-    
+
+    const passwordErrors = validatePasswordRequirements(pass)
+
     if (passwordErrors.length > 0) {
-      setPasswordError(``);
+      setPasswordError(``)
     } else {
-      setPasswordError("");
+      setPasswordError("")
     }
-    
+
     if (confirmPassword) {
-      validateConfirmPassword(confirmPassword);
+      validateConfirmPassword(confirmPassword)
     }
-  };
+  }
 
   const validateConfirmPassword = (confirmPass: string) => {
-    setConfirmPassword(confirmPass);
-    
+    setConfirmPassword(confirmPass)
+
     if (!confirmPass.trim()) {
-      setConfirmPasswordError("Debe confirmar la contraseña");
-      return;
+      setConfirmPasswordError("Debe confirmar la contraseña")
+      return
     }
-    
-    //Verifica si la contraseña principal cumple los requisitos
-    const passwordErrors = validatePasswordRequirements(password);
-    
+
+    const passwordErrors = validatePasswordRequirements(password)
+
     if (passwordErrors.length > 0) {
-      setConfirmPasswordError("Primero complete los requisitos de la contraseña");
-      return;
+      setConfirmPasswordError("Primero complete los requisitos de la contraseña")
+      return
     }
-    
+
     if (password !== confirmPass) {
-      setConfirmPasswordError("Las contraseñas no coinciden");
+      setConfirmPasswordError("Las contraseñas no coinciden")
     } else {
-      setConfirmPasswordError("");
+      setConfirmPasswordError("")
     }
-  };
+  }
 
   const formatDate = (date: Date) => {
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
   }
@@ -255,113 +253,164 @@ export default function RegisterScreen() {
     }
   }
 
+  const handleNetworkError = (error: any): string => {
+    console.error("Error de red:", error)
+
+    if (error.message?.includes("Network request failed")) {
+      return "Error de conexión. Verifica tu internet y vuelve a intentar."
+    }
+
+    if (error.message?.includes("timeout")) {
+      return "La conexión tardó demasiado. Intenta nuevamente."
+    }
+
+    if (error.message?.includes("400")) {
+      return "Datos inválidos. Verifica la información ingresada."
+    }
+
+    if (error.message?.includes("409")) {
+      return "Este email ya está registrado. Usa otro email o inicia sesión."
+    }
+
+    if (error.message?.includes("500")) {
+      return "Error del servidor. Intenta más tarde."
+    }
+
+    return error.message || "Error desconocido. Intenta nuevamente."
+  }
+
   const handleRegister = async () => {
-  let hasErrors = false;
+    let hasErrors = false
 
-  if (!nombre.trim()) {
-    setNombreError("El nombre es obligatorio");
-    hasErrors = true;
-  }
-
-  if (!apellido.trim()) {
-    setApellidoError("El apellido es obligatorio");
-    hasErrors = true;
-  }
-
-  if (!cedula) {
-    setCedulaError("La cédula es obligatoria");
-    hasErrors = true;
-  } else if (cedula.length !== 8 || !validarCedulaUruguaya(cedula)) {
-    setCedulaError("Por favor, ingrese una cédula válida");
-    hasErrors = true;
-  }
-
-  if (!email.trim()) {
-    setEmailError("El correo electrónico es obligatorio");
-    hasErrors = true;
-  } else if (emailError) {
-    hasErrors = true;
-  }
-
-  if (!password.trim()) {
-    setPasswordError("La contraseña es obligatoria");
-    hasErrors = true;
-  } else {
-    const passwordErrors = validatePasswordRequirements(password);
-    if (passwordErrors.length > 0) {
-      setPasswordError(`Requisitos faltantes: ${passwordErrors.join(", ")}`);
-      hasErrors = true;
+    // Validaciones del formulario
+    if (!nombre.trim()) {
+      setNombreError("El nombre es obligatorio")
+      hasErrors = true
     }
-  }
 
-  if (!confirmPassword.trim()) {
-    setConfirmPasswordError("Debe confirmar la contraseña");
-    hasErrors = true;
-  } else if (password !== confirmPassword) {
-    setConfirmPasswordError("Las contraseñas no coinciden");
-    hasErrors = true;
-  }
+    if (!apellido.trim()) {
+      setApellidoError("El apellido es obligatorio")
+      hasErrors = true
+    }
 
-  if (!date) {
-    setFechaError("La fecha de nacimiento es obligatoria");
-    hasErrors = true;
-  } else {
-    setFechaError("");
-  }
+    if (!cedula) {
+      setCedulaError("La cédula es obligatoria")
+      hasErrors = true
+    } else if (cedula.length !== 8 || !validarCedulaUruguaya(cedula)) {
+      setCedulaError("Por favor, ingrese una cédula válida")
+      hasErrors = true
+    }
 
-  if (!genero) {
-    setGeneroError("Debe seleccionar un género");
-    hasErrors = true;
-  } else {
-    setGeneroError("");
-  }
+    if (!email.trim()) {
+      setEmailError("El correo electrónico es obligatorio")
+      hasErrors = true
+    } else if (emailError) {
+      hasErrors = true
+    }
 
-  if (!situacionLaboral) {
-    setSituacionLaboralError("Debe seleccionar una situación laboral");
-    hasErrors = true;
-  } else {
-    setSituacionLaboralError("");
-  }
+    if (!password.trim()) {
+      setPasswordError("La contraseña es obligatoria")
+      hasErrors = true
+    } else {
+      const passwordErrors = validatePasswordRequirements(password)
+      if (passwordErrors.length > 0) {
+        setPasswordError(`Requisitos faltantes: ${passwordErrors.join(", ")}`)
+        hasErrors = true
+      }
+    }
 
-  if (hasErrors) return;
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError("Debe confirmar la contraseña")
+      hasErrors = true
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError("Las contraseñas no coinciden")
+      hasErrors = true
+    }
 
-  try {
     if (!date) {
-      setFechaError("Error con la fecha de nacimiento");
-      return;
+      setFechaError("La fecha de nacimiento es obligatoria")
+      hasErrors = true
+    } else {
+      setFechaError("")
     }
 
-    const fechaFormateada = date.toISOString().split('T')[0]; //yyyy-MM-dd
+    if (!genero) {
+      setGeneroError("Debe seleccionar un género")
+      hasErrors = true
+    } else {
+      setGeneroError("")
+    }
 
-    const data = {
-      email,
-      password,
-      nombre,
-      apellido,
-      fechaNacimiento: fechaFormateada,
-      documento: cedula,
-      tipoDocumento: "CEDULA",
-      situacionLaboral: situacionLaboral.toUpperCase(),
-      genero: genero.toUpperCase(),
-    };
+    if (!situacionLaboral) {
+      setSituacionLaboralError("Debe seleccionar una situación laboral")
+      hasErrors = true
+    } else {
+      setSituacionLaboralError("")
+    }
 
-    await registerUser(data);
+    if (hasErrors) return
 
-    Alert.alert("Éxito", "Usuario registrado!");
-    navigation.navigate("VerifyEmail", { email: email });
+    setIsLoading(true)
 
-  } catch (error: any) {
-    console.error("Error al registrar:", error.message);
-    Alert.alert("Error", error.message);
+    try {
+      if (!date) {
+        setFechaError("Error con la fecha de nacimiento")
+        return
+      }
+
+      const fechaFormateada = date.toISOString().split("T")[0]
+
+      const data = {
+        email,
+        password,
+        nombre,
+        apellido,
+        fechaNacimiento: fechaFormateada,
+        documento: cedula,
+        tipoDocumento: "CEDULA",
+        situacionLaboral: situacionLaboral.toUpperCase(),
+        genero: genero.toUpperCase(),
+      }
+
+      await registerUser(data)
+
+      Alert.alert(
+        "¡Registro exitoso!",
+        "Tu cuenta ha sido creada correctamente. Revisa tu email para verificar tu cuenta.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("VerifyEmail", { email: email }),
+          },
+        ],
+      )
+    } catch (error: any) {
+      const errorMessage = handleNetworkError(error)
+
+      Alert.alert("Error al registrarse", errorMessage, [
+        {
+          text: "Reintentar",
+          onPress: () => handleRegister(),
+        },
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+      ])
+    } finally {
+      setIsLoading(false)
+    }
   }
-};
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardAvoidingView}
+          >
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
               <View style={styles.cardContainer}>
                 <View style={styles.headerContainer}>
@@ -373,45 +422,49 @@ export default function RegisterScreen() {
                 </View>
 
                 <View style={styles.formContainer}>
+                  {/* Campos del formulario */}
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Nombre</Text>
-                    <TextInput 
-                      style={[styles.input, nombreError ? styles.inputError : null]} 
-                      placeholder="Nombre" 
-                      placeholderTextColor="#9CA3AF" 
-                      autoCapitalize="words" 
-                      autoCorrect={false} 
-                      value={nombre} 
-                      onChangeText={validateNombre} 
+                    <TextInput
+                      style={[styles.input, nombreError ? styles.inputError : null]}
+                      placeholder="Nombre"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      value={nombre}
+                      onChangeText={validateNombre}
+                      editable={!isLoading}
                     />
                     {nombreError ? <Text style={styles.errorText}>{nombreError}</Text> : null}
                   </View>
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Apellido</Text>
-                    <TextInput 
-                      style={[styles.input, apellidoError ? styles.inputError : null]} 
-                      placeholder="Apellido" 
-                      placeholderTextColor="#9CA3AF" 
-                      autoCapitalize="words" 
-                      autoCorrect={false} 
-                      value={apellido} 
-                      onChangeText={validateApellido} 
+                    <TextInput
+                      style={[styles.input, apellidoError ? styles.inputError : null]}
+                      placeholder="Apellido"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      value={apellido}
+                      onChangeText={validateApellido}
+                      editable={!isLoading}
                     />
                     {apellidoError ? <Text style={styles.errorText}>{apellidoError}</Text> : null}
                   </View>
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Cédula</Text>
-                    <TextInput 
-                      style={[styles.input, cedulaError ? styles.inputError : null]} 
-                      placeholder="1.234.567-8" 
-                      placeholderTextColor="#9CA3AF" 
-                      keyboardType="numeric" 
-                      autoCorrect={false} 
-                      value={formatearCedula(cedula)} 
+                    <TextInput
+                      style={[styles.input, cedulaError ? styles.inputError : null]}
+                      placeholder="1.234.567-8"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      autoCorrect={false}
+                      value={formatearCedula(cedula)}
                       onChangeText={validateCedula}
-                      maxLength={11} //Contempla los puntos y guión en el formato X.XXX.XXX-X
+                      maxLength={11}
+                      editable={!isLoading}
                     />
                     {cedulaError ? (
                       <Text style={styles.errorText}>{cedulaError}</Text>
@@ -422,15 +475,16 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Correo electrónico</Text>
-                    <TextInput 
-                      style={[styles.input, emailError && styles.inputError]} 
-                      placeholder="Correo electrónico" 
-                      placeholderTextColor="#9CA3AF" 
-                      keyboardType="email-address" 
-                      autoCapitalize="none" 
-                      autoCorrect={false} 
-                      value={email} 
-                      onChangeText={validateEmail} 
+                    <TextInput
+                      style={[styles.input, emailError && styles.inputError]}
+                      placeholder="Correo electrónico"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={email}
+                      onChangeText={validateEmail}
+                      editable={!isLoading}
                     />
                     {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                   </View>
@@ -446,16 +500,14 @@ export default function RegisterScreen() {
                         autoCapitalize="none"
                         value={password}
                         onChangeText={validatePassword}
+                        editable={!isLoading}
                       />
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.eyeButton}
                         onPress={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
                       >
-                        <Icon 
-                          name={showPassword ? "visibility" : "visibility-off"} 
-                          size={20} 
-                          color="#9CA3AF" 
-                        />
+                        <Icon name={showPassword ? "visibility" : "visibility-off"} size={20} color="#9CA3AF" />
                       </TouchableOpacity>
                     </View>
                     <PasswordRequirements password={password} />
@@ -473,31 +525,31 @@ export default function RegisterScreen() {
                         autoCapitalize="none"
                         value={confirmPassword}
                         onChangeText={validateConfirmPassword}
+                        editable={!isLoading}
                       />
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.eyeButton}
                         onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={isLoading}
                       >
-                        <Icon 
-                          name={showConfirmPassword ? "visibility" : "visibility-off"} 
-                          size={20} 
-                          color="#9CA3AF" 
-                        />
+                        <Icon name={showConfirmPassword ? "visibility" : "visibility-off"} size={20} color="#9CA3AF" />
                       </TouchableOpacity>
                     </View>
                     {confirmPasswordError ? (
                       <Text style={styles.errorText}>{confirmPasswordError}</Text>
-                    ) : confirmPassword && password === confirmPassword && validatePasswordRequirements(password).length === 0 ? (
+                    ) : confirmPassword &&
+                      password === confirmPassword &&
+                      validatePasswordRequirements(password).length === 0 ? (
                       <Text style={styles.successText}>✓ Las contraseñas coinciden y cumplen los requisitos</Text>
                     ) : null}
                   </View>
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Fecha de nacimiento</Text>
-                    <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                    <TouchableOpacity onPress={() => !isLoading && setShowDatePicker(true)}>
                       <View style={[styles.inputWithIcon, fechaError ? styles.inputError : null]}>
                         <Text style={[styles.inputText, !fechaNacimiento && styles.placeholderText]}>
-                          {fechaNacimiento || 'DD/MM/AAAA'}
+                          {fechaNacimiento || "DD/MM/AAAA"}
                         </Text>
                         <Icon name="calendar-today" size={20} color="#9CA3AF" />
                       </View>
@@ -518,14 +570,17 @@ export default function RegisterScreen() {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Género</Text>
                     <View style={styles.column}>
-                      {['masculino', 'femenino', 'otro'].map((item) => (
-                        <TouchableOpacity 
-                          key={item} 
-                          style={[styles.checkboxRow, styles.checkboxSpacing]} 
+                      {["masculino", "femenino", "otro"].map((item) => (
+                        <TouchableOpacity
+                          key={item}
+                          style={[styles.checkboxRow, styles.checkboxSpacing]}
                           onPress={() => {
-                            setGenero(item);
-                            setGeneroError("");
+                            if (!isLoading) {
+                              setGenero(item)
+                              setGeneroError("")
+                            }
                           }}
+                          disabled={isLoading}
                         >
                           <View style={[styles.checkbox, genero === item && styles.checkboxSelected]}>
                             {genero === item && <Icon name="check" size={16} color="white" />}
@@ -539,7 +594,11 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Situación laboral</Text>
-                    <TouchableOpacity style={styles.selectButton} onPress={() => setShowSituacionModal(true)}>
+                    <TouchableOpacity
+                      style={styles.selectButton}
+                      onPress={() => !isLoading && setShowSituacionModal(true)}
+                      disabled={isLoading}
+                    >
                       <Text style={[styles.selectText, !situacionLaboral && styles.selectPlaceholder]}>
                         {situacionLaboral || "Seleccionar situación laboral"}
                       </Text>
@@ -548,13 +607,25 @@ export default function RegisterScreen() {
                     {situacionLaboralError ? <Text style={styles.errorText}>{situacionLaboralError}</Text> : null}
                   </View>
 
-                  <TouchableOpacity style={styles.registerButton} activeOpacity={0.8} onPress={handleRegister}>
-                    <Text style={styles.registerButtonText}>Registrarse</Text>
+                  <TouchableOpacity
+                    style={[styles.registerButton, isLoading && styles.buttonDisabled]}
+                    activeOpacity={0.8}
+                    onPress={handleRegister}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color="white" />
+                        <Text style={styles.registerButtonText}>Registrando...</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.registerButtonText}>Registrarse</Text>
+                    )}
                   </TouchableOpacity>
 
                   <View style={styles.footerContainer}>
                     <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
-                    <TouchableOpacity onPress={handleBackToLogin}>
+                    <TouchableOpacity onPress={handleBackToLogin} disabled={isLoading}>
                       <Text style={styles.footerLink}>Iniciar sesión</Text>
                     </TouchableOpacity>
                   </View>
@@ -570,7 +641,11 @@ export default function RegisterScreen() {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Seleccionar situación laboral</Text>
                 {situacionesLaborales.map((situacion) => (
-                  <TouchableOpacity key={situacion} style={styles.modalOption} onPress={() => selectSituacion(situacion)}>
+                  <TouchableOpacity
+                    key={situacion}
+                    style={styles.modalOption}
+                    onPress={() => selectSituacion(situacion)}
+                  >
                     <Text style={styles.modalOptionText}>{situacion}</Text>
                   </TouchableOpacity>
                 ))}
@@ -661,6 +736,14 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
     borderWidth: 2,
   },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   errorText: {
     color: "#EF4444",
     fontSize: 12,
@@ -675,8 +758,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "white",
     borderRadius: 8,
     borderWidth: 1,
@@ -692,27 +775,22 @@ const styles = StyleSheet.create({
   eyeButton: {
     padding: 15,
   },
-  // Estilos para los requisitos de contraseña
   passwordRequirements: {
     marginTop: 8,
     paddingHorizontal: 4,
   },
   requirementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 4,
   },
   requirementText: {
     fontSize: 12,
-    color: '#EF4444',
+    color: "#EF4444",
     marginLeft: 6,
   },
   requirementValid: {
-    color: '#10B981',
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    color: "#10B981",
   },
   checkboxRow: {
     flexDirection: "row",
@@ -777,6 +855,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+    marginLeft: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -810,44 +889,44 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
     height: 50,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     paddingHorizontal: 16,
   },
   inputText: {
     fontSize: 16,
-    color: '#1F2937',
+    color: "#1F2937",
   },
   placeholderText: {
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   column: {
-    flexDirection: 'column',
+    flexDirection: "column",
     marginBottom: 12,
-  },  
+  },
   checkboxSpacing: {
     marginBottom: 12,
   },
   footerContainer: {
-    flexDirection: "row", 
-    justifyContent: "center", 
-    alignItems: "center", 
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 16,
   },
-  footerText: { 
-    fontSize: 14, 
-    color: "#6B7280", 
-    marginRight: 8 
+  footerText: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginRight: 8,
   },
-  footerLink: { 
-    fontSize: 14, 
-    color: "#3B82F6", 
-    fontWeight: "500" 
+  footerLink: {
+    fontSize: 14,
+    color: "#3B82F6",
+    fontWeight: "500",
   },
 })
