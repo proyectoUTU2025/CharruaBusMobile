@@ -1,4 +1,6 @@
-import React, { useState } from "react"
+"use client"
+
+import { useState } from "react"
 import {
   StyleSheet,
   View,
@@ -12,13 +14,14 @@ import {
   ScrollView,
   Modal,
   Alert,
+  ActivityIndicator,
 } from "react-native"
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker"
 import Icon from "react-native-vector-icons/MaterialIcons"
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { registerUser } from '../services/authService';
+import { useNavigation } from "@react-navigation/native"
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import type { RootStackParamList } from "../navigation/AppNavigator"
+import { registerUser } from "../services/authService"
 
 const PasswordRequirements = ({ password }: { password: string }) => {
   const requirements = [
@@ -26,32 +29,27 @@ const PasswordRequirements = ({ password }: { password: string }) => {
     { text: "Al menos una minúscula", valid: /[a-z]/.test(password) },
     { text: "Al menos una mayúscula", valid: /[A-Z]/.test(password) },
     { text: "Al menos un número", valid: /\d/.test(password) },
-    { text: "Al menos un carácter especial", valid: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) }
-  ];
+    { text: "Al menos un carácter especial", valid: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) },
+  ]
 
-  if (!password) return null;
+  if (!password) return null
 
   return (
     <View style={styles.passwordRequirements}>
       {requirements.map((req, index) => (
         <View key={index} style={styles.requirementRow}>
-          <Icon 
-            name={req.valid ? "check-circle" : "cancel"} 
-            size={16} 
-            color={req.valid ? "#10B981" : "#EF4444"} 
-          />
-          <Text style={[styles.requirementText, req.valid && styles.requirementValid]}>
-            {req.text}
-          </Text>
+          <Icon name={req.valid ? "check-circle" : "cancel"} size={16} color={req.valid ? "#10B981" : "#EF4444"} />
+          <Text style={[styles.requirementText, req.valid && styles.requirementValid]}>{req.text}</Text>
         </View>
       ))}
     </View>
-  );
-};
+  )
+}
 
 export default function RegisterScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 
+  // Estados del formulario
   const [nombre, setNombre] = useState("")
   const [nombreError, setNombreError] = useState("")
   const [apellido, setApellido] = useState("")
@@ -71,73 +69,78 @@ export default function RegisterScreen() {
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [passwordError, setPasswordError] = useState("") // Solo para el campo de contraseña
-  const [confirmPasswordError, setConfirmPasswordError] = useState("") // Para el campo de confirmación
+  const [passwordError, setPasswordError] = useState("")
+  const [confirmPasswordError, setConfirmPasswordError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Estados de carga
+  const [isLoading, setIsLoading] = useState(false)
 
   const situacionesLaborales = ["Jubilado", "Estudiante", "Otro"]
 
   const validatePasswordRequirements = (password: string): string[] => {
-    const errors: string[] = [];
-    
+    const errors: string[] = []
+
     if (password.length < 8) {
-      errors.push("Mínimo 8 caracteres");
+      errors.push("Mínimo 8 caracteres")
     }
-    
+
     if (!/[a-z]/.test(password)) {
-      errors.push("Al menos una letra minúscula");
+      errors.push("Al menos una letra minúscula")
     }
-    
+
     if (!/[A-Z]/.test(password)) {
-      errors.push("Al menos una letra mayúscula");
+      errors.push("Al menos una letra mayúscula")
     }
-    
+
     if (!/\d/.test(password)) {
-      errors.push("Al menos un número");
+      errors.push("Al menos un número")
     }
-    
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      errors.push("Al menos un carácter especial");
+
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+      errors.push("Al menos un carácter especial")
     }
-    
-    return errors;
-  };
+
+    return errors
+  }
 
   const calcularDigitoVerificador = (cedula: string): number => {
-    if (cedula.length < 7) return -1;
-    
-    const numeros = cedula.substring(0, 7).split('').map(Number);
-    const multiplicadores = [2, 9, 8, 7, 6, 3, 4];
-    
-    let suma = 0;
+    if (cedula.length < 7) return -1
+
+    const numeros = cedula.substring(0, 7).split("").map(Number)
+    const multiplicadores = [2, 9, 8, 7, 6, 3, 4]
+
+    let suma = 0
     for (let i = 0; i < 7; i++) {
-      suma += numeros[i] * multiplicadores[i];
+      suma += numeros[i] * multiplicadores[i]
     }
-    
-    const resto = suma % 10;
-    return resto === 0 ? 0 : 10 - resto;
-  };
+
+    const resto = suma % 10
+    return resto === 0 ? 0 : 10 - resto
+  }
 
   const validarCedulaUruguaya = (cedula: string): boolean => {
-    if (cedula.length !== 8) return false;
-    
-    const digitoCalculado = calcularDigitoVerificador(cedula);
-    const digitoIngresado = parseInt(cedula[7]);
-    
-    return digitoCalculado === digitoIngresado;
-  };
+    if (cedula.length !== 8) return false
 
-  //Función para formatear cédula con puntos (formato uruguayo: X.XXX.XXX-X)
+    const digitoCalculado = calcularDigitoVerificador(cedula)
+    const digitoIngresado = Number.parseInt(cedula[7])
+
+    return digitoCalculado === digitoIngresado
+  }
+
   const formatearCedula = (cedula: string): string => {
-    if (cedula.length <= 1) return cedula;
-    if (cedula.length <= 4) return `${cedula.substring(0, 1)}.${cedula.substring(1)}`;
-    if (cedula.length <= 7) return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4)}`;
-    return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4, 7)}-${cedula.substring(7)}`;
-  };
+    if (cedula.length <= 1) return cedula
+    if (cedula.length <= 4) return `${cedula.substring(0, 1)}.${cedula.substring(1)}`
+    if (cedula.length <= 7) return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4)}`
+    return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4, 7)}-${cedula.substring(7)}`
+  }
 
   const handleBackToLogin = () => {
-    navigation.navigate("Login")
+    if (!isLoading) {
+      console.log("Navegando de vuelta a Login")
+      navigation.navigate("Login")
+    }
   }
 
   const selectSituacion = (situacion: string) => {
@@ -147,98 +150,96 @@ export default function RegisterScreen() {
   }
 
   const validateNombre = (value: string) => {
-    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
+    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")
     setNombre(onlyLetters)
     setNombreError(onlyLetters.trim() === "" ? "El nombre es obligatorio" : "")
   }
 
   const validateApellido = (value: string) => {
-    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
+    const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")
     setApellido(onlyLetters)
     setApellidoError(onlyLetters.trim() === "" ? "El apellido es obligatorio" : "")
   }
 
   const validateEmail = (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmail(value);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    setEmail(value)
     if (!value.trim()) {
-      setEmailError("El correo electrónico es obligatorio");
+      setEmailError("El correo electrónico es obligatorio")
     } else if (!emailRegex.test(value)) {
-      setEmailError("Formato de correo no válido");
+      setEmailError("Formato de correo no válido")
     } else {
-      setEmailError("");
+      setEmailError("")
     }
-  };
+  }
 
   const validateCedula = (value: string) => {
-    const onlyNumbers = value.replace(/\D/g, '');
-    
+    const onlyNumbers = value.replace(/\D/g, "")
+
     if (onlyNumbers.length <= 8) {
-      setCedula(onlyNumbers);
-      
+      setCedula(onlyNumbers)
+
       if (onlyNumbers.length === 0) {
-        setCedulaError("La cédula es obligatoria");
+        setCedulaError("La cédula es obligatoria")
       } else if (onlyNumbers.length < 8) {
-        setCedulaError("La cédula debe tener 8 dígitos");
+        setCedulaError("La cédula debe tener 8 dígitos")
       } else if (onlyNumbers.length === 8) {
         if (validarCedulaUruguaya(onlyNumbers)) {
-          setCedulaError("");
+          setCedulaError("")
         } else {
-          const digitoCalculado = calcularDigitoVerificador(onlyNumbers);
-          setCedulaError(`Dígito verificador incorrecto. Debería ser: ${digitoCalculado}`);
+          const digitoCalculado = calcularDigitoVerificador(onlyNumbers)
+          setCedulaError(`Dígito verificador incorrecto. Debería ser: ${digitoCalculado}`)
         }
       }
     }
   }
 
   const validatePassword = (pass: string) => {
-    setPassword(pass);
-    
+    setPassword(pass)
+
     if (!pass.trim()) {
-      setPasswordError("La contraseña es obligatoria");
-      return;
+      setPasswordError("La contraseña es obligatoria")
+      return
     }
-    
-    //Valida requisitos de la contraseña
-    const passwordErrors = validatePasswordRequirements(pass);
-    
+
+    const passwordErrors = validatePasswordRequirements(pass)
+
     if (passwordErrors.length > 0) {
-      setPasswordError(``);
+      setPasswordError(``)
     } else {
-      setPasswordError("");
+      setPasswordError("")
     }
-    
+
     if (confirmPassword) {
-      validateConfirmPassword(confirmPassword);
+      validateConfirmPassword(confirmPassword)
     }
-  };
+  }
 
   const validateConfirmPassword = (confirmPass: string) => {
-    setConfirmPassword(confirmPass);
-    
+    setConfirmPassword(confirmPass)
+
     if (!confirmPass.trim()) {
-      setConfirmPasswordError("Debe confirmar la contraseña");
-      return;
+      setConfirmPasswordError("Debe confirmar la contraseña")
+      return
     }
-    
-    //Verifica si la contraseña principal cumple los requisitos
-    const passwordErrors = validatePasswordRequirements(password);
-    
+
+    const passwordErrors = validatePasswordRequirements(password)
+
     if (passwordErrors.length > 0) {
-      setConfirmPasswordError("Primero complete los requisitos de la contraseña");
-      return;
+      setConfirmPasswordError("Primero complete los requisitos de la contraseña")
+      return
     }
-    
+
     if (password !== confirmPass) {
-      setConfirmPasswordError("Las contraseñas no coinciden");
+      setConfirmPasswordError("Las contraseñas no coinciden")
     } else {
-      setConfirmPasswordError("");
+      setConfirmPasswordError("")
     }
-  };
+  }
 
   const formatDate = (date: Date) => {
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
   }
@@ -251,6 +252,7 @@ export default function RegisterScreen() {
       setFechaError("")
     }
   }
+
 
   const handleRegister = async () => {
     // Limpiar errores de email previos
@@ -382,61 +384,71 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
       <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
+
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={true}
           bounces={true}
         >
+
               <View style={styles.cardContainer}>
                 <View style={styles.headerContainer}>
-                  <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin}>
-                    <Icon name="arrow-back" size={24} color="#374151" />
+                  <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin} disabled={isLoading}>
+                    <Icon name="arrow-back" size={24} color={isLoading ? "#9CA3AF" : "#374151"} />
                   </TouchableOpacity>
                   <Text style={styles.headerTitle}>Crear cuenta</Text>
                   <View style={styles.placeholder} />
                 </View>
 
                 <View style={styles.formContainer}>
+                  {/* Campos del formulario */}
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Nombre</Text>
-                    <TextInput 
-                      style={[styles.input, nombreError ? styles.inputError : null]} 
-                      placeholder="Nombre" 
-                      placeholderTextColor="#9CA3AF" 
-                      autoCapitalize="words" 
-                      autoCorrect={false} 
-                      value={nombre} 
-                      onChangeText={validateNombre} 
+                    <TextInput
+                      style={[styles.input, nombreError ? styles.inputError : null, isLoading && styles.inputDisabled]}
+                      placeholder="Nombre"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      value={nombre}
+                      onChangeText={validateNombre}
+                      editable={!isLoading}
                     />
                     {nombreError ? <Text style={styles.errorText}>{nombreError}</Text> : null}
                   </View>
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Apellido</Text>
-                    <TextInput 
-                      style={[styles.input, apellidoError ? styles.inputError : null]} 
-                      placeholder="Apellido" 
-                      placeholderTextColor="#9CA3AF" 
-                      autoCapitalize="words" 
-                      autoCorrect={false} 
-                      value={apellido} 
-                      onChangeText={validateApellido} 
+                    <TextInput
+                      style={[
+                        styles.input,
+                        apellidoError ? styles.inputError : null,
+                        isLoading && styles.inputDisabled,
+                      ]}
+                      placeholder="Apellido"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      value={apellido}
+                      onChangeText={validateApellido}
+                      editable={!isLoading}
                     />
                     {apellidoError ? <Text style={styles.errorText}>{apellidoError}</Text> : null}
                   </View>
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Cédula</Text>
-                    <TextInput 
-                      style={[styles.input, cedulaError ? styles.inputError : null]} 
-                      placeholder="1.234.567-8" 
-                      placeholderTextColor="#9CA3AF" 
-                      keyboardType="numeric" 
-                      autoCorrect={false} 
-                      value={formatearCedula(cedula)} 
+                    <TextInput
+                      style={[styles.input, cedulaError ? styles.inputError : null, isLoading && styles.inputDisabled]}
+                      placeholder="1.234.567-8"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      autoCorrect={false}
+                      value={formatearCedula(cedula)}
                       onChangeText={validateCedula}
-                      maxLength={11} //Contempla los puntos y guión en el formato X.XXX.XXX-X
+                      maxLength={11}
+                      editable={!isLoading}
                     />
                     {cedulaError ? (
                       <Text style={styles.errorText}>{cedulaError}</Text>
@@ -447,15 +459,16 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Correo electrónico</Text>
-                    <TextInput 
-                      style={[styles.input, emailError && styles.inputError]} 
-                      placeholder="Correo electrónico" 
-                      placeholderTextColor="#9CA3AF" 
-                      keyboardType="email-address" 
-                      autoCapitalize="none" 
-                      autoCorrect={false} 
-                      value={email} 
-                      onChangeText={validateEmail} 
+                    <TextInput
+                      style={[styles.input, emailError && styles.inputError, isLoading && styles.inputDisabled]}
+                      placeholder="Correo electrónico"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={email}
+                      onChangeText={validateEmail}
+                      editable={!isLoading}
                     />
                     {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                   </View>
@@ -622,6 +635,7 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     flexGrow: 1,
     justifyContent: "center",
+
     alignItems: "center",
     padding: 16,
     paddingTop: StatusBar.currentHeight || 42,

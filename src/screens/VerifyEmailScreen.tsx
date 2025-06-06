@@ -1,4 +1,6 @@
-import React, { useState } from "react"
+"use client"
+
+import { useState } from "react"
 import {
   StyleSheet,
   View,
@@ -13,8 +15,10 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  ActivityIndicator,
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
+
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../navigation/AppNavigator'
 import { verifyEmailCode, /*resendVerificationCode*/ } from '../services/authService'
@@ -28,19 +32,30 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
     return ''
   })()
   
+
   const [codigo, setCodigo] = useState("")
   const [codigoError, setCodigoError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
 
   const handleBackToRegister = () => {
-    navigation.goBack()
+    if (!isLoading && !isResending) {
+      console.log("Navegando de vuelta al registro")
+      navigation.goBack()
+    }
   }
 
   const validateCodigo = (value: string) => {
-    //Solo permite números y un máximo de 6 dígitos
-    const onlyNumbers = value.replace(/\D/g, '').slice(0, 6)
+    // Solo permite números y un máximo de 6 dígitos
+    const onlyNumbers = value.replace(/\D/g, "").slice(0, 6)
     setCodigo(onlyNumbers)
-    
+
+    // Limpiar error previo al escribir
+    if (codigoError) {
+      setCodigoError("")
+    }
+
+    // Validación en tiempo real
     if (onlyNumbers.length === 0) {
       setCodigoError("El código es obligatorio")
     } else if (onlyNumbers.length < 6) {
@@ -50,24 +65,61 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
     }
   }
 
+  const handleNetworkError = (error: any): string => {
+    console.error("Error de red en verificación:", error)
+
+    if (error.message?.includes("Network request failed")) {
+      return "Error de conexión. Verifica tu internet y vuelve a intentar."
+    }
+
+    if (error.message?.includes("timeout")) {
+      return "La conexión tardó demasiado. Intenta nuevamente."
+    }
+
+    if (error.message?.includes("400") || error.message?.includes("inválido")) {
+      return "Código de verificación inválido"
+    }
+
+    if (error.message?.includes("404") || error.message?.includes("Usuario no encontrado")) {
+      return "Usuario no encontrado o email no registrado"
+    }
+
+    if (error.message?.includes("410") || error.message?.includes("expirado")) {
+      return "El código ha expirado. Solicita uno nuevo"
+    }
+
+    if (error.message?.includes("429") || error.message?.includes("Demasiados intentos")) {
+      return "Demasiados intentos. Espera antes de intentar nuevamente"
+    }
+
+    if (error.message?.includes("500")) {
+      return "Error del servidor. Intenta más tarde."
+    }
+
+    return error.message || "Error inesperado al verificar el código"
+  }
+
   const handleVerificar = async () => {
+
     // Limpiar errores previos
     setCodigoError("")
     
     //Valida que el código tenga 6 dígitos
+
     if (!codigo.trim()) {
       setCodigoError("El código es obligatorio")
       return
     }
-    
+
     if (codigo.length !== 6) {
       setCodigoError("El código debe tener 6 dígitos")
       return
     }
 
     setIsLoading(true)
-    
+
     try {
+
       // Doble try-catch para manejar errores sin propagación
       try {
         const response = await verifyEmailCode(email, codigo)
@@ -120,46 +172,65 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
     }
   }
 
-  /*const handleReenviarCodigo = async () => {
+  const handleReenviarCodigo = async () => {
+    console.log("Reenviando código de verificación")
+    setIsResending(true)
+    setCodigoError("")
+
     try {
       await resendVerificationCode(email)
-      
-      Alert.alert(
-        "Código reenviado", 
-        "Se ha enviado un nuevo código a tu correo electrónico"
-      )
-      
+      console.log("Código reenviado exitosamente")
+
+      Alert.alert("Código reenviado", "Se ha enviado un nuevo código a tu correo electrónico")
+
       setCodigo("")
       setCodigoError("")
     } catch (error: any) {
       console.error("Error al reenviar código:", error.message)
-      
-      Alert.alert(
-        "Error", 
-        error.message || "No se pudo reenviar el código. Inténtalo más tarde."
-      )
+      const errorMessage = handleNetworkError(error)
+
+      if (error.message?.includes("Network request failed") || error.message?.includes("timeout")) {
+        Alert.alert("Error de conexión", errorMessage, [
+          {
+            text: "Reintentar",
+            onPress: () => handleReenviarCodigo(),
+          },
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+        ])
+      } else {
+        Alert.alert("Error", errorMessage || "No se pudo reenviar el código. Inténtalo más tarde.")
+      }
+    } finally {
+      setIsResending(false)
     }
-  }*/
+  }
+
+  const isFormDisabled = isLoading || isResending
 
   return (
     <SafeAreaView style={styles.container}>
+
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
       <ImageBackground 
         source={require("../assets/background.png")} 
         style={styles.backgroundImage} 
         resizeMode="cover"
       >
+
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardAvoidingView}
           >
             <View style={styles.contentContainer}>
               <View style={styles.cardContainer}>
                 {/* Header */}
                 <View style={styles.headerContainer}>
-                  <TouchableOpacity style={styles.backButton} onPress={handleBackToRegister}>
-                    <Icon name="arrow-back" size={24} color="#374151" />
+                  <TouchableOpacity style={styles.backButton} onPress={handleBackToRegister} disabled={isFormDisabled}>
+                    <Icon name="arrow-back" size={24} color={isFormDisabled ? "#9CA3AF" : "#374151"} />
                   </TouchableOpacity>
                   <Text style={styles.headerTitle}>Verificar Correo</Text>
                   <View style={styles.placeholder} />
@@ -171,9 +242,7 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                     <Icon name="mail-outline" size={48} color="#3B82F6" />
                   </View>
                   <Text style={styles.mainTitle}>Verificación</Text>
-                  <Text style={styles.subtitle}>
-                    Se ha enviado un código de verificación a tu correo
-                  </Text>
+                  <Text style={styles.subtitle}>Se ha enviado un código de verificación a tu correo</Text>
                   <Text style={styles.emailText}>{email}</Text>
                 </View>
 
@@ -182,7 +251,11 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Código de verificación</Text>
                     <TextInput
-                      style={[styles.codeInput, codigoError ? styles.inputError : null]}
+                      style={[
+                        styles.codeInput,
+                        codigoError ? styles.inputError : null,
+                        isFormDisabled && styles.inputDisabled,
+                      ]}
                       placeholder="000000"
                       placeholderTextColor="#9CA3AF"
                       keyboardType="numeric"
@@ -191,34 +264,45 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                       onChangeText={validateCodigo}
                       maxLength={6}
                       textAlign="center"
+                      editable={!isFormDisabled}
                     />
-                    <Text style={styles.helperText}>
-                      Ingresa el código de 6 dígitos que enviamos a tu correo
-                    </Text>
+                    <Text style={styles.helperText}>Ingresa el código de 6 dígitos que enviamos a tu correo</Text>
                     {codigoError ? <Text style={styles.errorText}>{codigoError}</Text> : null}
                   </View>
 
-                  {/* Resend section }
+                  {/* Resend section */}
                   <View style={styles.resendContainer}>
                     <Text style={styles.resendText}>¿No recibiste el código?</Text>
-                    <TouchableOpacity onPress={handleReenviarCodigo}>
-                      <Text style={styles.resendLink}>Reenviar código</Text>
+                    <TouchableOpacity onPress={handleReenviarCodigo} disabled={isFormDisabled}>
+                      {isResending ? (
+                        <View style={styles.resendingContainer}>
+                          <ActivityIndicator size="small" color="#3B82F6" />
+                          <Text style={[styles.resendLink, styles.resendingText]}>Reenviando...</Text>
+                        </View>
+                      ) : (
+                        <Text style={[styles.resendLink, isFormDisabled && styles.disabledLink]}>Reenviar código</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
-                  {*/}
+
                   {/* Verify button */}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[
-                      styles.verifyButton, 
-                      (codigo.length !== 6 || isLoading) && styles.verifyButtonDisabled
-                    ]} 
-                    activeOpacity={0.8} 
+                      styles.verifyButton,
+                      (codigo.length !== 6 || isFormDisabled) && styles.verifyButtonDisabled,
+                    ]}
+                    activeOpacity={0.8}
                     onPress={handleVerificar}
-                    disabled={codigo.length !== 6 || isLoading}
+                    disabled={codigo.length !== 6 || isFormDisabled}
                   >
-                    <Text style={styles.verifyButtonText}>
-                      {isLoading ? "Verificando..." : "Verificar"}
-                    </Text>
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color="white" />
+                        <Text style={styles.verifyButtonText}>Verificando...</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.verifyButtonText}>Verificar</Text>
+                    )}
                   </TouchableOpacity>
 
                   <Text style={styles.expirationText}>El código expira en 10 minutos</Text>
@@ -264,6 +348,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    alignSelf: "center",
   },
   headerContainer: {
     flexDirection: "row",
@@ -337,13 +422,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 24,
     color: "#1F2937",
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     letterSpacing: 8,
     marginBottom: 8,
   },
   inputError: {
     borderColor: "#EF4444",
-    borderWidth: 2,
+    backgroundColor: "#FEF2F2",
+  },
+  inputDisabled: {
+    backgroundColor: "#F9FAFB",
+    opacity: 0.6,
   },
   helperText: {
     fontSize: 12,
@@ -356,6 +445,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     textAlign: "center",
+    fontWeight: "500",
   },
   resendContainer: {
     alignItems: "center",
@@ -370,6 +460,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#3B82F6",
     fontWeight: "500",
+  },
+  disabledLink: {
+    color: "#9CA3AF",
+  },
+  resendingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  resendingText: {
+    marginLeft: 8,
+    color: "#6B7280",
   },
   verifyButton: {
     backgroundColor: "#3B82F6",
@@ -396,6 +497,10 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   expirationText: {
     fontSize: 12,

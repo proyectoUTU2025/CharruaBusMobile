@@ -40,6 +40,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
   const { token } = useAuth()
   const navigation = useNavigation<NavigationProp>();
   
+
   const [origen, setOrigen] = useState("")
   const [origenError, setOrigenError] = useState("")
   const [destino, setDestino] = useState("")
@@ -50,6 +51,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [showPasajerosModal, setShowPasajerosModal] = useState(false)
+
 
   const [localidades, setLocalidades] = useState<Localidad[]>([])
   const [filteredLocalidades, setFilteredLocalidades] = useState<Localidad[]>([])
@@ -72,13 +74,13 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
       navigation.goBack();
     }
   };
-
   const opcionesPasajeros = [
     { label: "1 pasajero", value: "1" },
     { label: "2 pasajeros", value: "2" },
     { label: "3 pasajeros", value: "3" },
     { label: "4 pasajeros", value: "4" },
   ]
+
 
   useEffect(() => {
     const cargarLocalidades = async () => {
@@ -163,6 +165,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
     setDestinoError(value.trim() === "" ? "El destino es obligatorio" : "")
   }
 
+
   const selectOrigen = (localidad: Localidad) => {
     setOrigenSeleccionado(localidad)
     setOrigen(localidad.nombreConDepartamento)
@@ -182,7 +185,6 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
     setShowDestinoModal(false)
     setSearchDestino("")
   }
-
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -207,7 +209,9 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
   const handleBuscar = () => {
     let hasErrors = false
 
+
     if (!origenSeleccionado) {
+
       setOrigenError("El origen es obligatorio")
       hasErrors = true
     }
@@ -223,6 +227,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
     }
 
     if (hasErrors) return
+
 
     if (origenSeleccionado && destinoSeleccionado && date) {
       // CORRECCIÓN: Usar la función de callback en lugar de navigation.navigate
@@ -252,6 +257,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
     return opcion ? opcion.label : "Seleccionar pasajeros"
   }
 
+
   const renderLocalidadItem = ({ item }: { item: Localidad }) => (
     <TouchableOpacity 
       style={styles.modalOption} 
@@ -278,6 +284,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
         style={styles.backgroundImage}
         resizeMode="cover"
       >
+
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
@@ -526,6 +533,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
           </TouchableWithoutFeedback>
         </Modal>
 
+
         {/* Modal para seleccionar pasajeros */}
         <Modal visible={showPasajerosModal} transparent animationType="fade">
           <TouchableWithoutFeedback onPress={() => setShowPasajerosModal(false)}>
@@ -559,18 +567,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
   scrollView: {
+
     flex: 1,
     width: "100%",
   },
   scrollViewContent: {
     flexGrow: 1,
+
     padding: 16,
     paddingBottom: 40,
   },
   cardContainer: {
     width: "100%",
     maxWidth: 500,
+
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -582,6 +594,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+
     alignSelf: 'center',
   },
   headerContainer: {
@@ -650,10 +663,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: "#EF4444",
+
     marginTop: 4,
     marginLeft: 4,
   },
   selectButton: {
+
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -676,11 +691,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#10B981",
     marginTop: 8,
+
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: "600",
+
     color: "#065F46",
+
     marginBottom: 12,
   },
   infoRow: {
@@ -690,19 +708,25 @@ const styles = StyleSheet.create({
   },
   infoItem: {
     fontSize: 14,
+
     color: "#059669",
+
     marginLeft: 8,
     flex: 1,
   },
   searchButton: {
+
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+
     backgroundColor: "#9CA3AF",
     borderRadius: 8,
     paddingVertical: 16,
     paddingHorizontal: 24,
+
     marginTop: 16,
+
   },
   searchButtonActive: {
     backgroundColor: "#10B981",
@@ -711,6 +735,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   searchButtonText: {
+
     fontSize: 18,
     fontWeight: "600",
     color: "white",
@@ -727,6 +752,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     width: "80%",
+
     maxHeight: "60%",
   },
   modalContentLarge: {
@@ -735,11 +761,14 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "90%",
     maxHeight: "80%",
+
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
+
     color: "#374151",
+
     marginBottom: 16,
     textAlign: "center",
   },
@@ -747,11 +776,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
+
     borderBottomColor: "#E5E7EB",
+
   },
   modalOptionText: {
     fontSize: 16,
     color: "#374151",
+
   },
   searchContainer: {
     flexDirection: "row",
@@ -802,3 +834,4 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
 });
+
