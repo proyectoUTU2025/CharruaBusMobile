@@ -15,18 +15,18 @@ import {
   Alert,
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../navigation/AppNavigator'
 import { verifyEmailCode, /*resendVerificationCode*/ } from '../services/authService'
 
-type VerifyEmailRouteProp = RouteProp<RootStackParamList, 'VerifyEmail'>
+type Props = NativeStackScreenProps<RootStackParamList, 'VerifyEmail'>
 
-export default function VerificarCorreoScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-  const route = useRoute<VerifyEmailRouteProp>()
-  
-  const email = route.params?.email || "usuario@email.com"
+export default function VerificarCorreoScreen({ navigation, route }: Props) {
+  const email = route.params?.email || (() => {
+    console.error('Email parameter missing in VerifyEmail screen')
+    navigation.goBack()
+    return ''
+  })()
   
   const [codigo, setCodigo] = useState("")
   const [codigoError, setCodigoError] = useState("")
@@ -51,6 +51,9 @@ export default function VerificarCorreoScreen() {
   }
 
   const handleVerificar = async () => {
+    // Limpiar errores previos
+    setCodigoError("")
+    
     //Valida que el código tenga 6 dígitos
     if (!codigo.trim()) {
       setCodigoError("El código es obligatorio")
@@ -65,33 +68,53 @@ export default function VerificarCorreoScreen() {
     setIsLoading(true)
     
     try {
-      //Llama a la función del authService para verificar el código
-      const response = await verifyEmailCode(email, codigo)
-      
-      Alert.alert(
-        "Verificación exitosa", 
-        "Tu correo ha sido verificado correctamente",
-        [
-          {
-            text: "Continuar",
-            onPress: () => navigation.navigate("Login")
+      // Doble try-catch para manejar errores sin propagación
+      try {
+        const response = await verifyEmailCode(email, codigo)
+        
+        Alert.alert(
+          "Verificación exitosa", 
+          "Tu correo ha sido verificado correctamente",
+          [
+            {
+              text: "Continuar",
+              onPress: () => navigation.navigate("Login")
+            }
+          ]
+        )
+      } catch (verifyError: any) {
+        console.log("Error capturado en verificación:", verifyError.message)
+        
+        // Manejar errores específicos y mostrarlos en la UI
+        if (verifyError.message && verifyError.message.includes('inválido')) {
+          setCodigoError("Código de verificación inválido")
+          setCodigo("")
+        } else if (verifyError.message && verifyError.message.includes('expirado')) {
+          setCodigoError("El código ha expirado. Solicita uno nuevo")
+          setCodigo("")
+        } else if (verifyError.message && verifyError.message.includes('Usuario no encontrado')) {
+          Alert.alert("Error", "Usuario no encontrado o email no registrado")
+        } else if (verifyError.message && verifyError.message.includes('Demasiados intentos')) {
+          Alert.alert("Error", "Demasiados intentos. Espera antes de intentar nuevamente")
+        } else if (verifyError.message && verifyError.message.includes('Error de conexión')) {
+          Alert.alert("Error de conexión", "No se pudo conectar al servidor. Verifica tu internet")
+        } else {
+          // Para otros errores, mostrar en el campo o como alerta
+          if (verifyError.message) {
+            setCodigoError(verifyError.message)
+          } else {
+            Alert.alert("Error", "Error inesperado al verificar el código")
           }
-        ]
-      )
-    } catch (error: any) {
-      console.error("Error al verificar código:", error.message)
-      
-      // Muestra el mensaje de error específico del servicio
-      Alert.alert(
-        "Error de verificación", 
-        error.message || "Código de verificación incorrecto. Inténtalo de nuevo."
-      )
-      
-      //Si el código es inválido, limpia el campo
-      if (error.message?.includes('inválido') || error.message?.includes('expirado')) {
-        setCodigo("")
-        setCodigoError("Código inválido o expirado")
+        }
+        
+        // NO hacer throw aquí - esto es clave
+        return; // Salir sin propagar el error
       }
+
+    } catch (outerError: any) {
+      // Este catch nunca debería ejecutarse ahora
+      console.log("Error externo capturado:", outerError.message)
+      Alert.alert("Error", "Error inesperado")
     } finally {
       setIsLoading(false)
     }
@@ -120,7 +143,7 @@ export default function VerificarCorreoScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
       <ImageBackground 
         source={require("../assets/background.png")} 
         style={styles.backgroundImage} 

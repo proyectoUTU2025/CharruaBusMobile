@@ -5,15 +5,43 @@ import MainScreen from '../screens/MainScreen';
 import { TripSelectionScreen } from '../screens/TripSelectionScreen';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from '../hooks/useUser';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { OneWayTripScreen } from '../screens/OneWayTripScreen';
+import { ViewTripsScreen } from '../screens/ViewTripsScreen';
+import { SelectSeatScreen } from '../screens/SelectSeatScreen';
+
+// Tipos para los diferentes estados de navegación
+type NavigationState = 
+  | { type: 'tab'; activeTab: string }
+  | { type: 'oneWayTrip' }
+  | { type: 'viewTrips'; params: any }
+  | { type: 'selectSeat'; params: any };
+
+interface ViewTripsParams {
+  origenSeleccionado: any;
+  destinoSeleccionado: any;
+  fecha: string;
+  date: string;
+  pasajeros: string;
+}
 
 const BottomTabsNavigator = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { logout } = useAuth();
   const { user, loading } = useUser();
-  const [activeTab, setActiveTab] = useState("inicio");
+  
+  // Estado de navegación unificado
+  const [navigationState, setNavigationState] = useState<NavigationState>({ 
+    type: 'tab', 
+    activeTab: 'inicio' 
+  });
+  
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
-  //Datos de ejemplo para las notificaciones (Quitar es solo muestra hasta que se implemente el mostrado)
+  // Datos de ejemplo para las notificaciones
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -49,18 +77,51 @@ const BottomTabsNavigator = () => {
     }
   ]);
 
+  // Función para volver al estado de pestañas
+  const navigateToTab = (tab: string) => {
+    setNavigationState({ type: 'tab', activeTab: tab });
+  };
+
+  // Función para navegar a viaje de ida
+  const navigateToOneWayTrip = () => {
+    setNavigationState({ type: 'oneWayTrip' });
+  };
+
+  // Función para navegar a ver viajes
+  const navigateToViewTrips = (params: ViewTripsParams) => {
+    setNavigationState({ type: 'viewTrips', params });
+  };
+
+ const navigateToSelectSeat = (params: any) => {
+  console.log('=== navigateToSelectSeat called ===');
+  console.log('Params received:', params);
+  setNavigationState({ type: 'selectSeat', params });
+  console.log('Navigation state updated to selectSeat');
+};
+
+  // Función para volver desde cualquier pantalla
+  // Actualizar la función goBack
+  const goBack = () => {
+    if (navigationState.type === 'selectSeat') {
+      // Si estamos en SelectSeat, volver a ViewTrips
+      // Necesitarías guardar los parámetros de ViewTrips, por ahora volvemos a OneWayTrip
+      setNavigationState({ type: 'oneWayTrip' });
+    } else if (navigationState.type === 'viewTrips') {
+      setNavigationState({ type: 'oneWayTrip' });
+    } else if (navigationState.type === 'oneWayTrip') {
+      setNavigationState({ type: 'tab', activeTab: 'viajes' });
+    }
+  };
+
   const handleLogout = () => {
     logout();
   };
 
   const handleTabPress = (tab: string) => {
-    setActiveTab(tab);
+    navigateToTab(tab);
     
-    // Manejar el caso especial del historial
     if (tab === "historial") {
       console.log('Navegando a historial de compras (funcionalidad pendiente)');
-      // Aquí puedes agregar lógica adicional cuando implementes la funcionalidad
-      return;
     }
   };
 
@@ -126,27 +187,89 @@ const BottomTabsNavigator = () => {
     return 'Usuario';
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "inicio":
-        return <MainScreen />;
-      case "viajes":
-        return <TripSelectionScreen />;
-      case "historial":
-        // Pantalla temporal para historial
-        return (
-          <View style={styles.placeholderContainer}>
-            <Icon name="history" size={64} color="#CAC4D0" />
-            <Text style={styles.placeholderTitle}>Historial de Compras</Text>
-            <Text style={styles.placeholderSubtitle}>
-              Aquí podrás ver todas tus compras anteriores
-            </Text>
-          </View>
-        );
-      default:
-        return <MainScreen />;
+  // Función para obtener el tab activo actual
+  const getCurrentActiveTab = () => {
+    if (navigationState.type === 'tab') {
+      return navigationState.activeTab;
     }
+    // Si estamos en OneWayTrip, ViewTrips o SelectSeat, consideramos que estamos en viajes
+    return 'viajes';
   };
+
+  // Función para determinar si mostrar la barra de navegación inferior
+  const shouldShowBottomNavigation = () => {
+    // Siempre mostrar la barra de navegación, pero actualizar el estado activo
+    return true;
+  };
+
+  const renderContent = () => {
+  console.log('=== renderContent called ===');
+  console.log('Current navigation state:', navigationState);
+  switch (navigationState.type) {
+    case 'viewTrips':
+      return (
+        <ViewTripsScreen 
+          route={{ params: navigationState.params }}
+          navigation={{ 
+            goBack, 
+            navigate: navigateToSelectSeat // Agregar esta línea
+          }}
+          onGoBack={goBack}
+        />
+      );
+    case 'oneWayTrip':
+      return (
+        <OneWayTripScreen 
+          onGoBack={goBack}
+          onNavigateToViewTrips={navigateToViewTrips}
+        />
+      );
+    case 'selectSeat':
+          console.log('Rendering SelectSeatScreen');
+          return (
+            <SelectSeatScreen 
+              route={{ params: navigationState.params }}
+              navigation={{ goBack }}
+            />
+          );
+    case 'viewTrips':
+      return (
+        <ViewTripsScreen 
+          route={{ params: navigationState.params }}
+          navigation={{ goBack, navigate: navigateToSelectSeat }} // Actualizar para pasar navigate
+          onGoBack={goBack}
+        />
+      ); 
+    case 'tab':
+      switch (navigationState.activeTab) {
+        case "inicio":
+          return <MainScreen />;
+        case "viajes":
+          return (
+            <TripSelectionScreen 
+              activeTab={navigationState.activeTab}
+              onTabPress={handleTabPress}
+              onNavigateToOneWay={navigateToOneWayTrip}
+              onNavigateToRoundTrip={() => console.log('RoundTrip pendiente')}
+            />
+          );
+    case "historial":
+      return (
+        <View style={styles.placeholderContainer}>
+          <Icon name="history" size={64} color="#CAC4D0" />
+          <Text style={styles.placeholderTitle}>Historial de Compras</Text>
+          <Text style={styles.placeholderSubtitle}>
+            Aquí podrás ver todas tus compras anteriores
+          </Text>
+        </View>
+      );
+    default:
+      return <MainScreen />;
+    }
+    default:
+      return <MainScreen />;
+  }
+};
 
   const MenuDropdown = () => (
     <Modal
@@ -225,7 +348,6 @@ const BottomTabsNavigator = () => {
         onPress={() => setNotificationsVisible(false)}
       >
         <View style={styles.notificationsContainer}>
-          {/* Header de notificaciones */}
           <View style={styles.notificationsHeader}>
             <Text style={styles.notificationsTitle}>Notificaciones</Text>
             {getUnreadNotificationsCount() > 0 && (
@@ -240,7 +362,6 @@ const BottomTabsNavigator = () => {
 
           <View style={styles.menuDivider} />
 
-          {/* Lista de notificaciones */}
           <ScrollView style={styles.notificationsList} showsVerticalScrollIndicator={false}>
             {notifications.length === 0 ? (
               <View style={styles.emptyNotifications}>
@@ -289,13 +410,14 @@ const BottomTabsNavigator = () => {
     </Modal>
   );
 
+  const currentActiveTab = getCurrentActiveTab();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
 
-      {/* Barra Superior*/}
+      {/* Barra Superior */}
       <View style={styles.topAppBar}>
-        {/* Botón de Menú Hamburguesa */}
         <TouchableOpacity 
           style={styles.menuButton} 
           onPress={toggleMenu} 
@@ -304,10 +426,8 @@ const BottomTabsNavigator = () => {
           <Icon name="menu" size={24} color="white" />
         </TouchableOpacity>
 
-        {/* Espaciador para centrar el título si lo necesitas */}
         <View style={styles.titleContainer} />
 
-        {/* Botón de Notificaciones */}
         <TouchableOpacity 
           style={styles.notificationButton} 
           onPress={toggleNotifications} 
@@ -327,194 +447,175 @@ const BottomTabsNavigator = () => {
       {/* Contenido Principal */}
       <View style={styles.mainContent}>{renderContent()}</View>
 
-      {/* Barra Inferior de Navegación*/}
-      <View style={styles.navigationBar}>
-        <TouchableOpacity
-          style={[styles.navigationItem, activeTab === "inicio" && styles.activeNavigationItem]}
-          onPress={() => handleTabPress("inicio")}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.navigationIndicator, activeTab === "inicio" && styles.activeNavigationIndicator]}>
-            <Icon name="home" size={24} color={activeTab === "inicio" ? "#3B82F6" : "#49454F"} />
-          </View>
-          <Text style={[styles.navigationLabel, activeTab === "inicio" && styles.activeNavigationLabel]}>Inicio</Text>
-        </TouchableOpacity>
+      {/* Barra Inferior de Navegación - Siempre visible */}
+      {shouldShowBottomNavigation() && (
+        <View style={styles.navigationBar}>
+          <TouchableOpacity
+            style={[styles.navigationItem, currentActiveTab === "inicio" && styles.activeNavigationItem]}
+            onPress={() => handleTabPress("inicio")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.navigationIndicator, currentActiveTab === "inicio" && styles.activeNavigationIndicator]}>
+              <Icon name="home" size={24} color={currentActiveTab === "inicio" ? "#3B82F6" : "#49454F"} />
+            </View>
+            <Text style={[styles.navigationLabel, currentActiveTab === "inicio" && styles.activeNavigationLabel]}>Inicio</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.navigationItem, activeTab === "viajes" && styles.activeNavigationItem]}
-          onPress={() => handleTabPress("viajes")}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.navigationIndicator, activeTab === "viajes" && styles.activeNavigationIndicator]}>
-            <Icon name="search" size={24} color={activeTab === "viajes" ? "#3B82F6" : "#49454F"} />
-          </View>
-          <Text style={[styles.navigationLabel, activeTab === "viajes" && styles.activeNavigationLabel]}>Viajes</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.navigationItem, currentActiveTab === "viajes" && styles.activeNavigationItem]}
+            onPress={() => handleTabPress("viajes")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.navigationIndicator, currentActiveTab === "viajes" && styles.activeNavigationIndicator]}>
+              <Icon name="search" size={24} color={currentActiveTab === "viajes" ? "#3B82F6" : "#49454F"} />
+            </View>
+            <Text style={[styles.navigationLabel, currentActiveTab === "viajes" && styles.activeNavigationLabel]}>Viajes</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.navigationItem, activeTab === "historial" && styles.activeNavigationItem]}
-          onPress={() => handleTabPress("historial")}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.navigationIndicator, activeTab === "historial" && styles.activeNavigationIndicator]}>
-            <Icon name="history" size={24} color={activeTab === "historial" ? "#3B82F6" : "#49454F"} />
-          </View>
-          <Text style={[styles.navigationLabel, activeTab === "historial" && styles.activeNavigationLabel]}>Historial</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.navigationItem, currentActiveTab === "historial" && styles.activeNavigationItem]}
+            onPress={() => handleTabPress("historial")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.navigationIndicator, currentActiveTab === "historial" && styles.activeNavigationIndicator]}>
+              <Icon name="history" size={24} color={currentActiveTab === "historial" ? "#3B82F6" : "#49454F"} />
+            </View>
+            <Text style={[styles.navigationLabel, currentActiveTab === "historial" && styles.activeNavigationLabel]}>Historial</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* Menú Desplegable */}
+      {/* Menús Desplegables */}
       <MenuDropdown />
-
-      {/* Menú de Notificaciones */}
       <NotificationsDropdown />
     </SafeAreaView>
   );
 };
 
+// Estilos (manteniendo los originales, pero agregando algunos nuevos si es necesario)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFBFE",
+    backgroundColor: '#F5F5F5',
   },
   topAppBar: {
-    backgroundColor: "#3B82F6",
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    height: 64,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    paddingVertical: 12,
+    backgroundColor: '#3B82F6',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
+    padding: 8,
+  },
+  titleContainer: {
+    flex: 1,
   },
   notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 8,
+    padding: 8,
     position: 'relative',
   },
   notificationBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 4,
+    right: 4,
     backgroundColor: '#F44336',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
   },
   notificationBadgeText: {
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  titleContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  userEmail: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-  },
   mainContent: {
     flex: 1,
-    backgroundColor: "#FFFBFE",
   },
   navigationBar: {
-    backgroundColor: "#FEF7FF",
-    flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#E7E0EC",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -1,
-    },
+    borderTopColor: '#E5E7EB',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 4,
   },
   navigationItem: {
     flex: 1,
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 4,
   },
   activeNavigationItem: {
+    // Mantener estilos actuales
   },
   navigationIndicator: {
-    width: 64,
-    height: 32,
+    padding: 8,
     borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
   },
   activeNavigationIndicator: {
-    backgroundColor: "#E8F0FE",
+    backgroundColor: '#E0F2FE',
   },
   navigationLabel: {
     fontSize: 12,
-    color: "#49454F",
-    fontWeight: "500",
-    textAlign: "center",
+    color: '#49454F',
+    marginTop: 4,
   },
   activeNavigationLabel: {
-    color: "#3B82F6",
-    fontWeight: "600",
+    color: '#3B82F6',
+    fontWeight: '600',
   },
-  //Estilos para el menú desplegable
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  placeholderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 16,
+  },
+  placeholderSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-start',
+    paddingTop: 60,
   },
   menuContainer: {
     backgroundColor: 'white',
-    marginTop: 64,
-    marginLeft: 16,
-    marginRight: 80,
+    marginHorizontal: 16,
+    marginTop: 8,
     borderRadius: 12,
+    padding: 16,
     elevation: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    paddingVertical: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
-  //Estilos para el header del menú
   menuHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    marginBottom: 16,
   },
   avatarContainer: {
     marginRight: 12,
@@ -523,7 +624,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E8F0FE',
+    backgroundColor: '#E0F2FE',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -532,117 +633,83 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    marginBottom: 2,
+    fontWeight: 'bold',
+    color: '#1F2937',
   },
   userEmailText: {
     fontSize: 14,
-    color: '#49454F',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingHorizontal: 8,
   },
   menuIcon: {
     marginRight: 16,
-    width: 20,
   },
   menuText: {
     fontSize: 16,
     color: '#49454F',
-    fontWeight: '400',
   },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#E7E0EC',
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  //Estilos para el menú de notificaciones
   notificationsContainer: {
     backgroundColor: 'white',
-    marginTop: 64,
-    marginLeft: 80,
-    marginRight: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
     borderRadius: 12,
+    maxHeight: 400,
     elevation: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    maxHeight: '70%',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   notificationsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    alignItems: 'center',
+    padding: 16,
   },
   notificationsTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    flex: 1,
-    marginRight: 8,
+    fontWeight: 'bold',
+    color: '#1F2937',
   },
   markAllReadButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#E8F0FE',
-    borderRadius: 16,
-    minWidth: 60,
-    alignItems: 'center',
-    flexShrink: 0,
+    padding: 8,
   },
   markAllReadText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#3B82F6',
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 16,
   },
   notificationsList: {
-    maxHeight: 400,
-  },
-  emptyNotifications: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 16,
-  },
-  emptyNotificationsText: {
-    fontSize: 16,
-    color: '#CAC4D0',
-    marginTop: 12,
-    textAlign: 'center',
+    maxHeight: 300,
   },
   notificationItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F1F4',
+    borderBottomColor: '#F3F4F6',
   },
   unreadNotificationItem: {
-    backgroundColor: '#F8F9FF',
+    backgroundColor: '#F0F9FF',
   },
   notificationIconContainer: {
-    marginRight: 12,
     position: 'relative',
-    paddingTop: 2,
+    marginRight: 12,
+    padding: 8,
   },
   unreadDot: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 4,
+    right: 4,
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -652,45 +719,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#49454F',
+    fontSize: 16,
+    color: '#1F2937',
     marginBottom: 4,
   },
   unreadNotificationTitle: {
-    color: '#1C1B1F',
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   notificationMessage: {
     fontSize: 14,
-    color: '#79747E',
+    color: '#6B7280',
     marginBottom: 4,
-    lineHeight: 20,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#CAC4D0',
+    color: '#9CA3AF',
   },
-  // Estilos para la pantalla placeholder del historial
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  emptyNotifications: {
     alignItems: 'center',
-    paddingHorizontal: 32,
+    padding: 32,
   },
-  placeholderTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  placeholderSubtitle: {
+  emptyNotificationsText: {
     fontSize: 16,
-    color: '#79747E',
-    textAlign: 'center',
-    lineHeight: 24,
+    color: '#6B7280',
+    marginTop: 16,
   },
 });
 

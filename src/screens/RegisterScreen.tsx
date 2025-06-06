@@ -8,10 +8,7 @@ import {
   ImageBackground,
   SafeAreaView,
   StatusBar,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
-  Keyboard,
   ScrollView,
   Modal,
   Alert,
@@ -256,113 +253,141 @@ export default function RegisterScreen() {
   }
 
   const handleRegister = async () => {
-  let hasErrors = false;
+    // Limpiar errores de email previos
+    setEmailError("");
+    
+    let hasErrors = false;
 
-  if (!nombre.trim()) {
-    setNombreError("El nombre es obligatorio");
-    hasErrors = true;
-  }
-
-  if (!apellido.trim()) {
-    setApellidoError("El apellido es obligatorio");
-    hasErrors = true;
-  }
-
-  if (!cedula) {
-    setCedulaError("La cédula es obligatoria");
-    hasErrors = true;
-  } else if (cedula.length !== 8 || !validarCedulaUruguaya(cedula)) {
-    setCedulaError("Por favor, ingrese una cédula válida");
-    hasErrors = true;
-  }
-
-  if (!email.trim()) {
-    setEmailError("El correo electrónico es obligatorio");
-    hasErrors = true;
-  } else if (emailError) {
-    hasErrors = true;
-  }
-
-  if (!password.trim()) {
-    setPasswordError("La contraseña es obligatoria");
-    hasErrors = true;
-  } else {
-    const passwordErrors = validatePasswordRequirements(password);
-    if (passwordErrors.length > 0) {
-      setPasswordError(`Requisitos faltantes: ${passwordErrors.join(", ")}`);
+    if (!nombre.trim()) {
+      setNombreError("El nombre es obligatorio");
       hasErrors = true;
     }
-  }
 
-  if (!confirmPassword.trim()) {
-    setConfirmPasswordError("Debe confirmar la contraseña");
-    hasErrors = true;
-  } else if (password !== confirmPassword) {
-    setConfirmPasswordError("Las contraseñas no coinciden");
-    hasErrors = true;
-  }
-
-  if (!date) {
-    setFechaError("La fecha de nacimiento es obligatoria");
-    hasErrors = true;
-  } else {
-    setFechaError("");
-  }
-
-  if (!genero) {
-    setGeneroError("Debe seleccionar un género");
-    hasErrors = true;
-  } else {
-    setGeneroError("");
-  }
-
-  if (!situacionLaboral) {
-    setSituacionLaboralError("Debe seleccionar una situación laboral");
-    hasErrors = true;
-  } else {
-    setSituacionLaboralError("");
-  }
-
-  if (hasErrors) return;
-
-  try {
-    if (!date) {
-      setFechaError("Error con la fecha de nacimiento");
-      return;
+    if (!apellido.trim()) {
+      setApellidoError("El apellido es obligatorio");
+      hasErrors = true;
     }
 
-    const fechaFormateada = date.toISOString().split('T')[0]; //yyyy-MM-dd
+    if (!cedula) {
+      setCedulaError("La cédula es obligatoria");
+      hasErrors = true;
+    } else if (cedula.length !== 8 || !validarCedulaUruguaya(cedula)) {
+      setCedulaError("Por favor, ingrese una cédula válida");
+      hasErrors = true;
+    }
 
-    const data = {
-      email,
-      password,
-      nombre,
-      apellido,
-      fechaNacimiento: fechaFormateada,
-      documento: cedula,
-      tipoDocumento: "CEDULA",
-      situacionLaboral: situacionLaboral.toUpperCase(),
-      genero: genero.toUpperCase(),
-    };
+    if (!email.trim()) {
+      setEmailError("El correo electrónico es obligatorio");
+      hasErrors = true;
+    } else if (emailError) {
+      hasErrors = true;
+    }
 
-    await registerUser(data);
+    if (!password.trim()) {
+      setPasswordError("La contraseña es obligatoria");
+      hasErrors = true;
+    } else {
+      const passwordErrors = validatePasswordRequirements(password);
+      if (passwordErrors.length > 0) {
+        setPasswordError(`Requisitos faltantes: ${passwordErrors.join(", ")}`);
+        hasErrors = true;
+      }
+    }
 
-    Alert.alert("Éxito", "Usuario registrado!");
-    navigation.navigate("VerifyEmail", { email: email });
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError("Debe confirmar la contraseña");
+      hasErrors = true;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError("Las contraseñas no coinciden");
+      hasErrors = true;
+    }
 
-  } catch (error: any) {
-    console.error("Error al registrar:", error.message);
-    Alert.alert("Error", error.message);
-  }
-};
+    if (!date) {
+      setFechaError("La fecha de nacimiento es obligatoria");
+      hasErrors = true;
+    } else {
+      setFechaError("");
+    }
+
+    if (!genero) {
+      setGeneroError("Debe seleccionar un género");
+      hasErrors = true;
+    } else {
+      setGeneroError("");
+    }
+
+    if (!situacionLaboral) {
+      setSituacionLaboralError("Debe seleccionar una situación laboral");
+      hasErrors = true;
+    } else {
+      setSituacionLaboralError("");
+    }
+
+    if (hasErrors) return;
+
+    try {
+      if (!date) {
+        setFechaError("Error con la fecha de nacimiento");
+        return;
+      }
+
+      const fechaFormateada = date.toISOString().split('T')[0];
+
+      const data = {
+        email,
+        password,
+        nombre,
+        apellido,
+        fechaNacimiento: fechaFormateada,
+        documento: cedula,
+        tipoDocumento: "CEDULA",
+        situacionLaboral: situacionLaboral.toUpperCase(),
+        genero: genero.toUpperCase(),
+      };
+
+      // Llamar registerUser pero capturar TODOS los errores
+      try {
+        await registerUser(data);
+        
+        // Si llegamos aquí, el registro fue exitoso
+        Alert.alert("Éxito", "Usuario registrado!");
+        navigation.navigate("VerifyEmail", { email: email });
+        
+      } catch (registerError: any) {
+        // Manejar errores de registro sin que se propaguen
+        console.log("Error capturado en registro:", registerError.message);
+        
+        if (registerError.message && registerError.message.includes('email ya está registrado')) {
+          setEmailError("El email ya está registrado");
+        } else if (registerError.message && registerError.message.includes('Datos de registro inválidos')) {
+          Alert.alert("Error", "Los datos ingresados no son válidos. Revisa la información.");
+        } else if (registerError.message && registerError.message.includes('Error de conexión')) {
+          Alert.alert("Error de conexión", "No se pudo conectar al servidor. Verifica tu internet.");
+        } else {
+          Alert.alert("Error", registerError.message || "Error inesperado al registrarse");
+        }
+        
+        // NO hacer throw aquí - esto es clave
+        return; // Salir sin propagar el error
+      }
+
+    } catch (outerError: any) {
+      // Este catch nunca debería ejecutarse ahora
+      console.log("Error externo capturado:", outerError.message);
+      Alert.alert("Error", "Error inesperado");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
       <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
-            <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+        >
               <View style={styles.cardContainer}>
                 <View style={styles.headerContainer}>
                   <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin}>
@@ -437,417 +462,417 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Contraseña</Text>
-                    <View style={[styles.passwordContainer, passwordError ? styles.inputError : null]}>
-                      <TextInput
-                        style={styles.passwordInput}
-                        placeholder="Contraseña"
-                        placeholderTextColor="#9CA3AF"
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        value={password}
-                        onChangeText={validatePassword}
-                      />
-                      <TouchableOpacity 
-                        style={styles.eyeButton}
-                        onPress={() => setShowPassword(!showPassword)}
-                      >
-                        <Icon 
-                          name={showPassword ? "visibility" : "visibility-off"} 
-                          size={20} 
-                          color="#9CA3AF" 
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <PasswordRequirements password={password} />
-                    {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-                  </View>
+                   <View style={[styles.passwordContainer, passwordError ? styles.inputError : null]}>
+                     <TextInput
+                       style={styles.passwordInput}
+                       placeholder="Contraseña"
+                       placeholderTextColor="#9CA3AF"
+                       secureTextEntry={!showPassword}
+                       autoCapitalize="none"
+                       value={password}
+                       onChangeText={validatePassword}
+                     />
+                     <TouchableOpacity 
+                       style={styles.eyeButton}
+                       onPress={() => setShowPassword(!showPassword)}
+                     >
+                       <Icon 
+                         name={showPassword ? "visibility" : "visibility-off"} 
+                         size={20} 
+                         color="#9CA3AF" 
+                       />
+                     </TouchableOpacity>
+                   </View>
+                   <PasswordRequirements password={password} />
+                   {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+                 </View>
 
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Confirmar contraseña</Text>
-                    <View style={[styles.passwordContainer, confirmPasswordError ? styles.inputError : null]}>
-                      <TextInput
-                        style={styles.passwordInput}
-                        placeholder="Confirmar contraseña"
-                        placeholderTextColor="#9CA3AF"
-                        secureTextEntry={!showConfirmPassword}
-                        autoCapitalize="none"
-                        value={confirmPassword}
-                        onChangeText={validateConfirmPassword}
-                      />
-                      <TouchableOpacity 
-                        style={styles.eyeButton}
-                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        <Icon 
-                          name={showConfirmPassword ? "visibility" : "visibility-off"} 
-                          size={20} 
-                          color="#9CA3AF" 
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    {confirmPasswordError ? (
-                      <Text style={styles.errorText}>{confirmPasswordError}</Text>
-                    ) : confirmPassword && password === confirmPassword && validatePasswordRequirements(password).length === 0 ? (
-                      <Text style={styles.successText}>✓ Las contraseñas coinciden y cumplen los requisitos</Text>
-                    ) : null}
-                  </View>
+                 <View style={styles.inputContainer}>
+                   <Text style={styles.inputLabel}>Confirmar contraseña</Text>
+                   <View style={[styles.passwordContainer, confirmPasswordError ? styles.inputError : null]}>
+                     <TextInput
+                       style={styles.passwordInput}
+                       placeholder="Confirmar contraseña"
+                       placeholderTextColor="#9CA3AF"
+                       secureTextEntry={!showConfirmPassword}
+                       autoCapitalize="none"
+                       value={confirmPassword}
+                       onChangeText={validateConfirmPassword}
+                     />
+                     <TouchableOpacity 
+                       style={styles.eyeButton}
+                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                     >
+                       <Icon 
+                         name={showConfirmPassword ? "visibility" : "visibility-off"} 
+                         size={20} 
+                         color="#9CA3AF" 
+                       />
+                     </TouchableOpacity>
+                   </View>
+                   {confirmPasswordError ? (
+                     <Text style={styles.errorText}>{confirmPasswordError}</Text>
+                   ) : confirmPassword && password === confirmPassword && validatePasswordRequirements(password).length === 0 ? (
+                     <Text style={styles.successText}>✓ Las contraseñas coinciden y cumplen los requisitos</Text>
+                   ) : null}
+                 </View>
 
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Fecha de nacimiento</Text>
-                    <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                      <View style={[styles.inputWithIcon, fechaError ? styles.inputError : null]}>
-                        <Text style={[styles.inputText, !fechaNacimiento && styles.placeholderText]}>
-                          {fechaNacimiento || 'DD/MM/AAAA'}
-                        </Text>
-                        <Icon name="calendar-today" size={20} color="#9CA3AF" />
-                      </View>
-                    </TouchableOpacity>
-                    {fechaError ? <Text style={styles.errorText}>{fechaError}</Text> : null}
-                  </View>
+                 <View style={styles.inputContainer}>
+                   <Text style={styles.inputLabel}>Fecha de nacimiento</Text>
+                   <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                     <View style={[styles.inputWithIcon, fechaError ? styles.inputError : null]}>
+                       <Text style={[styles.inputText, !fechaNacimiento && styles.placeholderText]}>
+                         {fechaNacimiento || 'DD/MM/AAAA'}
+                       </Text>
+                       <Icon name="calendar-today" size={20} color="#9CA3AF" />
+                     </View>
+                   </TouchableOpacity>
+                   {fechaError ? <Text style={styles.errorText}>{fechaError}</Text> : null}
+                 </View>
 
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={date || new Date(2000, 0, 1)}
-                      mode="date"
-                      display="default"
-                      onChange={onChangeDate}
-                      maximumDate={new Date()}
-                    />
-                  )}
+                 {showDatePicker && (
+                   <DateTimePicker
+                     value={date || new Date(2000, 0, 1)}
+                     mode="date"
+                     display="default"
+                     onChange={onChangeDate}
+                     maximumDate={new Date()}
+                   />
+                 )}
 
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Género</Text>
-                    <View style={styles.column}>
-                      {['masculino', 'femenino', 'otro'].map((item) => (
-                        <TouchableOpacity 
-                          key={item} 
-                          style={[styles.checkboxRow, styles.checkboxSpacing]} 
-                          onPress={() => {
-                            setGenero(item);
-                            setGeneroError("");
-                          }}
-                        >
-                          <View style={[styles.checkbox, genero === item && styles.checkboxSelected]}>
-                            {genero === item && <Icon name="check" size={16} color="white" />}
-                          </View>
-                          <Text style={styles.checkboxLabel}>{item.charAt(0).toUpperCase() + item.slice(1)}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    {generoError ? <Text style={styles.errorText}>{generoError}</Text> : null}
-                  </View>
+                 <View style={styles.inputContainer}>
+                   <Text style={styles.inputLabel}>Género</Text>
+                   <View style={styles.column}>
+                     {['masculino', 'femenino', 'otro'].map((item) => (
+                       <TouchableOpacity 
+                         key={item} 
+                         style={[styles.checkboxRow, styles.checkboxSpacing]} 
+                         onPress={() => {
+                           setGenero(item);
+                           setGeneroError("");
+                         }}
+                       >
+                         <View style={[styles.checkbox, genero === item && styles.checkboxSelected]}>
+                           {genero === item && <Icon name="check" size={16} color="white" />}
+                         </View>
+                         <Text style={styles.checkboxLabel}>{item.charAt(0).toUpperCase() + item.slice(1)}</Text>
+                       </TouchableOpacity>
+                     ))}
+                   </View>
+                   {generoError ? <Text style={styles.errorText}>{generoError}</Text> : null}
+                 </View>
 
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Situación laboral</Text>
-                    <TouchableOpacity style={styles.selectButton} onPress={() => setShowSituacionModal(true)}>
-                      <Text style={[styles.selectText, !situacionLaboral && styles.selectPlaceholder]}>
-                        {situacionLaboral || "Seleccionar situación laboral"}
-                      </Text>
-                      <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
-                    </TouchableOpacity>
-                    {situacionLaboralError ? <Text style={styles.errorText}>{situacionLaboralError}</Text> : null}
-                  </View>
+                 <View style={styles.inputContainer}>
+                   <Text style={styles.inputLabel}>Situación laboral</Text>
+                   <TouchableOpacity style={styles.selectButton} onPress={() => setShowSituacionModal(true)}>
+                     <Text style={[styles.selectText, !situacionLaboral && styles.selectPlaceholder]}>
+                       {situacionLaboral || "Seleccionar situación laboral"}
+                     </Text>
+                     <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
+                   </TouchableOpacity>
+                   {situacionLaboralError ? <Text style={styles.errorText}>{situacionLaboralError}</Text> : null}
+                 </View>
 
-                  <TouchableOpacity style={styles.registerButton} activeOpacity={0.8} onPress={handleRegister}>
-                    <Text style={styles.registerButtonText}>Registrarse</Text>
-                  </TouchableOpacity>
+                 <TouchableOpacity style={styles.registerButton} activeOpacity={0.8} onPress={handleRegister}>
+                   <Text style={styles.registerButtonText}>Registrarse</Text>
+                 </TouchableOpacity>
 
-                  <View style={styles.footerContainer}>
-                    <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
-                    <TouchableOpacity onPress={handleBackToLogin}>
-                      <Text style={styles.footerLink}>Iniciar sesión</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+                 <View style={styles.footerContainer}>
+                   <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
+                   <TouchableOpacity onPress={handleBackToLogin}>
+                     <Text style={styles.footerLink}>Iniciar sesión</Text>
+                   </TouchableOpacity>
+                 </View>
+               </View>
+             </View>
+           </ScrollView>
 
-        <Modal visible={showSituacionModal} transparent animationType="fade">
-          <TouchableWithoutFeedback onPress={() => setShowSituacionModal(false)}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Seleccionar situación laboral</Text>
-                {situacionesLaborales.map((situacion) => (
-                  <TouchableOpacity key={situacion} style={styles.modalOption} onPress={() => selectSituacion(situacion)}>
-                    <Text style={styles.modalOptionText}>{situacion}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      </ImageBackground>
-    </SafeAreaView>
-  )
+       <Modal visible={showSituacionModal} transparent animationType="fade">
+         <TouchableWithoutFeedback onPress={() => setShowSituacionModal(false)}>
+           <View style={styles.modalOverlay}>
+             <View style={styles.modalContent}>
+               <Text style={styles.modalTitle}>Seleccionar situación laboral</Text>
+               {situacionesLaborales.map((situacion) => (
+                 <TouchableOpacity key={situacion} style={styles.modalOption} onPress={() => selectSituacion(situacion)}>
+                   <Text style={styles.modalOptionText}>{situacion}</Text>
+                 </TouchableOpacity>
+               ))}
+             </View>
+           </View>
+         </TouchableWithoutFeedback>
+       </Modal>
+     </ImageBackground>
+   </SafeAreaView>
+ )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  backgroundImage: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  keyboardAvoidingView: {
+ container: {
+   flex: 1,
+ },
+ backgroundImage: {
+   flex: 1,
+   justifyContent: "center",
+   alignItems: "center",
+ },
+  scrollView: {
     flex: 1,
     width: "100%",
   },
   scrollViewContent: {
     flexGrow: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 16,
+    paddingTop: StatusBar.currentHeight || 42,
   },
-  cardContainer: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#374151",
-    textAlign: "center",
-  },
-  placeholder: {
-    width: 40,
-  },
-  formContainer: {
-    width: "100%",
-  },
-  inputContainer: {
-    marginBottom: 16,
-    width: "100%",
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#4B5563",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "white",
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  inputError: {
-    borderColor: "#EF4444",
-    borderWidth: 2,
-  },
-  errorText: {
-    color: "#EF4444",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  successText: {
-    color: "#10B981",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-    fontWeight: "500",
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: "white",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-  },
-  passwordInput: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  eyeButton: {
-    padding: 15,
-  },
-  // Estilos para los requisitos de contraseña
-  passwordRequirements: {
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  requirementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  requirementText: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginLeft: 6,
-  },
-  requirementValid: {
-    color: '#10B981',
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    marginRight: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkboxSelected: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    color: "#374151",
-    flex: 1,
-  },
-  selectButton: {
-    backgroundColor: "white",
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  selectText: {
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  selectPlaceholder: {
-    color: "#9CA3AF",
-  },
-  registerButton: {
-    backgroundColor: "#3B82F6",
-    height: 50,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-    shadowColor: "#3B82F6",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  registerButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-    width: "80%",
-    maxWidth: 300,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  modalOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: "#374151",
-    textAlign: "center",
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 16,
-  },
-  inputText: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  placeholderText: {
-    color: '#9CA3AF',
-  },
-  column: {
-    flexDirection: 'column',
-    marginBottom: 12,
-  },  
-  checkboxSpacing: {
-    marginBottom: 12,
-  },
-  footerContainer: {
-    flexDirection: "row", 
-    justifyContent: "center", 
-    alignItems: "center", 
-    marginTop: 16,
-  },
-  footerText: { 
-    fontSize: 14, 
-    color: "#6B7280", 
-    marginRight: 8 
-  },
-  footerLink: { 
-    fontSize: 14, 
-    color: "#3B82F6", 
-    fontWeight: "500" 
-  },
+ cardContainer: {
+   width: "100%",
+   maxWidth: 400,
+   backgroundColor: "rgba(255, 255, 255, 0.95)",
+   borderRadius: 16,
+   padding: 24,
+   shadowColor: "#000",
+   shadowOffset: {
+     width: 0,
+     height: 4,
+   },
+   shadowOpacity: 0.3,
+   shadowRadius: 8,
+   elevation: 8,
+ },
+ headerContainer: {
+   flexDirection: "row",
+   alignItems: "center",
+   justifyContent: "space-between",
+   marginBottom: 24,
+ },
+ backButton: {
+   padding: 8,
+ },
+ headerTitle: {
+   fontSize: 20,
+   fontWeight: "600",
+   color: "#374151",
+   textAlign: "center",
+ },
+ placeholder: {
+   width: 40,
+ },
+ formContainer: {
+   width: "100%",
+ },
+ inputContainer: {
+   marginBottom: 16,
+   width: "100%",
+ },
+ inputLabel: {
+   fontSize: 14,
+   fontWeight: "500",
+   color: "#4B5563",
+   marginBottom: 8,
+ },
+ input: {
+   backgroundColor: "white",
+   height: 50,
+   borderRadius: 8,
+   borderWidth: 1,
+   borderColor: "#D1D5DB",
+   paddingHorizontal: 16,
+   fontSize: 16,
+   color: "#1F2937",
+ },
+ inputError: {
+   borderColor: "#EF4444",
+   borderWidth: 2,
+ },
+ errorText: {
+   color: "#EF4444",
+   fontSize: 12,
+   marginTop: 4,
+   marginLeft: 4,
+ },
+ successText: {
+   color: "#10B981",
+   fontSize: 12,
+   marginTop: 4,
+   marginLeft: 4,
+   fontWeight: "500",
+ },
+ passwordContainer: {
+   flexDirection: 'row',
+   alignItems: 'center',
+   backgroundColor: "white",
+   borderRadius: 8,
+   borderWidth: 1,
+   borderColor: "#D1D5DB",
+ },
+ passwordInput: {
+   flex: 1,
+   height: 50,
+   paddingHorizontal: 16,
+   fontSize: 16,
+   color: "#1F2937",
+ },
+ eyeButton: {
+   padding: 15,
+ },
+ // Estilos para los requisitos de contraseña
+ passwordRequirements: {
+   marginTop: 8,
+   paddingHorizontal: 4,
+ },
+ requirementRow: {
+   flexDirection: 'row',
+   alignItems: 'center',
+   marginBottom: 4,
+ },
+ requirementText: {
+   fontSize: 12,
+   color: '#EF4444',
+   marginLeft: 6,
+ },
+ requirementValid: {
+   color: '#10B981',
+ },
+ checkboxContainer: {
+   flexDirection: "row",
+   justifyContent: "space-between",
+ },
+ checkboxRow: {
+   flexDirection: "row",
+   alignItems: "center",
+   flex: 1,
+   marginRight: 8,
+ },
+ checkbox: {
+   width: 20,
+   height: 20,
+   borderRadius: 4,
+   borderWidth: 2,
+   borderColor: "#D1D5DB",
+   marginRight: 8,
+   justifyContent: "center",
+   alignItems: "center",
+ },
+ checkboxSelected: {
+   backgroundColor: "#3B82F6",
+   borderColor: "#3B82F6",
+ },
+ checkboxLabel: {
+   fontSize: 14,
+   color: "#374151",
+   flex: 1,
+ },
+ selectButton: {
+   backgroundColor: "white",
+   height: 50,
+   borderRadius: 8,
+   borderWidth: 1,
+   borderColor: "#D1D5DB",
+   paddingHorizontal: 16,
+   flexDirection: "row",
+   alignItems: "center",
+   justifyContent: "space-between",
+ },
+ selectText: {
+   fontSize: 16,
+   color: "#1F2937",
+ },
+ selectPlaceholder: {
+   color: "#9CA3AF",
+ },
+ registerButton: {
+   backgroundColor: "#3B82F6",
+   height: 50,
+   borderRadius: 8,
+   justifyContent: "center",
+   alignItems: "center",
+   marginTop: 8,
+   shadowColor: "#3B82F6",
+   shadowOffset: {
+     width: 0,
+     height: 2,
+   },
+   shadowOpacity: 0.3,
+   shadowRadius: 4,
+   elevation: 4,
+ },
+ registerButtonText: {
+   color: "white",
+   fontSize: 16,
+   fontWeight: "600",
+ },
+ modalOverlay: {
+   flex: 1,
+   backgroundColor: "rgba(0, 0, 0, 0.5)",
+   justifyContent: "center",
+   alignItems: "center",
+ },
+ modalContent: {
+   backgroundColor: "white",
+   borderRadius: 12,
+   padding: 20,
+   width: "80%",
+   maxWidth: 300,
+ },
+ modalTitle: {
+   fontSize: 18,
+   fontWeight: "600",
+   color: "#1F2937",
+   marginBottom: 16,
+   textAlign: "center",
+ },
+ modalOption: {
+   paddingVertical: 12,
+   paddingHorizontal: 16,
+   borderBottomWidth: 1,
+   borderBottomColor: "#F3F4F6",
+ },
+ modalOptionText: {
+   fontSize: 16,
+   color: "#374151",
+   textAlign: "center",
+ },
+ inputWithIcon: {
+   flexDirection: 'row',
+   alignItems: 'center',
+   justifyContent: 'space-between',
+   backgroundColor: '#FFFFFF',
+   height: 50,
+   borderRadius: 8,
+   borderWidth: 1,
+   borderColor: '#D1D5DB',
+   paddingHorizontal: 16,
+ },
+ inputText: {
+   fontSize: 16,
+   color: '#1F2937',
+ },
+ placeholderText: {
+   color: '#9CA3AF',
+ },
+ column: {
+   flexDirection: 'column',
+   marginBottom: 12,
+ },  
+ checkboxSpacing: {
+   marginBottom: 12,
+ },
+ footerContainer: {
+   flexDirection: "row", 
+   justifyContent: "center", 
+   alignItems: "center", 
+   marginTop: 16,
+ },
+ footerText: { 
+   fontSize: 14, 
+   color: "#6B7280", 
+   marginRight: 8 
+ },
+ footerLink: { 
+   fontSize: 14, 
+   color: "#3B82F6", 
+   fontWeight: "500" 
+ },
 })

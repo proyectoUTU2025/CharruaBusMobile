@@ -18,20 +18,24 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons"
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-interface OneWayTripProps {
+interface RoundTripProps {
   onVolver: () => void
 }
 
-export function OneWayTrip({ onVolver }: OneWayTripProps) {
+export function RoundTrip({ onVolver }: RoundTripProps) {
   const [origen, setOrigen] = useState("")
   const [origenError, setOrigenError] = useState("")
   const [destino, setDestino] = useState("")
   const [destinoError, setDestinoError] = useState("")
-  const [fecha, setFecha] = useState("")
-  const [fechaError, setFechaError] = useState("")
+  const [fechaIda, setFechaIda] = useState("")
+  const [fechaIdaError, setFechaIdaError] = useState("")
+  const [fechaVuelta, setFechaVuelta] = useState("")
+  const [fechaVueltaError, setFechaVueltaError] = useState("")
   const [pasajeros, setPasajeros] = useState("1")
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [date, setDate] = useState<Date | undefined>(undefined)
+  const [showDatePickerIda, setShowDatePickerIda] = useState(false)
+  const [showDatePickerVuelta, setShowDatePickerVuelta] = useState(false)
+  const [dateIda, setDateIda] = useState<Date | undefined>(undefined)
+  const [dateVuelta, setDateVuelta] = useState<Date | undefined>(undefined)
   const [showPasajerosModal, setShowPasajerosModal] = useState(false)
 
   const opcionesPasajeros = [
@@ -58,12 +62,26 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
     return `${day}/${month}/${year}`
   }
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false)
+  const onChangeDateIda = (event: any, selectedDate?: Date) => {
+    setShowDatePickerIda(false)
     if (selectedDate) {
-      setDate(selectedDate)
-      setFecha(formatDate(selectedDate))
-      setFechaError("")
+      setDateIda(selectedDate)
+      setFechaIda(formatDate(selectedDate))
+      setFechaIdaError("")
+      
+      if (dateVuelta && selectedDate > dateVuelta) {
+        setDateVuelta(undefined)
+        setFechaVuelta("")
+      }
+    }
+  }
+
+  const onChangeDateVuelta = (event: any, selectedDate?: Date) => {
+    setShowDatePickerVuelta(false)
+    if (selectedDate) {
+      setDateVuelta(selectedDate)
+      setFechaVuelta(formatDate(selectedDate))
+      setFechaVueltaError("")
     }
   }
 
@@ -85,17 +103,28 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
       hasErrors = true
     }
 
-    if (!date) {
-      setFechaError("La fecha es obligatoria")
+    if (!dateIda) {
+      setFechaIdaError("La fecha de ida es obligatoria")
+      hasErrors = true
+    }
+
+    if (!dateVuelta) {
+      setFechaVueltaError("La fecha de vuelta es obligatoria")
+      hasErrors = true
+    }
+
+    if (dateIda && dateVuelta && dateVuelta <= dateIda) {
+      setFechaVueltaError("La fecha de vuelta debe ser posterior a la fecha de ida")
       hasErrors = true
     }
 
     if (hasErrors) return
 
-    console.log("Buscando viajes de ida:", {
+    console.log("Buscando viajes de ida y vuelta:", {
       origen,
       destino,
-      fecha,
+      fechaIda,
+      fechaVuelta,
       pasajeros,
     })
   }
@@ -127,7 +156,7 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
                   </TouchableOpacity>
                   <Text style={styles.headerTitle}>
                     Buscar Viaje{" "}
-                    <Text style={styles.headerSubtitle}>(Solo ida)</Text>
+                    <Text style={styles.headerSubtitle}>(Ida y vuelta)</Text>
                   </Text>
                   <View style={styles.placeholder} />
                 </View>
@@ -168,27 +197,51 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
                     {destinoError ? <Text style={styles.errorText}>{destinoError}</Text> : null}
                   </View>
 
-                  {/* Fecha */}
+                  {/* Fecha de ida */}
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Fecha de viaje</Text>
-                    <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                      <View style={[styles.inputWithIcon, fechaError ? styles.inputError : null]}>
-                        <Text style={[styles.inputText, !fecha && styles.placeholderText]}>
-                          {fecha || 'DD/MM/AAAA'}
+                    <Text style={styles.inputLabel}>Fecha de ida</Text>
+                    <TouchableOpacity onPress={() => setShowDatePickerIda(true)}>
+                      <View style={[styles.inputWithIcon, fechaIdaError ? styles.inputError : null]}>
+                        <Text style={[styles.inputText, !fechaIda && styles.placeholderText]}>
+                          {fechaIda || 'DD/MM/AAAA'}
                         </Text>
                         <Icon name="event" size={20} color="#9CA3AF" />
                       </View>
                     </TouchableOpacity>
-                    {fechaError ? <Text style={styles.errorText}>{fechaError}</Text> : null}
+                    {fechaIdaError ? <Text style={styles.errorText}>{fechaIdaError}</Text> : null}
                   </View>
 
-                  {showDatePicker && (
+                  {showDatePickerIda && (
                     <DateTimePicker
-                      value={date || new Date()}
+                      value={dateIda || new Date()}
                       mode="date"
                       display="default"
-                      onChange={onChangeDate}
+                      onChange={onChangeDateIda}
                       minimumDate={new Date()}
+                    />
+                  )}
+
+                  {/* Fecha de vuelta */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Fecha de vuelta</Text>
+                    <TouchableOpacity onPress={() => setShowDatePickerVuelta(true)}>
+                      <View style={[styles.inputWithIcon, fechaVueltaError ? styles.inputError : null]}>
+                        <Text style={[styles.inputText, !fechaVuelta && styles.placeholderText]}>
+                          {fechaVuelta || 'DD/MM/AAAA'}
+                        </Text>
+                        <Icon name="event" size={20} color="#9CA3AF" />
+                      </View>
+                    </TouchableOpacity>
+                    {fechaVueltaError ? <Text style={styles.errorText}>{fechaVueltaError}</Text> : null}
+                  </View>
+
+                  {showDatePickerVuelta && (
+                    <DateTimePicker
+                      value={dateVuelta || (dateIda ? new Date(dateIda.getTime() + 24 * 60 * 60 * 1000) : new Date())}
+                      mode="date"
+                      display="default"
+                      onChange={onChangeDateVuelta}
+                      minimumDate={dateIda ? new Date(dateIda.getTime() + 24 * 60 * 60 * 1000) : new Date()}
                     />
                   )}
 
@@ -211,7 +264,7 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
                     <Text style={styles.infoTitle}>Resumen del viaje:</Text>
                     <View style={styles.infoRow}>
                       <Icon name="info" size={16} color="#059669" />
-                      <Text style={styles.infoItem}>Tipo: Solo ida</Text>
+                      <Text style={styles.infoItem}>Tipo: Ida y vuelta</Text>
                     </View>
                     <View style={styles.infoRow}>
                       <Icon name="route" size={16} color="#059669" />
@@ -222,7 +275,13 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
                     <View style={styles.infoRow}>
                       <Icon name="event" size={16} color="#059669" />
                       <Text style={styles.infoItem}>
-                        Fecha: {fecha || "No seleccionada"}
+                        Fecha de ida: {fechaIda || "No seleccionada"}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Icon name="event" size={16} color="#059669" />
+                      <Text style={styles.infoItem}>
+                        Fecha de vuelta: {fechaVuelta || "No seleccionada"}
                       </Text>
                     </View>
                     <View style={styles.infoRow}>
@@ -237,10 +296,10 @@ export function OneWayTrip({ onVolver }: OneWayTripProps) {
                   <TouchableOpacity 
                     style={[
                       styles.searchButton,
-                      (origen && destino && fecha) && styles.searchButtonActive
+                      (origen && destino && fechaIda && fechaVuelta) && styles.searchButtonActive
                     ]}
                     onPress={handleBuscar}
-                    disabled={!(origen && destino && fecha)}
+                    disabled={!(origen && destino && fechaIda && fechaVuelta)}
                     activeOpacity={0.8}
                   >
                     <Icon name="search" size={20} color="white" style={styles.searchIcon} />

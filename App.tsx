@@ -1,56 +1,42 @@
 import React, { useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Alert } from 'react-native';
-import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';
-import {
-  requestUserPermission,
-  setupNotifications,
-} from './src/services/notificationService';
+import AppNavigator from './src/navigation/AppNavigator';
+import { requestUserPermission, setupNotifications } from './src/services/notificationService';
 import { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import { errorHandler } from './src/utils/errorHandler';
 
 const App = () => {
   useEffect(() => {
-    const setupNotificationsAsync = async () => {
+    // Inicializar el error handler personalizado al arrancar la app
+    errorHandler.init();
+
+    const initializeNotifications = async () => {
       try {
-        // ELIMINAR la solicitud duplicada de permisos POST_NOTIFICATIONS
-        // Solo llamar a requestUserPermission que ya maneja todo
         await requestUserPermission();
-
-        // Configurar listeners de notificaciones
+        
         const unsubscribe = setupNotifications((remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-          try {
-            // Mostrar alerta cuando se reciba una notificación
-            if (remoteMessage?.notification) {
-              Alert.alert(
-                remoteMessage.notification?.title || 'Notificación',
-                remoteMessage.notification?.body || 'Mensaje recibido',
-                [
-                  {
-                    text: 'OK',
-                  },
-                ]
-              );
-            }
-
-            // Lógica adicional para manejar datos de la notificación
-            if (remoteMessage?.data) {
-              // Por ejemplo, navegar a una pantalla específica
-              // navigation.navigate('Screen', { data: remoteMessage.data });
-            }
-          } catch (error) {
-            console.error('Error al procesar notificación:', error);
+          if (remoteMessage?.notification) {
+            Alert.alert(
+              remoteMessage.notification.title || 'Notificación',
+              remoteMessage.notification.body || 'Mensaje recibido'
+            );
           }
         });
 
-        // Cleanup function para cuando el componente se desmonte
         return unsubscribe;
       } catch (error) {
-        console.error('Error al configurar notificaciones:', error);
+        console.error('Error configurando notificaciones:', error);
       }
     };
 
-    setupNotificationsAsync();
+    initializeNotifications();
+
+    // Limpiar al desmontar la app (opcional, raramente se ejecuta)
+    return () => {
+      errorHandler.restore();
+    };
   }, []);
 
   return (
