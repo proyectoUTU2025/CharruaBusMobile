@@ -1,28 +1,33 @@
+"use client"
+
 import { useState } from "react"
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  StatusBar, 
-  SafeAreaView, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  SafeAreaView,
+  ScrollView,
   ImageBackground,
   Modal,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
-  Keyboard
+  Keyboard,
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker"
 
 interface RoundTripProps {
-  onVolver: () => void
+  onVolver?: () => void
+  onGoBack?: () => void // Compatibilidad adicional
+  onNavigateToViewTrips?: (params: any) => void // Para futuras integraciones
 }
 
-export function RoundTrip({ onVolver }: RoundTripProps) {
+export function RoundTripScreen({ onVolver, onGoBack, onNavigateToViewTrips }: RoundTripProps) {
+  // Estados del formulario
   const [origen, setOrigen] = useState("")
   const [origenError, setOrigenError] = useState("")
   const [destino, setDestino] = useState("")
@@ -32,10 +37,14 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
   const [fechaVuelta, setFechaVuelta] = useState("")
   const [fechaVueltaError, setFechaVueltaError] = useState("")
   const [pasajeros, setPasajeros] = useState("1")
+
+  // Estados para los date pickers
   const [showDatePickerIda, setShowDatePickerIda] = useState(false)
   const [showDatePickerVuelta, setShowDatePickerVuelta] = useState(false)
   const [dateIda, setDateIda] = useState<Date | undefined>(undefined)
   const [dateVuelta, setDateVuelta] = useState<Date | undefined>(undefined)
+
+  // Estados para modales
   const [showPasajerosModal, setShowPasajerosModal] = useState(false)
 
   const opcionesPasajeros = [
@@ -44,6 +53,15 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
     { label: "3 pasajeros", value: "3" },
     { label: "4 pasajeros", value: "4" },
   ]
+
+  const handleVolver = () => {
+    console.log("RoundTripScreen - handleVolver llamado")
+    if (onVolver) {
+      onVolver()
+    } else if (onGoBack) {
+      onGoBack()
+    }
+  }
 
   const validateOrigen = (value: string) => {
     setOrigen(value)
@@ -56,8 +74,8 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
   }
 
   const formatDate = (date: Date) => {
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
   }
@@ -68,12 +86,14 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
       setDateIda(selectedDate)
       setFechaIda(formatDate(selectedDate))
       setFechaIdaError("")
-      
+
       // Si ya hay fecha de vuelta seleccionada y es anterior a la nueva fecha de ida,
-      // limpiar la fecha de vuelta
+      // limpiar la fecha de vuelta para evitar inconsistencias
       if (dateVuelta && selectedDate > dateVuelta) {
+        console.log("Fecha de ida posterior a fecha de vuelta, limpiando fecha de vuelta")
         setDateVuelta(undefined)
         setFechaVuelta("")
+        setFechaVueltaError("")
       }
     }
   }
@@ -88,13 +108,16 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
   }
 
   const selectPasajeros = (value: string, label: string) => {
+    console.log("Pasajeros seleccionados:", value, label)
     setPasajeros(value)
     setShowPasajerosModal(false)
   }
 
   const handleBuscar = () => {
+    console.log("Iniciando búsqueda de viajes de ida y vuelta")
     let hasErrors = false
 
+    // Validaciones
     if (!origen.trim()) {
       setOrigenError("El origen es obligatorio")
       hasErrors = true
@@ -115,50 +138,71 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
       hasErrors = true
     }
 
+    // Validación de fechas: la fecha de vuelta debe ser posterior a la fecha de ida
     if (dateIda && dateVuelta && dateVuelta <= dateIda) {
       setFechaVueltaError("La fecha de vuelta debe ser posterior a la fecha de ida")
       hasErrors = true
     }
 
-    if (hasErrors) return
+    if (hasErrors) {
+      console.log("Errores de validación encontrados")
+      return
+    }
 
-    console.log("Buscando viajes de ida y vuelta:", {
+    const searchParams = {
       origen,
       destino,
       fechaIda,
       fechaVuelta,
+      dateIda: dateIda!.toISOString(),
+      dateVuelta: dateVuelta!.toISOString(),
       pasajeros,
-    })
+      tipoViaje: "ida-vuelta",
+    }
+
+    console.log("Buscando viajes de ida y vuelta:", searchParams)
+
+    // Si hay función de navegación disponible, usarla
+    if (onNavigateToViewTrips) {
+      onNavigateToViewTrips(searchParams)
+    } else {
+      // Placeholder para futuras implementaciones
+      console.log("Función de navegación no disponible, implementar navegación a resultados")
+    }
   }
 
   const getPasajerosLabel = () => {
-    const opcion = opcionesPasajeros.find(op => op.value === pasajeros)
+    const opcion = opcionesPasajeros.find((op) => op.value === pasajeros)
     return opcion ? opcion.label : "Seleccionar pasajeros"
+  }
+
+  const isFormValid = () => {
+    return origen.trim() && destino.trim() && fechaIda && fechaVuelta && dateIda && dateVuelta && dateVuelta > dateIda
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <ImageBackground 
-        source={require('../assets/background.png')} 
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
+      <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardAvoidingView}
           >
-            <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            <ScrollView
+              contentContainerStyle={styles.scrollViewContent}
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.cardContainer}>
                 {/* Header */}
                 <View style={styles.headerContainer}>
-                  <TouchableOpacity style={styles.backButton} onPress={onVolver}>
+                  <TouchableOpacity style={styles.backButton} onPress={handleVolver}>
                     <Icon name="arrow-back" size={24} color="#374151" />
                   </TouchableOpacity>
                   <Text style={styles.headerTitle}>
-                    Buscar Viaje{" "}
-                    <Text style={styles.headerSubtitle}>(Ida y vuelta)</Text>
+                    Buscar Viaje <Text style={styles.headerSubtitle}>(Ida y vuelta)</Text>
                   </Text>
                   <View style={styles.placeholder} />
                 </View>
@@ -205,7 +249,7 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
                     <TouchableOpacity onPress={() => setShowDatePickerIda(true)}>
                       <View style={[styles.inputWithIcon, fechaIdaError ? styles.inputError : null]}>
                         <Text style={[styles.inputText, !fechaIda && styles.placeholderText]}>
-                          {fechaIda || 'DD/MM/AAAA'}
+                          {fechaIda || "DD/MM/AAAA"}
                         </Text>
                         <Icon name="event" size={20} color="#9CA3AF" />
                       </View>
@@ -229,7 +273,7 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
                     <TouchableOpacity onPress={() => setShowDatePickerVuelta(true)}>
                       <View style={[styles.inputWithIcon, fechaVueltaError ? styles.inputError : null]}>
                         <Text style={[styles.inputText, !fechaVuelta && styles.placeholderText]}>
-                          {fechaVuelta || 'DD/MM/AAAA'}
+                          {fechaVuelta || "DD/MM/AAAA"}
                         </Text>
                         <Icon name="event" size={20} color="#9CA3AF" />
                       </View>
@@ -250,13 +294,8 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
                   {/* Número de pasajeros */}
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Número de pasajeros</Text>
-                    <TouchableOpacity 
-                      style={styles.selectButton} 
-                      onPress={() => setShowPasajerosModal(true)}
-                    >
-                      <Text style={styles.selectText}>
-                        {getPasajerosLabel()}
-                      </Text>
+                    <TouchableOpacity style={styles.selectButton} onPress={() => setShowPasajerosModal(true)}>
+                      <Text style={styles.selectText}>{getPasajerosLabel()}</Text>
                       <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
                     </TouchableOpacity>
                   </View>
@@ -276,32 +315,23 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
                     </View>
                     <View style={styles.infoRow}>
                       <Icon name="event" size={16} color="#059669" />
-                      <Text style={styles.infoItem}>
-                        Fecha de ida: {fechaIda || "No seleccionada"}
-                      </Text>
+                      <Text style={styles.infoItem}>Fecha de ida: {fechaIda || "No seleccionada"}</Text>
                     </View>
                     <View style={styles.infoRow}>
                       <Icon name="event" size={16} color="#059669" />
-                      <Text style={styles.infoItem}>
-                        Fecha de vuelta: {fechaVuelta || "No seleccionada"}
-                      </Text>
+                      <Text style={styles.infoItem}>Fecha de vuelta: {fechaVuelta || "No seleccionada"}</Text>
                     </View>
                     <View style={styles.infoRow}>
                       <Icon name="people" size={16} color="#059669" />
-                      <Text style={styles.infoItem}>
-                        Pasajeros: {getPasajerosLabel()}
-                      </Text>
+                      <Text style={styles.infoItem}>Pasajeros: {getPasajerosLabel()}</Text>
                     </View>
                   </View>
 
                   {/* Botón buscar */}
-                  <TouchableOpacity 
-                    style={[
-                      styles.searchButton,
-                      (origen && destino && fechaIda && fechaVuelta) && styles.searchButtonActive
-                    ]}
+                  <TouchableOpacity
+                    style={[styles.searchButton, isFormValid() && styles.searchButtonActive]}
                     onPress={handleBuscar}
-                    disabled={!(origen && destino && fechaIda && fechaVuelta)}
+                    disabled={!isFormValid()}
                     activeOpacity={0.8}
                   >
                     <Icon name="search" size={20} color="white" style={styles.searchIcon} />
@@ -320,9 +350,9 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Seleccionar pasajeros</Text>
                 {opcionesPasajeros.map((opcion) => (
-                  <TouchableOpacity 
-                    key={opcion.value} 
-                    style={styles.modalOption} 
+                  <TouchableOpacity
+                    key={opcion.value}
+                    style={styles.modalOption}
                     onPress={() => selectPasajeros(opcion.value, opcion.label)}
                   >
                     <Text style={styles.modalOptionText}>{opcion.label}</Text>
@@ -336,6 +366,9 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
     </SafeAreaView>
   )
 }
+
+// Exportación adicional para compatibilidad
+export const RoundTrip = RoundTripScreen
 
 const styles = StyleSheet.create({
   container: {
@@ -354,10 +387,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 16,
+    paddingBottom: 40,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 500,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -369,6 +403,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    alignSelf: "center",
   },
   headerContainer: {
     flexDirection: "row",
@@ -395,43 +430,43 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: "100%",
+    gap: 20,
   },
   inputContainer: {
-    marginBottom: 16,
-    width: "100%",
+    marginBottom: 4,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
-    color: "#4B5563",
+    color: "#374151",
     marginBottom: 8,
   },
   inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F9FAFB",
     height: 50,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     paddingHorizontal: 16,
   },
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: "#1F2937",
+    color: "#374151",
   },
   inputText: {
     fontSize: 16,
-    color: '#1F2937',
+    color: "#374151",
   },
   placeholderText: {
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   inputError: {
     borderColor: "#EF4444",
-    borderWidth: 2,
+    backgroundColor: "#FEF2F2",
   },
   errorText: {
     color: "#EF4444",
@@ -440,7 +475,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   selectButton: {
-    backgroundColor: "white",
+    backgroundColor: "#F9FAFB",
     height: 50,
     borderRadius: 8,
     borderWidth: 1,
@@ -452,20 +487,20 @@ const styles = StyleSheet.create({
   },
   selectText: {
     fontSize: 16,
-    color: "#1F2937",
+    color: "#374151",
   },
   infoContainer: {
     backgroundColor: "#ECFDF5",
     padding: 16,
     borderRadius: 12,
-    marginBottom: 24,
+    marginTop: 8,
     borderWidth: 1,
-    borderColor: "#A7F3D0",
+    borderColor: "#10B981",
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#059669",
+    color: "#065F46",
     marginBottom: 12,
   },
   infoRow: {
@@ -475,7 +510,7 @@ const styles = StyleSheet.create({
   },
   infoItem: {
     fontSize: 14,
-    color: "#047857",
+    color: "#059669",
     marginLeft: 8,
     flex: 1,
   },
@@ -487,6 +522,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 16,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -504,7 +540,7 @@ const styles = StyleSheet.create({
   },
   searchButtonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
   },
   modalOverlay: {

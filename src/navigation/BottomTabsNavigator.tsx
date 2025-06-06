@@ -1,19 +1,68 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal, ScrollView } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import MainScreen from '../screens/MainScreen';
-import { TripSelectionScreen } from '../screens/TripSelectionScreen';
-import { useAuth } from '../context/AuthContext';
-import { useUser } from '../hooks/useUser';
+"use client"
+
+import { useState } from "react"
+import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal, ScrollView } from "react-native"
+import Icon from "react-native-vector-icons/MaterialIcons"
+
+// Importaciones de pantallas de ambas versiones
+import MainScreen from "../screens/MainScreen"
+import ProfileScreen from "../screens/ProfileScreen"
+import NewPasswordScreen from "../screens/NewPasswordScreen"
+import { TripSelectionScreen } from "../screens/TripSelectionScreen"
+import { OneWayTripScreen } from "../screens/OneWayTripScreen"
+import { ViewTripsScreen } from "../screens/ViewTripsScreen"
+import { SelectSeatScreen } from "../screens/SelectSeatScreen"
+import HistorySelectionScreen from "../screens/HistorySelectionScreen"
+import PurchaseHistoryScreen from "../screens/PurchaseHistoryScreen"
+import PurchaseHistoryFiltersScreen from "../screens/PurchaseHistoryFiltersScreen"
+
+// Importaciones de contextos y hooks
+import { useAuth } from "../context/AuthContext"
+import { useUser } from "../hooks/useUser"
+import { useNavigation } from "@react-navigation/native"
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import type { RootStackParamList } from "../navigation/AppNavigator"
+
+// Tipos combinados para los diferentes estados de navegación
+type NavigationState =
+  | { type: "tab"; activeTab: string }
+  | { type: "oneWayTrip" }
+  | { type: "viewTrips"; params: ViewTripsParams }
+  | { type: "selectSeat"; params: any }
+
+interface ViewTripsParams {
+  origenSeleccionado: any
+  destinoSeleccionado: any
+  fecha: string
+  date: string
+  pasajeros: string
+}
 
 const BottomTabsNavigator = () => {
-  const { logout } = useAuth();
-  const { user, loading } = useUser();
-  const [activeTab, setActiveTab] = useState("inicio");
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const { logout } = useAuth()
+  const { user, loading } = useUser()
 
-  //Datos de ejemplo para las notificaciones (Quitar es solo muestra hasta que se implemente el mostrado)
+  // Estados de navegación combinados
+  const [navigationState, setNavigationState] = useState<NavigationState>({
+    type: "tab",
+    activeTab: "inicio",
+  })
+
+  const [menuVisible, setMenuVisible] = useState(false)
+  const [notificationsVisible, setNotificationsVisible] = useState(false)
+
+  // Estados para el historial con el nuevo flujo de filtros (de la versión 2)
+  const [historyView, setHistoryView] = useState<"selection" | "filters" | "purchases" | "tickets">("selection")
+  const [purchaseFilters, setPurchaseFilters] = useState({
+    estados: [],
+    fechaDesde: undefined,
+    fechaHasta: undefined,
+    montoMin: undefined,
+    montoMax: undefined,
+  })
+
+  // Datos de ejemplo para las notificaciones
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -21,7 +70,7 @@ const BottomTabsNavigator = () => {
       message: "Hay un nuevo viaje a Montevideo disponible",
       time: "Hace 5 min",
       read: false,
-      icon: "directions-bus"
+      icon: "directions-bus",
     },
     {
       id: 2,
@@ -29,7 +78,7 @@ const BottomTabsNavigator = () => {
       message: "Tu boleto ha sido confirmado exitosamente",
       time: "Hace 1 hora",
       read: false,
-      icon: "check-circle"
+      icon: "check-circle",
     },
     {
       id: 3,
@@ -37,7 +86,7 @@ const BottomTabsNavigator = () => {
       message: "Tu viaje sale en 2 horas",
       time: "Hace 2 horas",
       read: true,
-      icon: "schedule"
+      icon: "schedule",
     },
     {
       id: 4,
@@ -45,121 +94,259 @@ const BottomTabsNavigator = () => {
       message: "25% de descuento en viajes nocturnos",
       time: "Ayer",
       read: true,
-      icon: "local-offer"
+      icon: "local-offer",
+    },
+  ])
+
+  // Funciones de navegación para viajes (de la versión 1)
+  const navigateToTab = (tab: string) => {
+    console.log("Navegando a tab:", tab)
+    setNavigationState({ type: "tab", activeTab: tab })
+  }
+
+  const navigateToOneWayTrip = () => {
+    console.log("Navegando a OneWayTrip")
+    setNavigationState({ type: "oneWayTrip" })
+  }
+
+  const navigateToViewTrips = (params: ViewTripsParams) => {
+    console.log("Navegando a ViewTrips con params:", params)
+    setNavigationState({ type: "viewTrips", params })
+  }
+
+  const navigateToSelectSeat = (params: any) => {
+    console.log("=== navigateToSelectSeat called ===")
+    console.log("Params received:", params)
+    setNavigationState({ type: "selectSeat", params })
+    console.log("Navigation state updated to selectSeat")
+  }
+
+  // Función para volver desde cualquier pantalla (de la versión 1)
+  const goBack = () => {
+    console.log("goBack llamado desde:", navigationState.type)
+    if (navigationState.type === "selectSeat") {
+      // Si estamos en SelectSeat, volver a ViewTrips
+      setNavigationState({ type: "oneWayTrip" })
+    } else if (navigationState.type === "viewTrips") {
+      setNavigationState({ type: "oneWayTrip" })
+    } else if (navigationState.type === "oneWayTrip") {
+      setNavigationState({ type: "tab", activeTab: "viajes" })
     }
-  ]);
+  }
+
+  // Funciones para el historial (de la versión 2)
+  const handleHistoryNavigation = (type: "purchases" | "tickets") => {
+    console.log("Navegación de historial:", type)
+    if (type === "purchases") {
+      setHistoryView("filters")
+    } else {
+      setHistoryView(type)
+    }
+  }
+
+  const handleFiltersApplied = (filters: any) => {
+    console.log("Filtros aplicados:", filters)
+    setPurchaseFilters(filters)
+    setHistoryView("purchases")
+  }
+
+  const handleHistoryGoBack = () => {
+    console.log("Historial goBack desde:", historyView)
+    switch (historyView) {
+      case "purchases":
+        setHistoryView("filters")
+        break
+      case "filters":
+        setHistoryView("selection")
+        setPurchaseFilters({
+          estados: [],
+          fechaDesde: undefined,
+          fechaHasta: undefined,
+          montoMin: undefined,
+          montoMax: undefined,
+        })
+        break
+      case "tickets":
+        setHistoryView("selection")
+        break
+      default:
+        setHistoryView("selection")
+        break
+    }
+  }
 
   const handleLogout = () => {
-    logout();
-  };
+    console.log("Cerrando sesión")
+    logout()
+  }
 
   const handleTabPress = (tab: string) => {
-    setActiveTab(tab);
-    
-    // Manejar el caso especial del historial
-    if (tab === "historial") {
-      console.log('Navegando a historial de compras (funcionalidad pendiente)');
-      // Aquí puedes agregar lógica adicional cuando implementes la funcionalidad
-      return;
+    console.log("Tab presionado:", tab)
+    navigateToTab(tab)
+
+    // Resetear vista de historial cuando se cambia de pestaña
+    if (tab !== "historial") {
+      setHistoryView("selection")
+      setPurchaseFilters({
+        estados: [],
+        fechaDesde: undefined,
+        fechaHasta: undefined,
+        montoMin: undefined,
+        montoMax: undefined,
+      })
     }
-  };
+
+    if (tab === "historial") {
+      console.log("Navegando a historial de compras")
+    }
+  }
 
   const toggleMenu = () => {
-    setMenuVisible(!menuVisible);
-  };
+    setMenuVisible(!menuVisible)
+  }
 
   const toggleNotifications = () => {
-    setNotificationsVisible(!notificationsVisible);
-  };
+    setNotificationsVisible(!notificationsVisible)
+  }
 
   const handleMenuItemPress = (action: string) => {
-    setMenuVisible(false);
-    
+    setMenuVisible(false)
+
     switch (action) {
-      case 'editProfile':
-        console.log('Ir a editar perfil');
-        break;
-      case 'changePassword':
-        console.log('Ir a cambiar contraseña');
-        break;
-      case 'logout':
-        handleLogout();
-        break;
+      case "editProfile":
+        console.log("Ir a editar perfil")
+        navigateToTab("profile")
+        break
+      case "changePassword":
+        console.log("Ir a cambiar contraseña")
+        navigateToTab("changePassword")
+        break
+      case "logout":
+        handleLogout()
+        break
       default:
-        break;
+        break
     }
-  };
+  }
 
   const handleNotificationPress = (notificationId: number) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
-    console.log('Notificación presionada:', notificationId);
-  };
+    setNotifications((prev) =>
+      prev.map((notification) => (notification.id === notificationId ? { ...notification, read: true } : notification)),
+    )
+    console.log("Notificación presionada:", notificationId)
+  }
 
   const markAllNotificationsAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-    setNotificationsVisible(false);
-  };
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
+    setNotificationsVisible(false)
+  }
 
   const getUnreadNotificationsCount = () => {
-    return notifications.filter(notification => !notification.read).length;
-  };
+    return notifications.filter((notification) => !notification.read).length
+  }
 
   const getDisplayName = (user: any) => {
-    if (!user) return 'Usuario';
-    
-    if (user.name && user.apellido) {
-      return `${user.name} ${user.apellido}`;
-    }
-    
-    if (user.name) {
-      return user.name;
-    }
-    
-    return 'Usuario';
-  };
+    if (!user) return "Usuario"
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "inicio":
-        return <MainScreen />;
-      case "viajes":
-        return <TripSelectionScreen />;
-      case "historial":
-        // Pantalla temporal para historial
-        return (
-          <View style={styles.placeholderContainer}>
-            <Icon name="history" size={64} color="#CAC4D0" />
-            <Text style={styles.placeholderTitle}>Historial de Compras</Text>
-            <Text style={styles.placeholderSubtitle}>
-              Aquí podrás ver todas tus compras anteriores
-            </Text>
-          </View>
-        );
-      default:
-        return <MainScreen />;
+    if (user.name && user.apellido) {
+      return `${user.name} ${user.apellido}`
     }
-  };
+
+    if (user.name) {
+      return user.name
+    }
+
+    return "Usuario"
+  }
+
+  // Función para obtener el tab activo actual
+  const getCurrentActiveTab = () => {
+    if (navigationState.type === "tab") {
+      return navigationState.activeTab
+    }
+    // Si estamos en OneWayTrip, ViewTrips o SelectSeat, consideramos que estamos en viajes
+    return "viajes"
+  }
+
+  // Función para determinar si mostrar la barra de navegación inferior
+  const shouldShowBottomNavigation = () => {
+    return true
+  }
+
+  // Función de renderizado combinada
+  const renderContent = () => {
+    console.log("=== renderContent called ===")
+    console.log("Current navigation state:", navigationState)
+
+    switch (navigationState.type) {
+      case "viewTrips":
+        return (
+          <ViewTripsScreen
+            route={{ params: navigationState.params }}
+            navigation={{
+              goBack,
+              navigate: navigateToSelectSeat,
+            }}
+            onGoBack={goBack}
+          />
+        )
+      case "oneWayTrip":
+        return <OneWayTripScreen onGoBack={goBack} onNavigateToViewTrips={navigateToViewTrips} />
+      case "selectSeat":
+        console.log("Rendering SelectSeatScreen")
+        return <SelectSeatScreen route={{ params: navigationState.params }} navigation={{ goBack }} />
+      case "tab":
+        switch (navigationState.activeTab) {
+          case "inicio":
+            return <MainScreen />
+          case "profile":
+            return <ProfileScreen />
+          case "changePassword":
+            return <NewPasswordScreen />
+          case "viajes":
+            return (
+              <TripSelectionScreen
+                activeTab={navigationState.activeTab}
+                onTabPress={handleTabPress}
+                onNavigateToOneWay={navigateToOneWayTrip}
+                onNavigateToRoundTrip={() => console.log("RoundTrip pendiente")}
+              />
+            )
+          case "historial":
+            switch (historyView) {
+              case "selection":
+                return <HistorySelectionScreen onNavigateToHistory={handleHistoryNavigation} />
+              case "filters":
+                return (
+                  <PurchaseHistoryFiltersScreen onGoBack={handleHistoryGoBack} onApplyFilters={handleFiltersApplied} />
+                )
+              case "purchases":
+                return <PurchaseHistoryScreen onGoBack={handleHistoryGoBack} filters={purchaseFilters} />
+              case "tickets":
+                return (
+                  <View style={styles.placeholderContainer}>
+                    <Icon name="confirmation-number" size={64} color="#CAC4D0" />
+                    <Text style={styles.placeholderTitle}>Historial de Pasajes</Text>
+                    <Text style={styles.placeholderSubtitle}>Próximamente: Aquí podrás ver todos tus pasajes</Text>
+                    <TouchableOpacity style={styles.backToHistoryButton} onPress={handleHistoryGoBack}>
+                      <Text style={styles.backToHistoryText}>Volver a Historial</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+              default:
+                return <HistorySelectionScreen onNavigateToHistory={handleHistoryNavigation} />
+            }
+          default:
+            return <MainScreen />
+        }
+      default:
+        return <MainScreen />
+    }
+  }
 
   const MenuDropdown = () => (
-    <Modal
-      visible={menuVisible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => setMenuVisible(false)}
-    >
-      <TouchableOpacity 
-        style={styles.modalOverlay} 
-        activeOpacity={1} 
-        onPress={() => setMenuVisible(false)}
-      >
+    <Modal visible={menuVisible} transparent={true} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
         <View style={styles.menuContainer}>
           <View style={styles.menuHeader}>
             <View style={styles.avatarContainer}>
@@ -168,29 +355,25 @@ const BottomTabsNavigator = () => {
               </View>
             </View>
             <View style={styles.userInfoContainer}>
-              <Text style={styles.greetingText}>
-                ¡Hola, {loading ? 'Cargando...' : getDisplayName(user)}!
-              </Text>
-              <Text style={styles.userEmailText}>
-                {loading ? '' : (user?.email || '')}
-              </Text>
+              <Text style={styles.greetingText}>¡Hola, {loading ? "Cargando..." : getDisplayName(user)}!</Text>
+              <Text style={styles.userEmailText}>{loading ? "" : user?.email || ""}</Text>
             </View>
           </View>
 
           <View style={styles.menuDivider} />
 
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => handleMenuItemPress('editProfile')}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => handleMenuItemPress("editProfile")}
             activeOpacity={0.7}
           >
             <Icon name="edit" size={20} color="#49454F" style={styles.menuIcon} />
             <Text style={styles.menuText}>Editar Perfil</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => handleMenuItemPress('changePassword')}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => handleMenuItemPress("changePassword")}
             activeOpacity={0.7}
           >
             <Icon name="lock" size={20} color="#49454F" style={styles.menuIcon} />
@@ -199,18 +382,14 @@ const BottomTabsNavigator = () => {
 
           <View style={styles.menuDivider} />
 
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => handleMenuItemPress('logout')}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress("logout")} activeOpacity={0.7}>
             <Icon name="logout" size={20} color="#F44336" style={styles.menuIcon} />
-            <Text style={[styles.menuText, { color: '#F44336' }]}>Cerrar Sesión</Text>
+            <Text style={[styles.menuText, { color: "#F44336" }]}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
     </Modal>
-  );
+  )
 
   const NotificationsDropdown = () => (
     <Modal
@@ -219,20 +398,12 @@ const BottomTabsNavigator = () => {
       animationType="fade"
       onRequestClose={() => setNotificationsVisible(false)}
     >
-      <TouchableOpacity 
-        style={styles.modalOverlay} 
-        activeOpacity={1} 
-        onPress={() => setNotificationsVisible(false)}
-      >
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setNotificationsVisible(false)}>
         <View style={styles.notificationsContainer}>
-          {/* Header de notificaciones */}
           <View style={styles.notificationsHeader}>
             <Text style={styles.notificationsTitle}>Notificaciones</Text>
             {getUnreadNotificationsCount() > 0 && (
-              <TouchableOpacity 
-                onPress={markAllNotificationsAsRead}
-                style={styles.markAllReadButton}
-              >
+              <TouchableOpacity onPress={markAllNotificationsAsRead} style={styles.markAllReadButton}>
                 <Text style={styles.markAllReadText}>Marcar todas como leídas</Text>
               </TouchableOpacity>
             )}
@@ -240,7 +411,6 @@ const BottomTabsNavigator = () => {
 
           <View style={styles.menuDivider} />
 
-          {/* Lista de notificaciones */}
           <ScrollView style={styles.notificationsList} showsVerticalScrollIndicator={false}>
             {notifications.length === 0 ? (
               <View style={styles.emptyNotifications}>
@@ -251,34 +421,20 @@ const BottomTabsNavigator = () => {
               notifications.map((notification) => (
                 <TouchableOpacity
                   key={notification.id}
-                  style={[
-                    styles.notificationItem,
-                    !notification.read && styles.unreadNotificationItem
-                  ]}
+                  style={[styles.notificationItem, !notification.read && styles.unreadNotificationItem]}
                   onPress={() => handleNotificationPress(notification.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.notificationIconContainer}>
-                    <Icon 
-                      name={notification.icon} 
-                      size={24} 
-                      color={!notification.read ? "#3B82F6" : "#49454F"} 
-                    />
+                    <Icon name={notification.icon} size={24} color={!notification.read ? "#3B82F6" : "#49454F"} />
                     {!notification.read && <View style={styles.unreadDot} />}
                   </View>
                   <View style={styles.notificationContent}>
-                    <Text style={[
-                      styles.notificationTitle,
-                      !notification.read && styles.unreadNotificationTitle
-                    ]}>
+                    <Text style={[styles.notificationTitle, !notification.read && styles.unreadNotificationTitle]}>
                       {notification.title}
                     </Text>
-                    <Text style={styles.notificationMessage}>
-                      {notification.message}
-                    </Text>
-                    <Text style={styles.notificationTime}>
-                      {notification.time}
-                    </Text>
+                    <Text style={styles.notificationMessage}>{notification.message}</Text>
+                    <Text style={styles.notificationTime}>{notification.time}</Text>
                   </View>
                 </TouchableOpacity>
               ))
@@ -287,37 +443,28 @@ const BottomTabsNavigator = () => {
         </View>
       </TouchableOpacity>
     </Modal>
-  );
+  )
+
+  const currentActiveTab = getCurrentActiveTab()
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
 
-      {/* Barra Superior*/}
+      {/* Barra Superior */}
       <View style={styles.topAppBar}>
-        {/* Botón de Menú Hamburguesa */}
-        <TouchableOpacity 
-          style={styles.menuButton} 
-          onPress={toggleMenu} 
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.menuButton} onPress={toggleMenu} activeOpacity={0.7}>
           <Icon name="menu" size={24} color="white" />
         </TouchableOpacity>
 
-        {/* Espaciador para centrar el título si lo necesitas */}
         <View style={styles.titleContainer} />
 
-        {/* Botón de Notificaciones */}
-        <TouchableOpacity 
-          style={styles.notificationButton} 
-          onPress={toggleNotifications} 
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.notificationButton} onPress={toggleNotifications} activeOpacity={0.7}>
           <Icon name="notifications" size={24} color="white" />
           {getUnreadNotificationsCount() > 0 && (
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>
-                {getUnreadNotificationsCount() > 9 ? '9+' : getUnreadNotificationsCount()}
+                {getUnreadNotificationsCount() > 9 ? "9+" : getUnreadNotificationsCount()}
               </Text>
             </View>
           )}
@@ -327,194 +474,197 @@ const BottomTabsNavigator = () => {
       {/* Contenido Principal */}
       <View style={styles.mainContent}>{renderContent()}</View>
 
-      {/* Barra Inferior de Navegación*/}
-      <View style={styles.navigationBar}>
-        <TouchableOpacity
-          style={[styles.navigationItem, activeTab === "inicio" && styles.activeNavigationItem]}
-          onPress={() => handleTabPress("inicio")}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.navigationIndicator, activeTab === "inicio" && styles.activeNavigationIndicator]}>
-            <Icon name="home" size={24} color={activeTab === "inicio" ? "#3B82F6" : "#49454F"} />
-          </View>
-          <Text style={[styles.navigationLabel, activeTab === "inicio" && styles.activeNavigationLabel]}>Inicio</Text>
-        </TouchableOpacity>
+      {/* Barra Inferior de Navegación - Siempre visible */}
+      {shouldShowBottomNavigation() && (
+        <View style={styles.navigationBar}>
+          <TouchableOpacity
+            style={[styles.navigationItem, currentActiveTab === "inicio" && styles.activeNavigationItem]}
+            onPress={() => handleTabPress("inicio")}
+            activeOpacity={0.7}
+          >
+            <View
+              style={[styles.navigationIndicator, currentActiveTab === "inicio" && styles.activeNavigationIndicator]}
+            >
+              <Icon name="home" size={24} color={currentActiveTab === "inicio" ? "#3B82F6" : "#49454F"} />
+            </View>
+            <Text style={[styles.navigationLabel, currentActiveTab === "inicio" && styles.activeNavigationLabel]}>
+              Inicio
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.navigationItem, activeTab === "viajes" && styles.activeNavigationItem]}
-          onPress={() => handleTabPress("viajes")}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.navigationIndicator, activeTab === "viajes" && styles.activeNavigationIndicator]}>
-            <Icon name="search" size={24} color={activeTab === "viajes" ? "#3B82F6" : "#49454F"} />
-          </View>
-          <Text style={[styles.navigationLabel, activeTab === "viajes" && styles.activeNavigationLabel]}>Viajes</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.navigationItem, currentActiveTab === "viajes" && styles.activeNavigationItem]}
+            onPress={() => handleTabPress("viajes")}
+            activeOpacity={0.7}
+          >
+            <View
+              style={[styles.navigationIndicator, currentActiveTab === "viajes" && styles.activeNavigationIndicator]}
+            >
+              <Icon name="search" size={24} color={currentActiveTab === "viajes" ? "#3B82F6" : "#49454F"} />
+            </View>
+            <Text style={[styles.navigationLabel, currentActiveTab === "viajes" && styles.activeNavigationLabel]}>
+              Viajes
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.navigationItem, activeTab === "historial" && styles.activeNavigationItem]}
-          onPress={() => handleTabPress("historial")}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.navigationIndicator, activeTab === "historial" && styles.activeNavigationIndicator]}>
-            <Icon name="history" size={24} color={activeTab === "historial" ? "#3B82F6" : "#49454F"} />
-          </View>
-          <Text style={[styles.navigationLabel, activeTab === "historial" && styles.activeNavigationLabel]}>Historial</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.navigationItem, currentActiveTab === "historial" && styles.activeNavigationItem]}
+            onPress={() => handleTabPress("historial")}
+            activeOpacity={0.7}
+          >
+            <View
+              style={[styles.navigationIndicator, currentActiveTab === "historial" && styles.activeNavigationIndicator]}
+            >
+              <Icon name="history" size={24} color={currentActiveTab === "historial" ? "#3B82F6" : "#49454F"} />
+            </View>
+            <Text style={[styles.navigationLabel, currentActiveTab === "historial" && styles.activeNavigationLabel]}>
+              Historial
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* Menú Desplegable */}
+      {/* Menús Desplegables */}
       <MenuDropdown />
-
-      {/* Menú de Notificaciones */}
       <NotificationsDropdown />
     </SafeAreaView>
-  );
-};
+  )
+}
 
+// Estilos combinados de ambas versiones
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFBFE",
+    backgroundColor: "#F5F5F5",
   },
   topAppBar: {
-    backgroundColor: "#3B82F6",
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    height: 64,
-    elevation: 2,
+    paddingVertical: 12,
+    backgroundColor: "#3B82F6",
+    elevation: 4,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 8,
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#F44336',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  notificationBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+    padding: 8,
   },
   titleContainer: {
     flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 16,
   },
-  userEmail: {
+  notificationButton: {
+    padding: 8,
+    position: "relative",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "#F44336",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notificationBadgeText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   mainContent: {
     flex: 1,
-    backgroundColor: "#FFFBFE",
   },
   navigationBar: {
-    backgroundColor: "#FEF7FF",
     flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    backgroundColor: "white",
+    paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#E7E0EC",
-    elevation: 3,
+    borderTopColor: "#E5E7EB",
+    elevation: 8,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -1,
-    },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 4,
   },
   navigationItem: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 4,
   },
-  activeNavigationItem: {
-  },
+  activeNavigationItem: {},
   navigationIndicator: {
-    width: 64,
-    height: 32,
+    padding: 8,
     borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
   },
   activeNavigationIndicator: {
-    backgroundColor: "#E8F0FE",
+    backgroundColor: "#E0F2FE",
   },
   navigationLabel: {
     fontSize: 12,
     color: "#49454F",
-    fontWeight: "500",
-    textAlign: "center",
+    marginTop: 4,
   },
   activeNavigationLabel: {
     color: "#3B82F6",
     fontWeight: "600",
   },
-  //Estilos para el menú desplegable
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  placeholderTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#374151",
+    marginTop: 16,
+  },
+  placeholderSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginTop: 8,
+  },
+  backToHistoryButton: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#E8F0FE",
+    borderRadius: 20,
+  },
+  backToHistoryText: {
+    color: "#3B82F6",
+    fontWeight: "500",
+    fontSize: 14,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-start",
+    paddingTop: 60,
   },
   menuContainer: {
-    backgroundColor: 'white',
-    marginTop: 64,
-    marginLeft: 16,
-    marginRight: 80,
+    backgroundColor: "white",
+    marginHorizontal: 16,
+    marginTop: 8,
     borderRadius: 12,
+    padding: 16,
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
-  //Estilos para el header del menú
   menuHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
   },
   avatarContainer: {
     marginRight: 12,
@@ -523,175 +673,126 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E8F0FE',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#E0F2FE",
+    justifyContent: "center",
+    alignItems: "center",
   },
   userInfoContainer: {
     flex: 1,
   },
   greetingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    marginBottom: 2,
+    fontWeight: "bold",
+    color: "#1F2937",
   },
   userEmailText: {
     fontSize: 14,
-    color: '#49454F',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  menuIcon: {
-    marginRight: 16,
-    width: 20,
-  },
-  menuText: {
-    fontSize: 16,
-    color: '#49454F',
-    fontWeight: '400',
+    color: "#6B7280",
+    marginTop: 2,
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#E7E0EC',
+    backgroundColor: "#E5E7EB",
     marginVertical: 8,
-    marginHorizontal: 16,
   },
-  //Estilos para el menú de notificaciones
-  notificationsContainer: {
-    backgroundColor: 'white',
-    marginTop: 64,
-    marginLeft: 80,
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  menuIcon: {
     marginRight: 16,
+  },
+  menuText: {
+    fontSize: 16,
+    color: "#49454F",
+  },
+  notificationsContainer: {
+    backgroundColor: "white",
+    marginHorizontal: 16,
+    marginTop: 8,
     borderRadius: 12,
+    maxHeight: 400,
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    maxHeight: '70%',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   notificationsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
   },
   notificationsTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    flex: 1,
-    marginRight: 8,
+    fontWeight: "bold",
+    color: "#1F2937",
   },
   markAllReadButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#E8F0FE',
-    borderRadius: 16,
-    minWidth: 60,
-    alignItems: 'center',
-    flexShrink: 0,
+    padding: 8,
   },
   markAllReadText: {
-    fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 16,
+    fontSize: 14,
+    color: "#3B82F6",
   },
   notificationsList: {
-    maxHeight: 400,
-  },
-  emptyNotifications: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 16,
-  },
-  emptyNotificationsText: {
-    fontSize: 16,
-    color: '#CAC4D0',
-    marginTop: 12,
-    textAlign: 'center',
+    maxHeight: 300,
   },
   notificationItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flexDirection: "row",
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F1F4',
+    borderBottomColor: "#F3F4F6",
   },
   unreadNotificationItem: {
-    backgroundColor: '#F8F9FF',
+    backgroundColor: "#F0F9FF",
   },
   notificationIconContainer: {
+    position: "relative",
     marginRight: 12,
-    position: 'relative',
-    paddingTop: 2,
+    padding: 8,
   },
   unreadDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
+    position: "absolute",
+    top: 4,
+    right: 4,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
   },
   notificationContent: {
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#49454F',
+    fontSize: 16,
+    color: "#1F2937",
     marginBottom: 4,
   },
   unreadNotificationTitle: {
-    color: '#1C1B1F',
-    fontWeight: '600',
+    fontWeight: "bold",
   },
   notificationMessage: {
     fontSize: 14,
-    color: '#79747E',
+    color: "#6B7280",
     marginBottom: 4,
-    lineHeight: 20,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#CAC4D0',
+    color: "#9CA3AF",
   },
-  // Estilos para la pantalla placeholder del historial
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
+  emptyNotifications: {
+    alignItems: "center",
+    padding: 32,
   },
-  placeholderTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  placeholderSubtitle: {
+  emptyNotificationsText: {
     fontSize: 16,
-    color: '#79747E',
-    textAlign: 'center',
-    lineHeight: 24,
+    color: "#6B7280",
+    marginTop: 16,
   },
-});
+})
 
-export default BottomTabsNavigator;
+export default BottomTabsNavigator

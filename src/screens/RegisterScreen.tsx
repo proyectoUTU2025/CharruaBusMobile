@@ -140,7 +140,10 @@ export default function RegisterScreen() {
   }
 
   const handleBackToLogin = () => {
-    navigation.navigate("Login")
+    if (!isLoading) {
+      console.log("Navegando de vuelta a Login")
+      navigation.navigate("Login")
+    }
   }
 
   const selectSituacion = (situacion: string) => {
@@ -254,7 +257,7 @@ export default function RegisterScreen() {
   }
 
   const handleNetworkError = (error: any): string => {
-    console.error("Error de red:", error)
+    console.error("Error de red en registro:", error)
 
     if (error.message?.includes("Network request failed")) {
       return "Error de conexión. Verifica tu internet y vuelve a intentar."
@@ -268,7 +271,7 @@ export default function RegisterScreen() {
       return "Datos inválidos. Verifica la información ingresada."
     }
 
-    if (error.message?.includes("409")) {
+    if (error.message?.includes("409") || error.message?.includes("email ya está registrado")) {
       return "Este email ya está registrado. Usa otro email o inicia sesión."
     }
 
@@ -276,10 +279,16 @@ export default function RegisterScreen() {
       return "Error del servidor. Intenta más tarde."
     }
 
+    if (error.message?.includes("Datos de registro inválidos")) {
+      return "Los datos ingresados no son válidos. Revisa la información."
+    }
+
     return error.message || "Error desconocido. Intenta nuevamente."
   }
 
   const handleRegister = async () => {
+    console.log("Iniciando proceso de registro")
+    setEmailError("") // Limpiar errores de email previos
     let hasErrors = false
 
     // Validaciones del formulario
@@ -348,7 +357,10 @@ export default function RegisterScreen() {
       setSituacionLaboralError("")
     }
 
-    if (hasErrors) return
+    if (hasErrors) {
+      console.log("Errores de validación encontrados")
+      return
+    }
 
     setIsLoading(true)
 
@@ -372,8 +384,10 @@ export default function RegisterScreen() {
         genero: genero.toUpperCase(),
       }
 
+      console.log("Enviando datos de registro...")
       await registerUser(data)
 
+      console.log("Registro exitoso")
       Alert.alert(
         "¡Registro exitoso!",
         "Tu cuenta ha sido creada correctamente. Revisa tu email para verificar tu cuenta.",
@@ -385,18 +399,39 @@ export default function RegisterScreen() {
         ],
       )
     } catch (error: any) {
+      console.log("Error en registro:", error.message)
       const errorMessage = handleNetworkError(error)
 
-      Alert.alert("Error al registrarse", errorMessage, [
-        {
-          text: "Reintentar",
-          onPress: () => handleRegister(),
-        },
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-      ])
+      // Manejo específico para email duplicado
+      if (error.message?.includes("email ya está registrado") || error.message?.includes("409")) {
+        setEmailError("El email ya está registrado")
+        return
+      }
+
+      // Para otros errores, mostrar alerta con opción de reintentar
+      if (error.message?.includes("Network request failed") || error.message?.includes("timeout")) {
+        Alert.alert("Error de conexión", errorMessage, [
+          {
+            text: "Reintentar",
+            onPress: () => handleRegister(),
+          },
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+        ])
+      } else {
+        Alert.alert("Error al registrarse", errorMessage, [
+          {
+            text: "Reintentar",
+            onPress: () => handleRegister(),
+          },
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+        ])
+      }
     } finally {
       setIsLoading(false)
     }
@@ -411,11 +446,16 @@ export default function RegisterScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardAvoidingView}
           >
-            <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            <ScrollView
+              contentContainerStyle={styles.scrollViewContent}
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.cardContainer}>
                 <View style={styles.headerContainer}>
-                  <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin}>
-                    <Icon name="arrow-back" size={24} color="#374151" />
+                  <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin} disabled={isLoading}>
+                    <Icon name="arrow-back" size={24} color={isLoading ? "#9CA3AF" : "#374151"} />
                   </TouchableOpacity>
                   <Text style={styles.headerTitle}>Crear cuenta</Text>
                   <View style={styles.placeholder} />
@@ -426,7 +466,7 @@ export default function RegisterScreen() {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Nombre</Text>
                     <TextInput
-                      style={[styles.input, nombreError ? styles.inputError : null]}
+                      style={[styles.input, nombreError ? styles.inputError : null, isLoading && styles.inputDisabled]}
                       placeholder="Nombre"
                       placeholderTextColor="#9CA3AF"
                       autoCapitalize="words"
@@ -441,7 +481,11 @@ export default function RegisterScreen() {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Apellido</Text>
                     <TextInput
-                      style={[styles.input, apellidoError ? styles.inputError : null]}
+                      style={[
+                        styles.input,
+                        apellidoError ? styles.inputError : null,
+                        isLoading && styles.inputDisabled,
+                      ]}
                       placeholder="Apellido"
                       placeholderTextColor="#9CA3AF"
                       autoCapitalize="words"
@@ -456,7 +500,7 @@ export default function RegisterScreen() {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Cédula</Text>
                     <TextInput
-                      style={[styles.input, cedulaError ? styles.inputError : null]}
+                      style={[styles.input, cedulaError ? styles.inputError : null, isLoading && styles.inputDisabled]}
                       placeholder="1.234.567-8"
                       placeholderTextColor="#9CA3AF"
                       keyboardType="numeric"
@@ -476,7 +520,7 @@ export default function RegisterScreen() {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Correo electrónico</Text>
                     <TextInput
-                      style={[styles.input, emailError && styles.inputError]}
+                      style={[styles.input, emailError && styles.inputError, isLoading && styles.inputDisabled]}
                       placeholder="Correo electrónico"
                       placeholderTextColor="#9CA3AF"
                       keyboardType="email-address"
@@ -491,7 +535,13 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Contraseña</Text>
-                    <View style={[styles.passwordContainer, passwordError ? styles.inputError : null]}>
+                    <View
+                      style={[
+                        styles.passwordContainer,
+                        passwordError ? styles.inputError : null,
+                        isLoading && styles.inputDisabled,
+                      ]}
+                    >
                       <TextInput
                         style={styles.passwordInput}
                         placeholder="Contraseña"
@@ -507,7 +557,11 @@ export default function RegisterScreen() {
                         onPress={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        <Icon name={showPassword ? "visibility" : "visibility-off"} size={20} color="#9CA3AF" />
+                        <Icon
+                          name={showPassword ? "visibility" : "visibility-off"}
+                          size={20}
+                          color={isLoading ? "#D1D5DB" : "#9CA3AF"}
+                        />
                       </TouchableOpacity>
                     </View>
                     <PasswordRequirements password={password} />
@@ -516,7 +570,13 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Confirmar contraseña</Text>
-                    <View style={[styles.passwordContainer, confirmPasswordError ? styles.inputError : null]}>
+                    <View
+                      style={[
+                        styles.passwordContainer,
+                        confirmPasswordError ? styles.inputError : null,
+                        isLoading && styles.inputDisabled,
+                      ]}
+                    >
                       <TextInput
                         style={styles.passwordInput}
                         placeholder="Confirmar contraseña"
@@ -532,7 +592,11 @@ export default function RegisterScreen() {
                         onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                         disabled={isLoading}
                       >
-                        <Icon name={showConfirmPassword ? "visibility" : "visibility-off"} size={20} color="#9CA3AF" />
+                        <Icon
+                          name={showConfirmPassword ? "visibility" : "visibility-off"}
+                          size={20}
+                          color={isLoading ? "#D1D5DB" : "#9CA3AF"}
+                        />
                       </TouchableOpacity>
                     </View>
                     {confirmPasswordError ? (
@@ -546,12 +610,18 @@ export default function RegisterScreen() {
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Fecha de nacimiento</Text>
-                    <TouchableOpacity onPress={() => !isLoading && setShowDatePicker(true)}>
-                      <View style={[styles.inputWithIcon, fechaError ? styles.inputError : null]}>
+                    <TouchableOpacity onPress={() => !isLoading && setShowDatePicker(true)} disabled={isLoading}>
+                      <View
+                        style={[
+                          styles.inputWithIcon,
+                          fechaError ? styles.inputError : null,
+                          isLoading && styles.inputDisabled,
+                        ]}
+                      >
                         <Text style={[styles.inputText, !fechaNacimiento && styles.placeholderText]}>
                           {fechaNacimiento || "DD/MM/AAAA"}
                         </Text>
-                        <Icon name="calendar-today" size={20} color="#9CA3AF" />
+                        <Icon name="calendar-today" size={20} color={isLoading ? "#D1D5DB" : "#9CA3AF"} />
                       </View>
                     </TouchableOpacity>
                     {fechaError ? <Text style={styles.errorText}>{fechaError}</Text> : null}
@@ -582,10 +652,18 @@ export default function RegisterScreen() {
                           }}
                           disabled={isLoading}
                         >
-                          <View style={[styles.checkbox, genero === item && styles.checkboxSelected]}>
+                          <View
+                            style={[
+                              styles.checkbox,
+                              genero === item && styles.checkboxSelected,
+                              isLoading && styles.checkboxDisabled,
+                            ]}
+                          >
                             {genero === item && <Icon name="check" size={16} color="white" />}
                           </View>
-                          <Text style={styles.checkboxLabel}>{item.charAt(0).toUpperCase() + item.slice(1)}</Text>
+                          <Text style={[styles.checkboxLabel, isLoading && styles.textDisabled]}>
+                            {item.charAt(0).toUpperCase() + item.slice(1)}
+                          </Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -595,14 +673,20 @@ export default function RegisterScreen() {
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Situación laboral</Text>
                     <TouchableOpacity
-                      style={styles.selectButton}
+                      style={[styles.selectButton, isLoading && styles.inputDisabled]}
                       onPress={() => !isLoading && setShowSituacionModal(true)}
                       disabled={isLoading}
                     >
-                      <Text style={[styles.selectText, !situacionLaboral && styles.selectPlaceholder]}>
+                      <Text
+                        style={[
+                          styles.selectText,
+                          !situacionLaboral && styles.selectPlaceholder,
+                          isLoading && styles.textDisabled,
+                        ]}
+                      >
                         {situacionLaboral || "Seleccionar situación laboral"}
                       </Text>
-                      <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
+                      <Icon name="keyboard-arrow-down" size={24} color={isLoading ? "#D1D5DB" : "#6B7280"} />
                     </TouchableOpacity>
                     {situacionLaboralError ? <Text style={styles.errorText}>{situacionLaboralError}</Text> : null}
                   </View>
@@ -626,7 +710,7 @@ export default function RegisterScreen() {
                   <View style={styles.footerContainer}>
                     <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
                     <TouchableOpacity onPress={handleBackToLogin} disabled={isLoading}>
-                      <Text style={styles.footerLink}>Iniciar sesión</Text>
+                      <Text style={[styles.footerLink, isLoading && styles.textDisabled]}>Iniciar sesión</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -675,6 +759,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 16,
+    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
@@ -735,6 +820,10 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: "#EF4444",
     borderWidth: 2,
+  },
+  inputDisabled: {
+    backgroundColor: "#F9FAFB",
+    opacity: 0.6,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -812,10 +901,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     borderColor: "#3B82F6",
   },
+  checkboxDisabled: {
+    opacity: 0.5,
+  },
   checkboxLabel: {
     fontSize: 14,
     color: "#374151",
     flex: 1,
+  },
+  textDisabled: {
+    color: "#9CA3AF",
   },
   selectButton: {
     backgroundColor: "white",

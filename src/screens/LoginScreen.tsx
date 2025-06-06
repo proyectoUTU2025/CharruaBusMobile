@@ -15,6 +15,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from "react-native"
@@ -38,30 +39,37 @@ export default function LoginScreen({ navigation }: Props) {
 
   // Redirige si ya está autenticado
   useEffect(() => {
+    console.log("LoginScreen - Estado de autenticación:", isAuthenticated)
     if (isAuthenticated) {
-      // Navega a la pantalla principal o dashboard
-      navigation.replace("Main") // Ajusta según tu estructura de navegación
+      console.log("Usuario autenticado, navegando a Main")
+      navigation.replace("Main")
     }
   }, [isAuthenticated, navigation])
 
   // Limpia errores cuando el componente se monta o cuando cambian los inputs
   useEffect(() => {
     if (error) {
+      console.log("Limpiando error del contexto")
       clearError()
     }
     if (networkError) {
+      console.log("Limpiando error de red")
       setNetworkError("")
     }
   }, [email, password])
 
   const validateEmail = (value: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    setEmailError(emailRegex.test(value) ? "" : "Formato de correo no válido")
+    const isValid = emailRegex.test(value)
+    console.log("Validando email:", value, "válido:", isValid)
+    setEmailError(isValid ? "" : "Formato de correo no válido")
     setEmail(value)
   }
 
   const validatePassword = (value: string) => {
-    setPasswordError(value.length < 1 ? "La contraseña es obligatoria" : "")
+    const isValid = value.length >= 1
+    console.log("Validando contraseña, longitud:", value.length, "válida:", isValid)
+    setPasswordError(isValid ? "" : "La contraseña es obligatoria")
     setPassword(value)
   }
 
@@ -100,6 +108,7 @@ export default function LoginScreen({ navigation }: Props) {
   }
 
   const handleLogin = async () => {
+    console.log("Iniciando proceso de login")
     clearError()
     setNetworkError("")
 
@@ -107,25 +116,31 @@ export default function LoginScreen({ navigation }: Props) {
     let hasErrors = false
 
     if (!email.trim()) {
+      console.log("Error: Email vacío")
       setEmailError("El correo electrónico es obligatorio")
       hasErrors = true
     } else if (emailError) {
+      console.log("Error: Email con formato inválido")
       hasErrors = true
     }
 
     if (!password.trim()) {
+      console.log("Error: Contraseña vacía")
       setPasswordError("La contraseña es obligatoria")
       hasErrors = true
     }
 
     if (hasErrors) {
+      console.log("Errores de validación encontrados, cancelando login")
       return
     }
 
     setIsLoading(true)
+    console.log("Llamando al servicio de login...")
 
     try {
       await login(email.trim(), password)
+      console.log("Login exitoso")
       // Si llegamos aquí, el login fue exitoso
       // La navegación se manejará automáticamente por el useEffect que escucha isAuthenticated
     } catch (error: any) {
@@ -156,14 +171,16 @@ export default function LoginScreen({ navigation }: Props) {
   }
 
   const handleRegister = () => {
-    if (!isLoading && !loading) {
+    if (!isFormDisabled) {
+      console.log("Navegando a Register")
       navigation.navigate("Register")
     }
   }
 
   const handleForgotPassword = () => {
-    if (!isLoading && !loading) {
-      Alert.alert("Recuperar contraseña", "Esta funcionalidad estará disponible próximamente.", [{ text: "OK" }])
+    if (!isFormDisabled) {
+      console.log("Navegando a RecoverPassword")
+      navigation.navigate("RecoverPassword")
     }
   }
 
@@ -178,102 +195,112 @@ export default function LoginScreen({ navigation }: Props) {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardAvoidingView}
           >
-            <View style={styles.cardContainer}>
-              <View style={styles.logoContainer}>
-                <Image source={require("../assets/CharruaBusLogo.png")} style={styles.logoImage} resizeMode="contain" />
-              </View>
-
-              <Text style={styles.welcomeText}>Bienvenido</Text>
-
-              {/* Mostrar error general si existe */}
-              {(error || networkError) && (
-                <View style={styles.errorContainer}>
-                  <Icon name="error-outline" size={20} color="#EF4444" />
-                  <Text style={styles.generalErrorText}>{error || networkError}</Text>
-                </View>
-              )}
-
-              <View style={styles.formContainer}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Correo electrónico</Text>
-                  <TextInput
-                    style={[styles.input, emailError && styles.inputInvalid, isFormDisabled && styles.inputDisabled]}
-                    placeholder="Correo electrónico"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={validateEmail}
-                    editable={!isFormDisabled}
+            <ScrollView
+              contentContainerStyle={styles.scrollViewContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.cardContainer}>
+                <View style={styles.logoContainer}>
+                  <Image
+                    source={require("../assets/CharruaBusLogo.png")}
+                    style={styles.logoImage}
+                    resizeMode="contain"
                   />
-                  {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Contraseña</Text>
-                  <View
-                    style={[
-                      styles.passwordContainer,
-                      passwordError && styles.inputInvalid,
-                      isFormDisabled && styles.inputDisabled,
-                    ]}
-                  >
+                <Text style={styles.welcomeText}>Bienvenido</Text>
+
+                {/* Mostrar error general si existe */}
+                {(error || networkError) && (
+                  <View style={styles.errorContainer}>
+                    <Icon name="error-outline" size={20} color="#EF4444" />
+                    <Text style={styles.generalErrorText}>{error || networkError}</Text>
+                  </View>
+                )}
+
+                <View style={styles.formContainer}>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Correo electrónico</Text>
                     <TextInput
-                      style={styles.passwordInput}
-                      placeholder="Contraseña"
+                      style={[styles.input, emailError && styles.inputInvalid, isFormDisabled && styles.inputDisabled]}
+                      placeholder="Correo electrónico"
                       placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showPassword}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                       autoCorrect={false}
-                      value={password}
-                      onChangeText={validatePassword}
+                      value={email}
+                      onChangeText={validateEmail}
                       editable={!isFormDisabled}
                     />
-                    <TouchableOpacity
-                      style={styles.eyeIcon}
-                      onPress={() => setShowPassword(!showPassword)}
-                      disabled={isFormDisabled}
+                    {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Contraseña</Text>
+                    <View
+                      style={[
+                        styles.passwordContainer,
+                        passwordError && styles.inputInvalid,
+                        isFormDisabled && styles.inputDisabled,
+                      ]}
                     >
-                      <Icon
-                        name={showPassword ? "visibility-off" : "visibility"}
-                        size={24}
-                        color={isFormDisabled ? "#D1D5DB" : "#6B7280"}
+                      <TextInput
+                        style={styles.passwordInput}
+                        placeholder="Contraseña"
+                        placeholderTextColor="#9CA3AF"
+                        secureTextEntry={!showPassword}
+                        autoCorrect={false}
+                        value={password}
+                        onChangeText={validatePassword}
+                        editable={!isFormDisabled}
                       />
+                      <TouchableOpacity
+                        style={styles.eyeIcon}
+                        onPress={() => setShowPassword(!showPassword)}
+                        disabled={isFormDisabled}
+                      >
+                        <Icon
+                          name={showPassword ? "visibility-off" : "visibility"}
+                          size={24}
+                          color={isFormDisabled ? "#D1D5DB" : "#6B7280"}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.loginButton, isFormDisabled && styles.loginButtonDisabled]}
+                    activeOpacity={0.8}
+                    onPress={handleLogin}
+                    disabled={isFormDisabled}
+                  >
+                    {isFormDisabled ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color="white" />
+                        <Text style={[styles.loginButtonText, styles.loadingText]}>
+                          {isLoading ? "Iniciando sesión..." : "Cargando..."}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={styles.footerContainer}>
+                    <TouchableOpacity onPress={handleRegister} disabled={isFormDisabled}>
+                      <Text style={[styles.footerLink, isFormDisabled && styles.disabledLink]}>Registrarse</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleForgotPassword} disabled={isFormDisabled}>
+                      <Text style={[styles.footerLink, isFormDisabled && styles.disabledLink]}>
+                        ¿Olvidaste tu contraseña?
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                  {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.loginButton, isFormDisabled && styles.loginButtonDisabled]}
-                  activeOpacity={0.8}
-                  onPress={handleLogin}
-                  disabled={isFormDisabled}
-                >
-                  {isFormDisabled ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="small" color="white" />
-                      <Text style={[styles.loginButtonText, styles.loadingText]}>
-                        {isLoading ? "Iniciando sesión..." : "Cargando..."}
-                      </Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.loginButtonText}>Iniciar sesión</Text>
-                  )}
-                </TouchableOpacity>
-
-                <View style={styles.footerContainer}>
-                  <TouchableOpacity onPress={handleRegister} disabled={isFormDisabled}>
-                    <Text style={[styles.footerLink, isFormDisabled && styles.disabledLink]}>Registrarse</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleForgotPassword} disabled={isFormDisabled}>
-                    <Text style={[styles.footerLink, isFormDisabled && styles.disabledLink]}>
-                      ¿Olvidaste tu contraseña?
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </ImageBackground>
@@ -282,18 +309,23 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
   backgroundImage: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   keyboardAvoidingView: {
     flex: 1,
     width: "100%",
+  },
+  scrollViewContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
+    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
@@ -365,7 +397,6 @@ const styles = StyleSheet.create({
   inputInvalid: {
     borderColor: "#EF4444",
   },
-  // Nuevo estilo para campos deshabilitados
   inputDisabled: {
     backgroundColor: "#F9FAFB",
     opacity: 0.6,
