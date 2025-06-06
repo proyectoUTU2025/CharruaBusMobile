@@ -1,3 +1,4 @@
+
 "use client"
 
 // AuthContext.tsx - Versión combinada con todas las funcionalidades
@@ -136,12 +137,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error en login:", errorMessage)
       setError(errorMessage)
       throw error // Re-lanzar para mantener compatibilidad con versión 2
+
     } finally {
       setLoading(false)
     }
   }
 
   const logout = async () => {
+
     console.log("Logout con servicio real y limpieza completa llamado")
     try {
       setLoading(true)
@@ -164,6 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setToken(null)
       setUser(null)
+
     } finally {
       setLoading(false)
     }
@@ -198,6 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const checkToken = async () => {
+
     console.log("checkToken iniciado con verificación JWT")
     try {
       const storedToken = await AsyncStorage.getItem("authToken")
@@ -231,11 +236,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       console.log("checkToken finalizando, estableciendo isAuthLoading = false")
       setIsAuthLoading(false)
+
     }
   }
 
   // Efecto para verificar la expiración del token periódicamente
   useEffect(() => {
+
     if (!user || !token) return
 
     console.log("Configurando verificación periódica de expiración de token")
@@ -270,9 +277,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     error,
   })
 
+
+  console.log('AuthProvider valores actuales:', {
+    token: token ? 'existe' : 'null',
+    isAuthenticated: !!token,
+    isAuthLoading,
+    loading,
+    error
+  });
+
   return (
     <AuthContext.Provider
       value={{
+
         isAuthenticated: !!token && !!user,
         login,
         logout,
@@ -283,6 +300,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         clearError,
         isAuthLoading,
         refreshUserInfo,
+
       }}
     >
       {children}
@@ -291,9 +309,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 }
 
 export const useAuth = (): AuthContextType => {
+
   const context = useContext(AuthContext)
   if (context === null) {
     throw new Error("useAuth debe usarse dentro de un AuthProvider")
+
   }
   return context
 }

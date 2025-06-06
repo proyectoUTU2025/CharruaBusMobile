@@ -1,3 +1,4 @@
+
 "use client"
 
 import type React from "react"
@@ -188,9 +189,11 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onLoadingComplete, onErro
   )
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+
     backgroundColor: "#4a6572",
     justifyContent: "center",
     alignItems: "center",
@@ -315,3 +318,4 @@ const styles = StyleSheet.create({
 })
 
 export default LoadingScreen
+

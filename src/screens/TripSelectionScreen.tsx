@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ImageBackground } from "react-native"
-import { RoundTrip } from "./RoundTrip"
-import { OneWayTrip } from "./OneWayTrip"
+import { RoundTrip } from "./RoundTripScreen"
+import { OneWayTripScreen } from "./OneWayTripScreen"
 import Icon from "react-native-vector-icons/MaterialIcons"
 
 type TipoViaje = "ida" | "ida-vuelta" | null
@@ -9,17 +9,23 @@ type TipoViaje = "ida" | "ida-vuelta" | null
 interface TripSelectionScreenProps {
   activeTab?: string;
   onTabPress?: (tab: string) => void;
+  onNavigateToOneWay?: () => void;
+  onNavigateToRoundTrip?: () => void;
 }
 
-export function TripSelectionScreen({ activeTab, onTabPress }: TripSelectionScreenProps) {
+export function TripSelectionScreen({ activeTab, onTabPress, onNavigateToOneWay, onNavigateToRoundTrip }: TripSelectionScreenProps) {
   const [tipoViaje, setTipoViaje] = useState<TipoViaje>(null)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
 
-  const handleContinuar = () => {
-    if (tipoViaje) {
-      setMostrarFormulario(true)
-    }
+const handleContinuar = () => {
+  if (tipoViaje === "ida" && onNavigateToOneWay) {
+    onNavigateToOneWay();
+  } else if (tipoViaje === "ida-vuelta" && onNavigateToRoundTrip) {
+    onNavigateToRoundTrip();
+  } else if (tipoViaje) {
+    setMostrarFormulario(true);
   }
+}
 
   const handleVolver = () => {
     setMostrarFormulario(false)
@@ -29,9 +35,9 @@ export function TripSelectionScreen({ activeTab, onTabPress }: TripSelectionScre
     return <RoundTrip onVolver={handleVolver} />
   }
 
-  if (mostrarFormulario && tipoViaje === "ida") {
-    return <OneWayTrip onVolver={handleVolver} />
-  }
+    if (mostrarFormulario && tipoViaje === "ida") {
+      return <OneWayTripScreen onGoBack={handleVolver} />
+    }
 
   return (
     <ImageBackground 

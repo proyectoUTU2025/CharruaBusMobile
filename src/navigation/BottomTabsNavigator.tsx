@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -61,6 +62,7 @@ const BottomTabsNavigator = () => {
     montoMin: undefined,
     montoMax: undefined,
   })
+
 
   // Datos de ejemplo para las notificaciones
   const [notifications, setNotifications] = useState([
@@ -175,12 +177,49 @@ const BottomTabsNavigator = () => {
     }
   }
 
+  // Función para volver al estado de pestañas
+  const navigateToTab = (tab: string) => {
+    setNavigationState({ type: 'tab', activeTab: tab });
+  };
+
+  // Función para navegar a viaje de ida
+  const navigateToOneWayTrip = () => {
+    setNavigationState({ type: 'oneWayTrip' });
+  };
+
+  // Función para navegar a ver viajes
+  const navigateToViewTrips = (params: ViewTripsParams) => {
+    setNavigationState({ type: 'viewTrips', params });
+  };
+
+ const navigateToSelectSeat = (params: any) => {
+  console.log('=== navigateToSelectSeat called ===');
+  console.log('Params received:', params);
+  setNavigationState({ type: 'selectSeat', params });
+  console.log('Navigation state updated to selectSeat');
+};
+
+  // Función para volver desde cualquier pantalla
+  // Actualizar la función goBack
+  const goBack = () => {
+    if (navigationState.type === 'selectSeat') {
+      // Si estamos en SelectSeat, volver a ViewTrips
+      // Necesitarías guardar los parámetros de ViewTrips, por ahora volvemos a OneWayTrip
+      setNavigationState({ type: 'oneWayTrip' });
+    } else if (navigationState.type === 'viewTrips') {
+      setNavigationState({ type: 'oneWayTrip' });
+    } else if (navigationState.type === 'oneWayTrip') {
+      setNavigationState({ type: 'tab', activeTab: 'viajes' });
+    }
+  };
+
   const handleLogout = () => {
     console.log("Cerrando sesión")
     logout()
   }
 
   const handleTabPress = (tab: string) => {
+
     console.log("Tab presionado:", tab)
     navigateToTab(tab)
 
@@ -198,6 +237,7 @@ const BottomTabsNavigator = () => {
 
     if (tab === "historial") {
       console.log("Navegando a historial de compras")
+
     }
   }
 
@@ -273,6 +313,7 @@ const BottomTabsNavigator = () => {
     return true
   }
 
+
   // Función de renderizado combinada
   const renderContent = () => {
     console.log("=== renderContent called ===")
@@ -343,6 +384,76 @@ const BottomTabsNavigator = () => {
         return <MainScreen />
     }
   }
+
+
+  const renderContent = () => {
+  console.log('=== renderContent called ===');
+  console.log('Current navigation state:', navigationState);
+  switch (navigationState.type) {
+    case 'viewTrips':
+      return (
+        <ViewTripsScreen 
+          route={{ params: navigationState.params }}
+          navigation={{ 
+            goBack, 
+            navigate: navigateToSelectSeat // Agregar esta línea
+          }}
+          onGoBack={goBack}
+        />
+      );
+    case 'oneWayTrip':
+      return (
+        <OneWayTripScreen 
+          onGoBack={goBack}
+          onNavigateToViewTrips={navigateToViewTrips}
+        />
+      );
+    case 'selectSeat':
+          console.log('Rendering SelectSeatScreen');
+          return (
+            <SelectSeatScreen 
+              route={{ params: navigationState.params }}
+              navigation={{ goBack }}
+            />
+          );
+    case 'viewTrips':
+      return (
+        <ViewTripsScreen 
+          route={{ params: navigationState.params }}
+          navigation={{ goBack, navigate: navigateToSelectSeat }} // Actualizar para pasar navigate
+          onGoBack={goBack}
+        />
+      ); 
+    case 'tab':
+      switch (navigationState.activeTab) {
+        case "inicio":
+          return <MainScreen />;
+        case "viajes":
+          return (
+            <TripSelectionScreen 
+              activeTab={navigationState.activeTab}
+              onTabPress={handleTabPress}
+              onNavigateToOneWay={navigateToOneWayTrip}
+              onNavigateToRoundTrip={() => console.log('RoundTrip pendiente')}
+            />
+          );
+    case "historial":
+      return (
+        <View style={styles.placeholderContainer}>
+          <Icon name="history" size={64} color="#CAC4D0" />
+          <Text style={styles.placeholderTitle}>Historial de Compras</Text>
+          <Text style={styles.placeholderSubtitle}>
+            Aquí podrás ver todas tus compras anteriores
+          </Text>
+        </View>
+      );
+    default:
+      return <MainScreen />;
+    }
+    default:
+      return <MainScreen />;
+  }
+};
 
   const MenuDropdown = () => (
     <Modal visible={menuVisible} transparent={true} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
@@ -447,19 +558,25 @@ const BottomTabsNavigator = () => {
 
   const currentActiveTab = getCurrentActiveTab()
 
+  const currentActiveTab = getCurrentActiveTab();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
 
       {/* Barra Superior */}
       <View style={styles.topAppBar}>
+
         <TouchableOpacity style={styles.menuButton} onPress={toggleMenu} activeOpacity={0.7}>
+
           <Icon name="menu" size={24} color="white" />
         </TouchableOpacity>
 
         <View style={styles.titleContainer} />
 
+
         <TouchableOpacity style={styles.notificationButton} onPress={toggleNotifications} activeOpacity={0.7}>
+
           <Icon name="notifications" size={24} color="white" />
           {getUnreadNotificationsCount() > 0 && (
             <View style={styles.notificationBadge}>
@@ -482,6 +599,7 @@ const BottomTabsNavigator = () => {
             onPress={() => handleTabPress("inicio")}
             activeOpacity={0.7}
           >
+
             <View
               style={[styles.navigationIndicator, currentActiveTab === "inicio" && styles.activeNavigationIndicator]}
             >
@@ -490,6 +608,7 @@ const BottomTabsNavigator = () => {
             <Text style={[styles.navigationLabel, currentActiveTab === "inicio" && styles.activeNavigationLabel]}>
               Inicio
             </Text>
+
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -497,6 +616,7 @@ const BottomTabsNavigator = () => {
             onPress={() => handleTabPress("viajes")}
             activeOpacity={0.7}
           >
+
             <View
               style={[styles.navigationIndicator, currentActiveTab === "viajes" && styles.activeNavigationIndicator]}
             >
@@ -505,6 +625,7 @@ const BottomTabsNavigator = () => {
             <Text style={[styles.navigationLabel, currentActiveTab === "viajes" && styles.activeNavigationLabel]}>
               Viajes
             </Text>
+
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -512,6 +633,7 @@ const BottomTabsNavigator = () => {
             onPress={() => handleTabPress("historial")}
             activeOpacity={0.7}
           >
+
             <View
               style={[styles.navigationIndicator, currentActiveTab === "historial" && styles.activeNavigationIndicator]}
             >
@@ -520,6 +642,7 @@ const BottomTabsNavigator = () => {
             <Text style={[styles.navigationLabel, currentActiveTab === "historial" && styles.activeNavigationLabel]}>
               Historial
             </Text>
+
           </TouchableOpacity>
         </View>
       )}
@@ -530,6 +653,7 @@ const BottomTabsNavigator = () => {
     </SafeAreaView>
   )
 }
+
 
 // Estilos combinados de ambas versiones
 const styles = StyleSheet.create({
@@ -546,6 +670,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     elevation: 4,
     shadowColor: "#000",
+
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -558,6 +683,7 @@ const styles = StyleSheet.create({
   },
   notificationButton: {
     padding: 8,
+
     position: "relative",
   },
   notificationBadge: {
@@ -575,11 +701,13 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "bold",
+
   },
   mainContent: {
     flex: 1,
   },
   navigationBar: {
+
     flexDirection: "row",
     backgroundColor: "white",
     paddingVertical: 8,
@@ -587,14 +715,17 @@ const styles = StyleSheet.create({
     borderTopColor: "#E5E7EB",
     elevation: 8,
     shadowColor: "#000",
+
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   navigationItem: {
     flex: 1,
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 8,
+
+
   },
   activeNavigationItem: {},
   navigationIndicator: {
@@ -602,17 +733,38 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   activeNavigationIndicator: {
+
     backgroundColor: "#E0F2FE",
   },
   navigationLabel: {
     fontSize: 12,
     color: "#49454F",
+
     marginTop: 4,
   },
   activeNavigationLabel: {
-    color: "#3B82F6",
-    fontWeight: "600",
+    color: '#3B82F6',
+    fontWeight: '600',
   },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  placeholderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 16,
+  },
+  placeholderSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
   placeholderContainer: {
     flex: 1,
     justifyContent: "center",
@@ -651,19 +803,24 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: "white",
+
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
     padding: 16,
     elevation: 8,
+
     shadowColor: "#000",
+
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   menuHeader: {
+
     flexDirection: "row",
     alignItems: "center",
+
     marginBottom: 16,
   },
   avatarContainer: {
@@ -673,31 +830,37 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+
     backgroundColor: "#E0F2FE",
     justifyContent: "center",
     alignItems: "center",
+
   },
   userInfoContainer: {
     flex: 1,
   },
   greetingText: {
     fontSize: 16,
+
     fontWeight: "bold",
     color: "#1F2937",
   },
   userEmailText: {
     fontSize: 14,
     color: "#6B7280",
+
     marginTop: 2,
   },
   menuDivider: {
     height: 1,
+
     backgroundColor: "#E5E7EB",
     marginVertical: 8,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
+
     paddingVertical: 12,
     paddingHorizontal: 8,
   },
@@ -706,42 +869,53 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
+
     color: "#49454F",
   },
   notificationsContainer: {
     backgroundColor: "white",
+
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
     maxHeight: 400,
     elevation: 8,
+
     shadowColor: "#000",
+
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   notificationsHeader: {
+
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+
     padding: 16,
   },
   notificationsTitle: {
     fontSize: 18,
+
     fontWeight: "bold",
     color: "#1F2937",
+
   },
   markAllReadButton: {
     padding: 8,
   },
   markAllReadText: {
     fontSize: 14,
+
     color: "#3B82F6",
+
   },
   notificationsList: {
     maxHeight: 300,
   },
   notificationItem: {
+
     flexDirection: "row",
     padding: 16,
     borderBottomWidth: 1,
@@ -752,11 +926,14 @@ const styles = StyleSheet.create({
   },
   notificationIconContainer: {
     position: "relative",
+
     marginRight: 12,
     padding: 8,
   },
   unreadDot: {
+
     position: "absolute",
+
     top: 4,
     right: 4,
     width: 8,
@@ -769,6 +946,7 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
+
     color: "#1F2937",
     marginBottom: 4,
   },
@@ -778,19 +956,24 @@ const styles = StyleSheet.create({
   notificationMessage: {
     fontSize: 14,
     color: "#6B7280",
+
     marginBottom: 4,
   },
   notificationTime: {
     fontSize: 12,
+
     color: "#9CA3AF",
   },
   emptyNotifications: {
     alignItems: "center",
+
     padding: 32,
   },
   emptyNotificationsText: {
     fontSize: 16,
+
     color: "#6B7280",
+
     marginTop: 16,
   },
 })

@@ -18,44 +18,21 @@ import {
   ActivityIndicator,
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
-import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native"
-import type { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack"
-import type { RootStackParamList } from "../navigation/AppNavigator"
-import { verifyEmailCode, resendVerificationCode } from "../services/authService"
 
-// Tipos para navegación (compatibilidad con ambas versiones)
-type VerifyEmailRouteProp = RouteProp<RootStackParamList, "VerifyEmail">
-type VerifyEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, "VerifyEmail">
-type Props = NativeStackScreenProps<RootStackParamList, "VerifyEmail">
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { RootStackParamList } from '../navigation/AppNavigator'
+import { verifyEmailCode, /*resendVerificationCode*/ } from '../services/authService'
 
-interface VerifyEmailScreenProps {
-  navigation?: VerifyEmailNavigationProp
-  route?: VerifyEmailRouteProp
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'VerifyEmail'>
 
-export default function VerifyEmailScreen({ navigation: propNavigation, route: propRoute }: VerifyEmailScreenProps) {
-  // Soporte para ambos tipos de navegación (hooks y props)
-  const hookNavigation = useNavigation<VerifyEmailNavigationProp>()
-  const hookRoute = useRoute<VerifyEmailRouteProp>()
+export default function VerificarCorreoScreen({ navigation, route }: Props) {
+  const email = route.params?.email || (() => {
+    console.error('Email parameter missing in VerifyEmail screen')
+    navigation.goBack()
+    return ''
+  })()
+  
 
-  const navigation = propNavigation || hookNavigation
-  const route = propRoute || hookRoute
-
-  // Manejo robusto del parámetro email
-  const email =
-    route.params?.email ||
-    (() => {
-      console.error("Email parameter missing in VerifyEmail screen")
-      Alert.alert("Error", "Parámetro de email faltante", [
-        {
-          text: "Volver",
-          onPress: () => navigation.goBack(),
-        },
-      ])
-      return "usuario@email.com" // Fallback
-    })()
-
-  // Estados del componente
   const [codigo, setCodigo] = useState("")
   const [codigoError, setCodigoError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -123,11 +100,12 @@ export default function VerifyEmailScreen({ navigation: propNavigation, route: p
   }
 
   const handleVerificar = async () => {
-    console.log("Iniciando verificación de código")
+
     // Limpiar errores previos
     setCodigoError("")
+    
+    //Valida que el código tenga 6 dígitos
 
-    // Validaciones locales
     if (!codigo.trim()) {
       setCodigoError("El código es obligatorio")
       return
@@ -141,56 +119,54 @@ export default function VerifyEmailScreen({ navigation: propNavigation, route: p
     setIsLoading(true)
 
     try {
-      console.log("Llamando a verifyEmailCode...")
-      const response = await verifyEmailCode(email, codigo)
-      console.log("Verificación exitosa")
 
-      Alert.alert("Verificación exitosa", "Tu correo ha sido verificado correctamente", [
-        {
-          text: "Continuar",
-          onPress: () => navigation.navigate("Login"),
-        },
-      ])
-    } catch (error: any) {
-      console.log("Error en verificación:", error.message)
-      const errorMessage = handleNetworkError(error)
-
-      // Manejo específico de errores
-      if (error.message?.includes("inválido") || error.message?.includes("400")) {
-        setCodigoError("Código de verificación inválido")
-        setCodigo("")
-      } else if (error.message?.includes("expirado") || error.message?.includes("410")) {
-        setCodigoError("El código ha expirado. Solicita uno nuevo")
-        setCodigo("")
-      } else if (error.message?.includes("Usuario no encontrado") || error.message?.includes("404")) {
-        Alert.alert("Error", "Usuario no encontrado o email no registrado", [
-          {
-            text: "Volver al registro",
-            onPress: () => navigation.goBack(),
-          },
-        ])
-      } else if (error.message?.includes("Demasiados intentos") || error.message?.includes("429")) {
-        Alert.alert("Error", "Demasiados intentos. Espera antes de intentar nuevamente")
-      } else if (error.message?.includes("Network request failed") || error.message?.includes("timeout")) {
-        Alert.alert("Error de conexión", errorMessage, [
-          {
-            text: "Reintentar",
-            onPress: () => handleVerificar(),
-          },
-          {
-            text: "Cancelar",
-            style: "cancel",
-          },
-        ])
-      } else {
-        // Para otros errores, mostrar en el campo si es específico del código
-        if (errorMessage.includes("código") || errorMessage.includes("inválido")) {
-          setCodigoError(errorMessage)
+      // Doble try-catch para manejar errores sin propagación
+      try {
+        const response = await verifyEmailCode(email, codigo)
+        
+        Alert.alert(
+          "Verificación exitosa", 
+          "Tu correo ha sido verificado correctamente",
+          [
+            {
+              text: "Continuar",
+              onPress: () => navigation.navigate("Login")
+            }
+          ]
+        )
+      } catch (verifyError: any) {
+        console.log("Error capturado en verificación:", verifyError.message)
+        
+        // Manejar errores específicos y mostrarlos en la UI
+        if (verifyError.message && verifyError.message.includes('inválido')) {
+          setCodigoError("Código de verificación inválido")
           setCodigo("")
+        } else if (verifyError.message && verifyError.message.includes('expirado')) {
+          setCodigoError("El código ha expirado. Solicita uno nuevo")
+          setCodigo("")
+        } else if (verifyError.message && verifyError.message.includes('Usuario no encontrado')) {
+          Alert.alert("Error", "Usuario no encontrado o email no registrado")
+        } else if (verifyError.message && verifyError.message.includes('Demasiados intentos')) {
+          Alert.alert("Error", "Demasiados intentos. Espera antes de intentar nuevamente")
+        } else if (verifyError.message && verifyError.message.includes('Error de conexión')) {
+          Alert.alert("Error de conexión", "No se pudo conectar al servidor. Verifica tu internet")
         } else {
-          Alert.alert("Error", errorMessage)
+          // Para otros errores, mostrar en el campo o como alerta
+          if (verifyError.message) {
+            setCodigoError(verifyError.message)
+          } else {
+            Alert.alert("Error", "Error inesperado al verificar el código")
+          }
         }
+        
+        // NO hacer throw aquí - esto es clave
+        return; // Salir sin propagar el error
       }
+
+    } catch (outerError: any) {
+      // Este catch nunca debería ejecutarse ahora
+      console.log("Error externo capturado:", outerError.message)
+      Alert.alert("Error", "Error inesperado")
     } finally {
       setIsLoading(false)
     }
@@ -236,8 +212,14 @@ export default function VerifyEmailScreen({ navigation: propNavigation, route: p
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
+
+      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+      <ImageBackground 
+        source={require("../assets/background.png")} 
+        style={styles.backgroundImage} 
+        resizeMode="cover"
+      >
+
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}

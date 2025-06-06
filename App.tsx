@@ -1,3 +1,4 @@
+
 "use client"
 
 import type React from "react"
@@ -111,6 +112,7 @@ const App: React.FC = () => {
             }
           } catch (error) {
             console.error("Error al procesar notificación:", error)
+
           }
         })
 
@@ -127,6 +129,7 @@ const App: React.FC = () => {
     const handleNotificationData = (data: any) => {
       try {
         console.log("Procesando datos de notificación:", data)
+
 
         // Ejemplos de manejo de diferentes tipos de notificaciones
         if (data.type) {
@@ -173,11 +176,14 @@ const App: React.FC = () => {
         console.log("Cleanup completado")
       } catch (error) {
         console.error("Error durante cleanup:", error)
+
       }
     }
   }, [])
 
+
   console.log("Renderizando componente App")
+
 
   return (
     <PaperProvider>

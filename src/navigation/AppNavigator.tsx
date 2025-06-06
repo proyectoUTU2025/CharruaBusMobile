@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -31,6 +32,7 @@ export type RootStackParamList = {
   // Rutas principales
   Main: undefined
 
+
   // Rutas de viajes
   TripSelection: undefined
   OneWayTrip: undefined
@@ -47,6 +49,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 const AppNavigator = () => {
+
   // Combinando estados de autenticación de ambas versiones
   const { isAuthenticated, isAuthLoading, checkAuthStatus } = useAuth()
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -105,13 +108,17 @@ const AppNavigator = () => {
         </Stack.Navigator>
       </NavigationContainer>
     )
+
   }
 
+  // Una vez que terminó la verificación, mostrar las rutas correspondientes
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
+
           // Usuario autenticado - mostrar navegación principal y rutas de viajes
+
           <>
             <Stack.Screen name="Main" component={BottomTabsNavigator} />
             <Stack.Screen name="TripSelection" component={BottomTabsNavigator} />

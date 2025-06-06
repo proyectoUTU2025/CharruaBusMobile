@@ -15,6 +15,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -27,6 +28,7 @@ import { useAuth } from "../context/AuthContext"
 type Props = NativeStackScreenProps<RootStackParamList, "Login">
 
 export default function LoginScreen({ navigation }: Props) {
+
   const [email, setEmail] = useState("")
   const [emailError, setEmailError] = useState("")
   const [password, setPassword] = useState("")
@@ -41,10 +43,12 @@ export default function LoginScreen({ navigation }: Props) {
   useEffect(() => {
     console.log("LoginScreen - Estado de autenticación:", isAuthenticated)
     if (isAuthenticated) {
+
       console.log("Usuario autenticado, navegando a Main")
       navigation.replace("Main")
     }
   }, [isAuthenticated, navigation])
+
 
   // Limpia errores cuando el componente se monta o cuando cambian los inputs
   useEffect(() => {
@@ -112,8 +116,10 @@ export default function LoginScreen({ navigation }: Props) {
     clearError()
     setNetworkError("")
 
+
     // Validaciones locales
     let hasErrors = false
+
 
     if (!email.trim()) {
       console.log("Error: Email vacío")
@@ -188,6 +194,7 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ImageBackground source={require("../assets/background.png")} style={styles.backgroundImage} resizeMode="cover">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -208,6 +215,8 @@ export default function LoginScreen({ navigation }: Props) {
                     resizeMode="contain"
                   />
                 </View>
+                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+              </View>
 
                 <Text style={styles.welcomeText}>Bienvenido</Text>
 
@@ -303,12 +312,14 @@ export default function LoginScreen({ navigation }: Props) {
             </ScrollView>
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
+
       </ImageBackground>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -320,6 +331,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
+
   scrollViewContent: {
     flexGrow: 1,
     justifyContent: "center",

@@ -180,7 +180,7 @@ export type RegisterData = {
   documento: string
   tipoDocumento: string
   situacionLaboral: string
-  genero: string // Incluido de la versión 1
+  genero: string
 }
 
 export const registerUser = async (data: RegisterData): Promise<void> => {
