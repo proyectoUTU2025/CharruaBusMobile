@@ -71,8 +71,8 @@ export default function RegisterScreen() {
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [passwordError, setPasswordError] = useState("") // Solo para el campo de contraseña
-  const [confirmPasswordError, setConfirmPasswordError] = useState("") // Para el campo de confirmación
+  const [passwordError, setPasswordError] = useState("")
+  const [confirmPasswordError, setConfirmPasswordError] = useState("") 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -128,7 +128,6 @@ export default function RegisterScreen() {
     return digitoCalculado === digitoIngresado;
   };
 
-  //Función para formatear cédula con puntos (formato uruguayo: X.XXX.XXX-X)
   const formatearCedula = (cedula: string): string => {
     if (cedula.length <= 1) return cedula;
     if (cedula.length <= 4) return `${cedula.substring(0, 1)}.${cedula.substring(1)}`;
@@ -199,7 +198,6 @@ export default function RegisterScreen() {
       return;
     }
     
-    //Valida requisitos de la contraseña
     const passwordErrors = validatePasswordRequirements(pass);
     
     if (passwordErrors.length > 0) {
@@ -221,7 +219,6 @@ export default function RegisterScreen() {
       return;
     }
     
-    //Verifica si la contraseña principal cumple los requisitos
     const passwordErrors = validatePasswordRequirements(password);
     
     if (passwordErrors.length > 0) {
@@ -253,7 +250,6 @@ export default function RegisterScreen() {
   }
 
   const handleRegister = async () => {
-    // Limpiar errores de email previos
     setEmailError("");
     
     let hasErrors = false;
@@ -345,17 +341,13 @@ export default function RegisterScreen() {
         genero: genero.toUpperCase(),
       };
 
-      // Llamar registerUser pero capturar TODOS los errores
       try {
         await registerUser(data);
         
-        // Si llegamos aquí, el registro fue exitoso
         Alert.alert("Éxito", "Usuario registrado!");
         navigation.navigate("VerifyEmail", { email: email });
         
       } catch (registerError: any) {
-        // Manejar errores de registro sin que se propaguen
-        console.log("Error capturado en registro:", registerError.message);
         
         if (registerError.message && registerError.message.includes('email ya está registrado')) {
           setEmailError("El email ya está registrado");
@@ -367,13 +359,10 @@ export default function RegisterScreen() {
           Alert.alert("Error", registerError.message || "Error inesperado al registrarse");
         }
         
-        // NO hacer throw aquí - esto es clave
-        return; // Salir sin propagar el error
+        return;
       }
 
     } catch (outerError: any) {
-      // Este catch nunca debería ejecutarse ahora
-      console.log("Error externo capturado:", outerError.message);
       Alert.alert("Error", "Error inesperado");
     }
   };

@@ -1,4 +1,3 @@
-// AuthContext.tsx - agregando AsyncStorage gradualmente
 import React, {
   createContext,
   useContext,
@@ -7,7 +6,6 @@ import React, {
   ReactNode
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Vamos a probar importar los servicios
 import { login as loginService, logout as logoutService } from '../services/authService';
 
 type AuthContextType = {
@@ -24,25 +22,20 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  console.log('AuthProvider con AsyncStorage renderizado');
   
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true); // Cambiado a true
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const login = async (email: string, password: string) => {
-    console.log('Login con servicio real llamado');
     setError(null);
     setLoading(true);
     
     try {
-      console.log('Llamando a loginService...');
       const newToken = await loginService(email, password);
-      console.log('LoginService exitoso, guardando token...');
       await AsyncStorage.setItem('authToken', newToken);
       setToken(newToken);
-      console.log('Token guardado y establecido exitosamente');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error en login';
       setError(errorMessage);
@@ -52,20 +45,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    console.log('Logout con servicio real llamado');
     try {
       setLoading(true);
-      console.log('Llamando a logoutService...');
       await logoutService(token || undefined);
-      console.log('LogoutService exitoso, removiendo token...');
       await AsyncStorage.removeItem('authToken');
       setToken(null);
       setError(null);
-      console.log('Logout completado exitosamente');
     } catch (error) {
       console.error('Error en logout real:', error);
       // En caso de error, limpiamos el token de todos modos
-      console.log('Limpiando token a pesar del error...');
       try {
         await AsyncStorage.removeItem('authToken');
       } catch (removeError) {
@@ -82,13 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkToken = async () => {
-    console.log('checkToken iniciado');
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
-      console.log('Token almacenado encontrado:', storedToken ? 'Sí' : 'No');
       if (storedToken) {
         setToken(storedToken);
-        console.log('Token establecido:', storedToken);
       }
     } catch (error) {
       console.error('Error checking stored token:', error);
@@ -99,23 +84,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error removing corrupted token:', removeError);
       }
     } finally {
-      console.log('checkToken finalizando, estableciendo isAuthLoading = false');
       setIsAuthLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('useEffect de checkToken ejecutándose');
     checkToken();
   }, []);
-
-  console.log('AuthProvider valores actuales:', {
-    token: token ? 'existe' : 'null',
-    isAuthenticated: !!token,
-    isAuthLoading,
-    loading,
-    error
-  });
 
   return (
     <AuthContext.Provider

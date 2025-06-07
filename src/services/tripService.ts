@@ -1,7 +1,6 @@
 const API_BASE_URL = 'http://192.168.1.7:8080';
 
-// Interfaces básicas necesarias para ViewTripsScreen
-export interface Journey {
+export interface Trip {
   idViaje: number;
   origen: string;
   destino: string;
@@ -11,7 +10,7 @@ export interface Journey {
   precioEstimado: number;
 }
 
-export interface SearchJourneysParams {
+export interface SearchTripsParams {
   idLocalidadOrigen: number;
   idLocalidadDestino: number;
   fechaViaje: string;
@@ -21,7 +20,6 @@ export interface SearchJourneysParams {
   sort?: string[];
 }
 
-// Nueva interfaz para la respuesta paginada
 export interface PaginatedResponse<T> {
   totalPages: number;
   totalElements: number;
@@ -51,8 +49,8 @@ export interface PaginatedResponse<T> {
   empty: boolean;
 }
 
-export interface SearchJourneysResponse {
-  journeys: Journey[];
+export interface SearchTripsResponse {
+  trips: Trip[];
   totalResults: number;
   totalPages: number;
   currentPage: number;
@@ -60,11 +58,10 @@ export interface SearchJourneysResponse {
   message?: string;
 }
 
-// Función principal para buscar viajes (actualizada para paginación)
-export const searchJourneys = async (
+export const searchTrips = async (
   token: string,
-  params: SearchJourneysParams
-): Promise<SearchJourneysResponse> => {
+  params: SearchTripsParams
+): Promise<SearchTripsResponse> => {
   try {
     const queryParams = new URLSearchParams({
       idLocalidadOrigen: params.idLocalidadOrigen.toString(),
@@ -75,13 +72,11 @@ export const searchJourneys = async (
       size: (params.size || 10).toString(),
     });
 
-    // Agregar parámetros de ordenamiento si existen
     if (params.sort && params.sort.length > 0) {
       params.sort.forEach(sortParam => {
         queryParams.append('sort', sortParam);
       });
     } else {
-      // Ordenamiento por defecto
       queryParams.append('sort', 'fechaHoraSalida,ASC');
     }
 
@@ -99,10 +94,10 @@ export const searchJourneys = async (
       throw new Error(errorData.message || `Error HTTP: ${response.status}`);
     }
 
-    const data: PaginatedResponse<Journey> = await response.json();
+    const data: PaginatedResponse<Trip> = await response.json();
    
     return {
-      journeys: data.content || [],
+      trips: data.content || [],
       totalResults: data.totalElements,
       totalPages: data.totalPages,
       currentPage: data.number,
@@ -110,16 +105,14 @@ export const searchJourneys = async (
       message: data.empty ? 'No se encontraron viajes' : 'Viajes encontrados',
     };
   } catch (error) {
-    console.error('Error searching journeys:', error);
+    console.error('Error searching trips:', error);
     throw error instanceof Error
       ? error
       : new Error('Error desconocido al buscar viajes');
   }
 };
 
-// Funciones de utilidad para fechas (usadas en ViewTripsScreen)
 export const formatDateForAPI = (date: Date | string): string => {
-  // Si es string, convertir a Date
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
   const year = dateObj.getFullYear();
@@ -143,7 +136,7 @@ export const formatDateTime = (dateTimeString: string): string => {
   }
 };
 
-export const calculateJourneyDuration = (
+export const calculateTripDuration = (
   departureTime: string,
   arrivalTime: string
 ): string => {
@@ -165,7 +158,7 @@ export const calculateJourneyDuration = (
   }
 };
 
-export interface JourneyStop {
+export interface TripStop {
   localidadId: number;
   nombreLocalidad: string;
   horaProgramada: string;
@@ -175,10 +168,10 @@ export interface JourneyStop {
 export interface Seat {
   id: number;
   numero: number;
-  estado: string; // "disponible", "ocupado", "reservado"
+  estado: string;
 }
 
-export interface JourneyDetails {
+export interface TripDetails {
   id: number;
   omnibusId: number;
   omnibusMatricula: string;
@@ -191,24 +184,22 @@ export interface JourneyDetails {
   cantidadAsientosReservados: number;
   ventaDisponible: boolean;
   precioPorTramo: number;
-  paradas: JourneyStop[];
+  paradas: TripStop[];
   asientos: Seat[];
 }
 
-export interface JourneyDetailsResponse {
-  data: JourneyDetails;
+export interface TripDetailsResponse {
+  data: TripDetails;
   message: string;
 }
 
-// Función para obtener detalles del viaje
-export const getJourneyDetails = async (
+export const getTripDetails = async (
   token: string,
-  journeyId: number
-): Promise<JourneyDetails> => {
+  tripId: number
+): Promise<TripDetails> => {
   try {
-    console.log(`Fetching journey details for ID: ${journeyId}`);
     
-    const response = await fetch(`${API_BASE_URL}/viajes/${journeyId}`, {
+    const response = await fetch(`${API_BASE_URL}/viajes/${tripId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -217,9 +208,6 @@ export const getJourneyDetails = async (
     });
 
     const responseText = await response.text();
-    console.log(`Journey details response status: ${response.status}`);
-    console.log(`Journey details response: ${responseText}`);
-
     if (!response.ok) {
       let errorMessage = `Error ${response.status}: ${response.statusText}`;
       
@@ -227,16 +215,15 @@ export const getJourneyDetails = async (
         const errorData = JSON.parse(responseText);
         errorMessage = errorData.message || errorMessage;
       } catch (e) {
-        // Si no se puede parsear como JSON, usar el mensaje por defecto
       }
       
       throw new Error(errorMessage);
     }
 
-    const data: JourneyDetailsResponse = JSON.parse(responseText);
+    const data: TripDetailsResponse = JSON.parse(responseText);
     return data.data;
   } catch (error) {
-    console.error('Error fetching journey details:', error);
+    console.error('Error fetching trip details:', error);
     throw error instanceof Error
       ? error
       : new Error('Error desconocido al obtener detalles del viaje');

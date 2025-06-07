@@ -22,7 +22,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
-// CAMBIO 1: Agregar tipos para las rutas
 declare global {
   namespace ReactNavigation {
     interface RootParamList extends RootStackParamList {}
@@ -225,7 +224,6 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
     if (hasErrors) return
 
     if (origenSeleccionado && destinoSeleccionado && date) {
-      // CORRECCIÓN: Usar la función de callback en lugar de navigation.navigate
       if (onNavigateToViewTrips) {
         onNavigateToViewTrips({
           origenSeleccionado,
@@ -233,15 +231,16 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
           fecha,
           date: date.toISOString(),
           pasajeros,
+          tipoViaje: 'ida',
         });
       } else {
-        // Fallback para navegación directa (si se usa fuera del BottomTabsNavigator)
         navigation.navigate('ViewTrips', {
           origenSeleccionado,
           destinoSeleccionado,
           fecha,
           date: date.toISOString(),
           pasajeros,
+          tipoViaje: 'ida',
         });
       }
     }
@@ -715,7 +714,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "white",
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",

@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     paddingTop: 32,
   },
   card: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // Agregamos transparencia para que se vea el fondo
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 24,
     padding: 24,
     marginHorizontal: 8,

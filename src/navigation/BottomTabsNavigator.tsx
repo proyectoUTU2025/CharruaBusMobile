@@ -12,7 +12,6 @@ import { OneWayTripScreen } from '../screens/OneWayTripScreen';
 import { ViewTripsScreen } from '../screens/ViewTripsScreen';
 import { SelectSeatScreen } from '../screens/SelectSeatScreen';
 
-// Tipos para los diferentes estados de navegación
 type NavigationState = 
   | { type: 'tab'; activeTab: string }
   | { type: 'oneWayTrip' }
@@ -25,6 +24,7 @@ interface ViewTripsParams {
   fecha: string;
   date: string;
   pasajeros: string;
+  tipoViaje: 'ida' | 'ida-vuelta';
 }
 
 const BottomTabsNavigator = () => {
@@ -32,7 +32,6 @@ const BottomTabsNavigator = () => {
   const { logout } = useAuth();
   const { user, loading } = useUser();
   
-  // Estado de navegación unificado
   const [navigationState, setNavigationState] = useState<NavigationState>({ 
     type: 'tab', 
     activeTab: 'inicio' 
@@ -77,26 +76,20 @@ const BottomTabsNavigator = () => {
     }
   ]);
 
-  // Función para volver al estado de pestañas
   const navigateToTab = (tab: string) => {
     setNavigationState({ type: 'tab', activeTab: tab });
   };
 
-  // Función para navegar a viaje de ida
   const navigateToOneWayTrip = () => {
     setNavigationState({ type: 'oneWayTrip' });
   };
 
-  // Función para navegar a ver viajes
   const navigateToViewTrips = (params: ViewTripsParams) => {
     setNavigationState({ type: 'viewTrips', params });
   };
 
  const navigateToSelectSeat = (params: any) => {
-  console.log('=== navigateToSelectSeat called ===');
-  console.log('Params received:', params);
   setNavigationState({ type: 'selectSeat', params });
-  console.log('Navigation state updated to selectSeat');
 };
 
   // Función para volver desde cualquier pantalla
@@ -119,10 +112,6 @@ const BottomTabsNavigator = () => {
 
   const handleTabPress = (tab: string) => {
     navigateToTab(tab);
-    
-    if (tab === "historial") {
-      console.log('Navegando a historial de compras (funcionalidad pendiente)');
-    }
   };
 
   const toggleMenu = () => {
@@ -136,18 +125,8 @@ const BottomTabsNavigator = () => {
   const handleMenuItemPress = (action: string) => {
     setMenuVisible(false);
     
-    switch (action) {
-      case 'editProfile':
-        console.log('Ir a editar perfil');
-        break;
-      case 'changePassword':
-        console.log('Ir a cambiar contraseña');
-        break;
-      case 'logout':
-        handleLogout();
-        break;
-      default:
-        break;
+    if (action === 'logout') {
+      handleLogout();
     }
   };
 
@@ -159,7 +138,6 @@ const BottomTabsNavigator = () => {
           : notification
       )
     );
-    console.log('Notificación presionada:', notificationId);
   };
 
   const markAllNotificationsAsRead = () => {
@@ -187,24 +165,18 @@ const BottomTabsNavigator = () => {
     return 'Usuario';
   };
 
-  // Función para obtener el tab activo actual
   const getCurrentActiveTab = () => {
     if (navigationState.type === 'tab') {
       return navigationState.activeTab;
     }
-    // Si estamos en OneWayTrip, ViewTrips o SelectSeat, consideramos que estamos en viajes
     return 'viajes';
   };
 
-  // Función para determinar si mostrar la barra de navegación inferior
   const shouldShowBottomNavigation = () => {
-    // Siempre mostrar la barra de navegación, pero actualizar el estado activo
     return true;
   };
 
   const renderContent = () => {
-  console.log('=== renderContent called ===');
-  console.log('Current navigation state:', navigationState);
   switch (navigationState.type) {
     case 'viewTrips':
       return (
@@ -212,7 +184,7 @@ const BottomTabsNavigator = () => {
           route={{ params: navigationState.params }}
           navigation={{ 
             goBack, 
-            navigate: navigateToSelectSeat // Agregar esta línea
+            navigate: navigateToSelectSeat
           }}
           onGoBack={goBack}
         />
@@ -225,7 +197,6 @@ const BottomTabsNavigator = () => {
         />
       );
     case 'selectSeat':
-          console.log('Rendering SelectSeatScreen');
           return (
             <SelectSeatScreen 
               route={{ params: navigationState.params }}
@@ -236,7 +207,7 @@ const BottomTabsNavigator = () => {
       return (
         <ViewTripsScreen 
           route={{ params: navigationState.params }}
-          navigation={{ goBack, navigate: navigateToSelectSeat }} // Actualizar para pasar navigate
+          navigation={{ goBack, navigate: navigateToSelectSeat }}
           onGoBack={goBack}
         />
       ); 

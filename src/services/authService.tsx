@@ -2,36 +2,28 @@ import { getFCMToken } from './notificationService';
 
 const API_BASE_URL = 'http://192.168.1.7:8080';
 
-//Función para obtener el token de dispositivo usando el servicio de notificaciones
 const getDeviceToken = async (): Promise<string> => {
   try {
     const token = await getFCMToken();
-    console.log('FCM Token obtenido:', token ? 'Sí' : 'No');
     
     if (!token) {
       console.warn('No se pudo obtener FCM token, usando token por defecto');
-      // Generar un token temporal si no se puede obtener el FCM
       return `temp_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
     
     return token;
   } catch (error) {
     console.error('Error obteniendo token de dispositivo:', error);
-    // Generar un token temporal en caso de error
     return `temp_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 };
 
 export const login = async (email: string, password: string): Promise<string> => {
   try {
-    console.log('Iniciando login con URL:', API_BASE_URL);
     const deviceToken = await getDeviceToken();
-    
-    console.log('Device token obtenido:', deviceToken ? 'Sí' : 'No');
 
-    // Agregar timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(`${API_BASE_URL}/auth/login-mobile`, {
       method: 'POST',
@@ -48,7 +40,6 @@ export const login = async (email: string, password: string): Promise<string> =>
 
     clearTimeout(timeoutId);
     
-    // Intentar parsear la respuesta
     let result;
     try {
       result = await response.json();
@@ -57,15 +48,10 @@ export const login = async (email: string, password: string): Promise<string> =>
       throw new Error('El servidor envió una respuesta inválida.');
     }
 
-    console.log('Response status:', response.status);
-    console.log('Response result:', result);
-
     if (!response.ok) {
-      // Manejar los errores específicos de tu API backend
       const errorMessage = result.message || result.error || 'Error desconocido';
       
       if (response.status === 400) {
-        // BadCredentialsException, IllegalArgumentException
         if (errorMessage.includes('Credenciales erróneas')) {
           throw new Error('Email o contraseña incorrectos. Verifica tus datos.');
         } else if (errorMessage.includes('deviceToken es obligatorio')) {
@@ -76,17 +62,14 @@ export const login = async (email: string, password: string): Promise<string> =>
           throw new Error(errorMessage);
         }
       } else if (response.status === 401) {
-        // Unauthorized - credenciales incorrectas
         throw new Error('Email o contraseña incorrectos. Verifica tus datos.');
       } else if (response.status === 403) {
-        // EmailNotVerifiedException o cuenta desactivada
         if (errorMessage.includes('verificar tu correo') || errorMessage.includes('desactivada')) {
           throw new Error('Debes verificar tu correo electrónico o tu cuenta está desactivada.');
         } else {
           throw new Error('Acceso denegado. Contacta al soporte.');
         }
       } else if (response.status === 404) {
-        // UsernameNotFoundException
         throw new Error('Usuario no encontrado. Verifica tu email.');
       } else if (response.status >= 500) {
         throw new Error('Error del servidor. Inténtalo más tarde.');
@@ -95,17 +78,14 @@ export const login = async (email: string, password: string): Promise<string> =>
       }
     }
 
-    // Verificar que la respuesta tenga el token
     if (!result || !result.data || !result.data.token) {
       console.error('Respuesta del servidor sin token:', result);
       throw new Error('El servidor no envió un token válido. Inténtalo más tarde.');
     }
 
-    console.log('Login exitoso, token recibido');
     return result.data.token;
     
   } catch (error: unknown) {
-    // Manejo simple de errores
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         throw new Error('La petición tardó demasiado. Verifica tu conexión a internet.');

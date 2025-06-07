@@ -11,25 +11,29 @@ import {
   ActivityIndicator,
   ImageBackground,
   Image,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../context/AuthContext';
 import { 
-  getJourneyDetails, 
-  JourneyDetails, 
+  getTripDetails, 
+  TripDetails, 
   Seat,
   formatDateTime 
-} from '../services/journeyService';
+} from '../services/tripService';
+import { crearSesionStripe } from '../services/paymentService';
+import { useUser } from '../hooks/useUser';
 
 interface SelectSeatScreenProps {
   route: {
     params: {
-      journeyId: number;
+      tripId: number;
       origenSeleccionado: any;
       destinoSeleccionado: any;
       fecha: string;
       pasajeros: string;
-      journey: any;
+      trip: any;
+      tipoViaje: 'ida' | 'ida-vuelta';
     };
   };
   navigation?: {
@@ -49,9 +53,10 @@ interface AsientoLocal extends Seat {
 
 export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
   const { token } = useAuth();
-  const { journeyId, origenSeleccionado, destinoSeleccionado, fecha, pasajeros, journey } = route.params;
+  const { user, loading: userLoading } = useUser();
+  const { tripId, origenSeleccionado, destinoSeleccionado, fecha, pasajeros, trip, tipoViaje } = route.params;
 
-  const [journeyDetails, setJourneyDetails] = useState<JourneyDetails | null>(null);
+  const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [asientos, setAsientos] = useState<AsientoLocal[]>([]);
   const [asientosSeleccionados, setAsientosSeleccionados] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,22 +64,20 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
 
   const cantidadPasajeros = parseInt(pasajeros);
 
-  // Cargar detalles del viaje
   useEffect(() => {
-    loadJourneyDetails();
+    loadTripDetails();
   }, []);
 
-  const loadJourneyDetails = async () => {
+  const loadTripDetails = async () => {
     if (!token) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const details = await getJourneyDetails(token, journeyId);
-      setJourneyDetails(details);
+      const details = await getTripDetails(token, tripId);
+      setTripDetails(details);
 
-      // Convertir asientos manteniendo su estado original
       const asientosLocales = details.asientos.map((seat) => {
         const fila = Math.ceil(seat.numero / 4);
         const columnaIndex = (seat.numero - 1) % 4;
@@ -82,7 +85,7 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
         
         return {
           ...seat,
-          estado: mapearEstadoAsiento(seat.estado), // Estado original del servidor
+          estado: mapearEstadoAsiento(seat.estado),
           fila,
           columna: columnas[columnaIndex],
           precio: details.precioPorTramo,
@@ -93,7 +96,7 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
       console.log('Estados iniciales:', asientosLocales.map(a => ({numero: a.numero, estado: a.estado})));
       
     } catch (error) {
-      console.error('Error loading journey details:', error);
+      console.error('Error loading trip details:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar detalles del viaje';
       setError(errorMessage);
       
@@ -101,7 +104,7 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
         'Error',
         errorMessage,
         [
-          { text: 'Reintentar', onPress: loadJourneyDetails },
+          { text: 'Reintentar', onPress: loadTripDetails },
           { text: 'Volver', onPress: () => navigation?.goBack() }
         ]
       );
@@ -125,14 +128,9 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
   };
 
   const handleSeleccionarAsiento = (numeroAsiento: number) => {
-    console.log('=== CLICK EN ASIENTO ===');
-    console.log('Número de asiento:', numeroAsiento);
-    console.log('Seleccionados antes:', asientosSeleccionados);
-    
     const asiento = asientos.find(a => a.numero === numeroAsiento);
     if (!asiento) return;
 
-    // Solo permitir selección de asientos disponibles
     if (asiento.estado !== "disponible") {
       console.log('Asiento no disponible, estado:', asiento.estado);
       return;
@@ -141,23 +139,17 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
     const yaSeleccionado = asientosSeleccionados.includes(numeroAsiento);
     
     if (yaSeleccionado) {
-      // Deseleccionar
-      console.log('Deseleccionando asiento número:', numeroAsiento);
       setAsientosSeleccionados(prev => {
         const nuevos = prev.filter(num => num !== numeroAsiento);
-        console.log('Nuevos seleccionados:', nuevos);
         return nuevos;
       });
     } else {
-      // Seleccionar
       if (asientosSeleccionados.length >= cantidadPasajeros) {
         Alert.alert("Límite alcanzado", `Solo puedes seleccionar ${cantidadPasajeros} asiento(s)`);
         return;
       }
-      console.log('Seleccionando asiento número:', numeroAsiento);
       setAsientosSeleccionados(prev => {
         const nuevos = [...prev, numeroAsiento];
-        console.log('Nuevos seleccionados:', nuevos);
         return nuevos;
       });
     }
@@ -170,11 +162,9 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
       return <View style={styles.asientoVacio} key={`vacio-${numeroAsiento}`} />;
     }
 
-    // Verificar si este NÚMERO de asiento está seleccionado
     const estaSeleccionado = asientosSeleccionados.includes(numeroAsiento);
     const estadoOriginal = asiento.estado;
     
-    // Determinar estilos usando el número del asiento
     const estilosAsiento = [
       styles.asiento,
       estadoOriginal === "ocupado" && styles.asientoOcupado,
@@ -219,43 +209,73 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
     );
   };
 
-  const handleFinalizarCompra = () => {
-    if (asientosSeleccionados.length === 0) {
-      Alert.alert("Error", "Debes seleccionar al menos un asiento");
-      return;
-    }
-    
-    if (asientosSeleccionados.length !== cantidadPasajeros) {
-      Alert.alert(
-        "Error", 
-        `Debes seleccionar exactamente ${cantidadPasajeros} asiento(s). Has seleccionado ${asientosSeleccionados.length}.`
-      );
-      return;
-    }
+  const handleFinalizarCompra = async () => {
+  if (asientosSeleccionados.length === 0) {
+    Alert.alert("Error", "Debes seleccionar al menos un asiento");
+    return;
+  }
 
-    const totalPrecio = asientosSeleccionados.length * (journeyDetails?.precioPorTramo || 0);
-    const asientosSeleccionadosInfo = asientosSeleccionados
-      .sort((a, b) => a - b)
-      .join(', ');
-
+  if (asientosSeleccionados.length !== cantidadPasajeros) {
     Alert.alert(
-      "Confirmar Compra",
-      `¿Proceder con la compra de ${asientosSeleccionados.length} asiento(s) (${asientosSeleccionadosInfo}) por $${totalPrecio.toFixed(2)}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Confirmar", 
-          onPress: () => {
-            Alert.alert("Éxito", "Redirigiendo al procesamiento de pago...");
-          }
-        }
-      ]
+      "Error",
+      `Debes seleccionar exactamente ${cantidadPasajeros} asiento(s). Has seleccionado ${asientosSeleccionados.length}.`
     );
-  };
+    return;
+  }
+
+  if (!user?.id) {
+    Alert.alert("Error", "No se pudo identificar el usuario. Por favor, inicia sesión nuevamente.");
+    return;
+  }
+
+  if (!origenSeleccionado?.id || !destinoSeleccionado?.id) {
+    Alert.alert("Error", "Información de origen o destino incompleta.");
+    return;
+  }
+
+  try {
+    const payload = {
+      viajeIdaId: tripId,
+      viajeVueltaId: null,
+      asientosIda: asientosSeleccionados,
+      asientosVuelta: [],
+      clienteId: parseInt(user.id),
+      localidadOrigenId: origenSeleccionado.id,
+      localidadDestinoId: destinoSeleccionado.id,
+      paradorOrigenVueltaId: null,
+      paradorDestinoVueltaId: null,
+      validRoundTripSeats: false,
+      differentLocalities: true,
+      uniqueAsientosIda: true,
+      uniqueAsientosVuelta: true,
+    };
+
+    const { data } = await crearSesionStripe(token!, payload);
+    const { sessionUrl } = data;
+
+    if (!sessionUrl) {
+      Alert.alert("Error", "No se pudo iniciar el pago.");
+      return;
+    }
+
+    await Linking.openURL(sessionUrl);
+
+  } catch (error) {
+  console.error("Error al iniciar el pago:", error);
+  
+  let errorMessage = "Hubo un problema al procesar el pago. Intenta nuevamente.";
+  
+  if (error instanceof Error) {
+    errorMessage = error.message;
+  }
+  
+  Alert.alert("Error", errorMessage);
+}
+};
 
   const totalFilas = asientos.length > 0 ? Math.ceil(Math.max(...asientos.map(a => a.numero)) / 4) : 1;
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#4285F4" barStyle="light-content" />
@@ -272,7 +292,7 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
     );
   }
 
-  if (error || !journeyDetails) {
+  if (error || !tripDetails) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#4285F4" barStyle="light-content" />
@@ -284,7 +304,7 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
             <Icon name="error-outline" size={64} color="#EF4444" />
             <Text style={styles.errorTitle}>Error al cargar</Text>
             <Text style={styles.errorMessage}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadJourneyDetails}>
+            <TouchableOpacity style={styles.retryButton} onPress={loadTripDetails}>
               <Text style={styles.retryButtonText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
@@ -318,28 +338,28 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
                 </View>
 
                 {/* Información del viaje */}
-                <View style={styles.journeyInfoContainer}>
-                  <View style={styles.journeyInfoRow}>
+                <View style={styles.tripInfoContainer}>
+                  <View style={styles.tripInfoRow}>
                     <Icon name="directions-bus" size={20} color="#10B981" />
-                    <Text style={styles.journeyInfoText}>
+                    <Text style={styles.tripInfoText}>
                       {origenSeleccionado.nombreConDepartamento} → {destinoSeleccionado.nombreConDepartamento}
                     </Text>
                   </View>
-                  <View style={styles.journeyInfoRow}>
+                  <View style={styles.tripInfoRow}>
                     <Icon name="event" size={20} color="#6B7280" />
-                    <Text style={styles.journeyInfoText}>Salida: {formatDateTime(journeyDetails.fechaHoraSalida).split(' ')[0]}</Text>
+                    <Text style={styles.tripInfoText}>Salida: {formatDateTime(tripDetails.fechaHoraSalida).split(' ')[0]}</Text>
                     <Icon name="access-time" size={20} color="#6B7280" />
-                    <Text style={styles.journeyInfoText}>{formatDateTime(journeyDetails.fechaHoraSalida).split(' ')[1]}</Text>
+                    <Text style={styles.tripInfoText}>{formatDateTime(tripDetails.fechaHoraSalida).split(' ')[1]}</Text>
                   </View>
-                  <View style={styles.journeyInfoRow}>
+                  <View style={styles.tripInfoRow}>
                     <Icon name="event" size={20} color="#6B7280" />
-                    <Text style={styles.journeyInfoText}>Llegada: {formatDateTime(journeyDetails.fechaHoraLlegada).split(' ')[0]}</Text>
+                    <Text style={styles.tripInfoText}>Llegada: {formatDateTime(tripDetails.fechaHoraLlegada).split(' ')[0]}</Text>
                     <Icon name="access-time" size={20} color="#6B7280" />
-                    <Text style={styles.journeyInfoText}>{formatDateTime(journeyDetails.fechaHoraLlegada).split(' ')[1]}</Text>
+                    <Text style={styles.tripInfoText}>{formatDateTime(tripDetails.fechaHoraLlegada).split(' ')[1]}</Text>
                   </View>
-                  <View style={styles.journeyInfoRow}>
+                  <View style={styles.tripInfoRow}>
                     <Icon name="group" size={20} color="#4285F4" />
-                    <Text style={styles.journeyInfoText}>
+                    <Text style={styles.tripInfoText}>
                       {cantidadPasajeros - asientosSeleccionados.length === 0
                         ? 'Asientos seleccionados'
                         : `Selecciona ${cantidadPasajeros - asientosSeleccionados.length} asiento${(cantidadPasajeros - asientosSeleccionados.length) !== 1 ? 's' : ''} más`}
@@ -391,7 +411,7 @@ export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
                   <View style={styles.resumen}>
                     <Text style={styles.resumenTexto}>Total a pagar</Text>
                     <Text style={styles.precio}>
-                      ${(asientosSeleccionados.length * (journeyDetails?.precioPorTramo || 0)).toFixed(2)}
+                      ${(asientosSeleccionados.length * (tripDetails?.precioPorTramo || 0)).toFixed(2)}
                     </Text>
                   </View>
                   <TouchableOpacity 
@@ -505,7 +525,7 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
-  journeyInfoContainer: {
+  tripInfoContainer: {
     backgroundColor: "#ECFDF5",
     borderRadius: 8,
     padding: 16,
@@ -513,12 +533,12 @@ const styles = StyleSheet.create({
     borderColor: "#10B981",
     marginBottom: 20,
   },
-  journeyInfoRow: {
+  tripInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
-  journeyInfoText: {
+  tripInfoText: {
     fontSize: 14,
     color: '#059669',
     marginLeft: 8,

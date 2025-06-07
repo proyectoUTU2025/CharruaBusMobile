@@ -15,13 +15,13 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../context/AuthContext';
 import { 
-  searchJourneys, 
-  Journey, 
-  SearchJourneysParams,
+  searchTrips, 
+  Trip, 
+  SearchTripsParams,
   formatDateTime,
-  calculateJourneyDuration,
+  calculateTripDuration,
   formatDateForAPI 
-} from '../services/journeyService';
+} from '../services/tripService';
 
 interface ViewTripsScreenProps {
   route: {
@@ -31,6 +31,7 @@ interface ViewTripsScreenProps {
       fecha: string;
       date: string;
       pasajeros: string;
+      tipoViaje: 'ida' | 'ida-vuelta';
     };
   };
   navigation?: {
@@ -42,9 +43,10 @@ interface ViewTripsScreenProps {
 
 export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreenProps) {
   const { token } = useAuth();
-  const { origenSeleccionado, destinoSeleccionado, fecha, date, pasajeros } = route.params;
+  const { origenSeleccionado, destinoSeleccionado, fecha, date, pasajeros, tipoViaje } = route.params;
 
-  const [journeys, setJourneys] = useState<Journey[]>([]);
+
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,8 +59,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
     return price.toFixed(2);
   };
 
-  // Buscar viajes con paginación
-  const searchAvailableJourneys = async (page = 0, isRefresh = false, isLoadMore = false) => {
+  const searchAvailableTrips = async (page = 0, isRefresh = false, isLoadMore = false) => {
     if (!token) return;
 
     try {
@@ -71,7 +72,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
       }
       setError(null);
 
-      const searchParams: SearchJourneysParams = {
+      const searchParams: SearchTripsParams = {
         idLocalidadOrigen: origenSeleccionado.id,
         idLocalidadDestino: destinoSeleccionado.id,
         fechaViaje: formatDateForAPI(date),
@@ -81,26 +82,24 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
         sort: ['fechaHoraSalida,ASC'],
       };
 
-      const response = await searchJourneys(token, searchParams);
+      const response = await searchTrips(token, searchParams);
       
       if (isRefresh || page === 0) {
-        // Nueva búsqueda o refresh
-        setJourneys(response.journeys);
+        setTrips(response.trips);
         setCurrentPage(0);
       } else {
-        // Cargar más resultados
-        setJourneys(prev => [...prev, ...response.journeys]);
+        setTrips(prev => [...prev, ...response.trips]);
       }
       
       setHasMore(response.hasMore);
       setTotalResults(response.totalResults);
       setCurrentPage(response.currentPage);
       
-      if (response.journeys.length === 0 && page === 0) {
+      if (response.trips.length === 0 && page === 0) {
         setError('No se encontraron viajes disponibles para los criterios seleccionados.');
       }
     } catch (error) {
-      console.error('Error searching journeys:', error);
+      console.error('Error searching trips:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al buscar viajes';
       setError(errorMessage);
       
@@ -119,7 +118,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
   };
 
   useEffect(() => {
-    searchAvailableJourneys();
+    searchAvailableTrips();
   }, []);
 
   const handleGoBack = () => {
@@ -131,61 +130,55 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
   };
 
   const onRefresh = () => {
-    searchAvailableJourneys(0, true);
+    searchAvailableTrips(0, true);
   };
 
   const handleLoadMore = () => {
     if (hasMore && !loadingMore && !loading) {
       const nextPage = currentPage + 1;
-      searchAvailableJourneys(nextPage, false, true);
+      searchAvailableTrips(nextPage, false, true);
     }
   };
 
-  const handleSelectSeat = (journey: Journey) => {
-    console.log('=== handleSelectSeat called ===');
-    console.log('Journey:', journey);
-    console.log('Navigation object:', navigation);
-    console.log('Navigation.navigate exists:', !!navigation?.navigate);
+  const handleSelectSeat = (trip: Trip) => {
     
     if (navigation?.navigate) {
       const params = {
-        journeyId: journey.idViaje,
+        tripId: trip.idViaje,
         origenSeleccionado,
         destinoSeleccionado,
         fecha,
         pasajeros,
-        journey
+        trip,
+        tipoViaje,
       };
-      console.log('Calling navigate with params:', params);
       navigation.navigate(params);
-    } else {
-      console.log('Navigation.navigate not available');
     }
   };
 
-  const renderJourneyCard = (journey: Journey) => {
-    const duration = calculateJourneyDuration(journey.fechaHoraSalida, journey.fechaHoraLlegada);
+  const renderTripCard = (trip: Trip) => {
+    const duration = calculateTripDuration(trip.fechaHoraSalida, trip.fechaHoraLlegada);
     
     return (
       <View
-        key={journey.idViaje}
-        style={styles.journeyCard}
+        key={trip.idViaje}
+        style={styles.tripCard}
       >
-        <View style={styles.journeyHeader}>
+        <View style={styles.tripHeader}>
           <View style={styles.routeContainer}>
-            <Text style={styles.cityText} numberOfLines={1}>{journey.origen}</Text>
+            <Text style={styles.cityText} numberOfLines={1}>{trip.origen}</Text>
             <Icon name="arrow-forward" size={18} color="#10B981" style={styles.arrowIcon} />
-            <Text style={styles.cityText} numberOfLines={1}>{journey.destino}</Text>
+            <Text style={styles.cityText} numberOfLines={1}>{trip.destino}</Text>
           </View>
-          <Text style={styles.priceText}>${formatPrice(journey.precioEstimado)}</Text>
+          <Text style={styles.priceText}>${formatPrice(trip.precioEstimado)}</Text>
         </View>
 
-        <View style={styles.journeyDetails}>
+        <View style={styles.tripDetails}>
           <View style={styles.timeContainer}>
             <View style={styles.timeInfo}>
               <Text style={styles.timeLabel}>Salida</Text>
               <Text style={styles.timeText} numberOfLines={2}>
-                {formatDateTime(journey.fechaHoraSalida)}
+                {formatDateTime(trip.fechaHoraSalida)}
               </Text>
             </View>
             
@@ -197,7 +190,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
             <View style={styles.timeInfo}>
               <Text style={styles.timeLabel}>Llegada</Text>
               <Text style={styles.timeText} numberOfLines={2}>
-                {formatDateTime(journey.fechaHoraLlegada)}
+                {formatDateTime(trip.fechaHoraLlegada)}
               </Text>
             </View>
           </View>
@@ -207,20 +200,20 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
               <Icon 
                 name="event-seat" 
                 size={16} 
-                color={journey.asientosDisponibles > 5 ? "#10B981" : "#F59E0B"} 
+                color={trip.asientosDisponibles > 5 ? "#10B981" : "#F59E0B"} 
               />
               <Text style={[
                 styles.availabilityText,
-                { color: journey.asientosDisponibles > 5 ? "#10B981" : "#F59E0B" }
+                { color: trip.asientosDisponibles > 5 ? "#10B981" : "#F59E0B" }
               ]} numberOfLines={1}>
-                {journey.asientosDisponibles} asientos disponibles
+                {trip.asientosDisponibles} asientos disponibles
               </Text>
             </View>
             
             <TouchableOpacity 
               style={styles.selectButton}
               activeOpacity={0.7}
-              onPress={() => handleSelectSeat(journey)}
+              onPress={() => handleSelectSeat(trip)}
             >
               <Text style={styles.selectButtonText}>Seleccionar</Text>
             </TouchableOpacity>
@@ -261,7 +254,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
       </Text>
       <TouchableOpacity 
         style={styles.retryButton}
-        onPress={() => searchAvailableJourneys()}
+        onPress={() => searchAvailableTrips()}
       >
         <Text style={styles.retryButtonText}>Buscar nuevamente</Text>
       </TouchableOpacity>
@@ -275,7 +268,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
       <Text style={styles.errorMessage}>{error}</Text>
       <TouchableOpacity 
         style={styles.retryButton}
-        onPress={() => searchAvailableJourneys()}
+        onPress={() => searchAvailableTrips()}
       >
         <Text style={styles.retryButtonText}>Reintentar</Text>
       </TouchableOpacity>
@@ -330,17 +323,17 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
               <ActivityIndicator size="large" color="#10B981" />
               <Text style={styles.loadingText}>Buscando viajes disponibles...</Text>
             </View>
-          ) : error && journeys.length === 0 ? (
+          ) : error && trips.length === 0 ? (
             renderError()
-          ) : journeys.length === 0 ? (
+          ) : trips.length === 0 ? (
             renderEmptyState()
           ) : (
-            <View style={styles.journeysContainer}>
+            <View style={styles.tripsContainer}>
               <Text style={styles.resultsTitle}>
                 {totalResults} viaje{totalResults !== 1 ? 's' : ''} encontrado{totalResults !== 1 ? 's' : ''}
-                {hasMore && ` (mostrando ${journeys.length})`}
+                {hasMore && ` (mostrando ${trips.length})`}
               </Text>
-              {journeys.map(renderJourneyCard)}
+              {trips.map(renderTripCard)}
               {renderLoadMoreButton()}
             </View>
           )}
@@ -351,7 +344,6 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
 }
 
 const styles = StyleSheet.create({
-  // ... todos los estilos existentes ...
   container: {
     flex: 1,
   },
@@ -432,7 +424,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center',
   },
-  journeysContainer: {
+  tripsContainer: {
     gap: 12,
   },
   resultsTitle: {
@@ -442,7 +434,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  journeyCard: {
+  tripCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     padding: 16,
@@ -454,7 +446,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     minHeight: 120,
   },
-  journeyHeader: {
+  tripHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -483,7 +475,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
     textAlign: 'right',
   },
-  journeyDetails: {
+  tripDetails: {
     gap: 12,
   },
   timeContainer: {
@@ -549,7 +541,6 @@ const styles = StyleSheet.create({
     color: 'white',
     marginLeft: 6,
   },
-  // Nuevos estilos para paginación
   loadMoreButton: {
     backgroundColor: '#ffffff',
     paddingVertical: 16,

@@ -14,10 +14,10 @@ try {
     //Configura el manejador de mensajes en segundo plano
     setBackgroundMessageHandler(messaging, async remoteMessage => {
       try {
-        return Promise.resolve(); // Siempre resolver la promesa
+        return Promise.resolve();
       } catch (error) {
         console.error('Error en el manejador de segundo plano:', error);
-        return Promise.resolve(); // Asegurar que siempre se resuelva la promesa
+        return Promise.resolve();
       }
     });
 
@@ -28,5 +28,4 @@ try {
   console.error('Error al inicializar Firebase:', error);
 }
 
-//Registra el componente principal
 AppRegistry.registerComponent(appName, () => App);

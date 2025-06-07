@@ -9,7 +9,6 @@ import { errorHandler } from './src/utils/errorHandler';
 
 const App = () => {
   useEffect(() => {
-    // Inicializar el error handler personalizado al arrancar la app
     errorHandler.init();
 
     const initializeNotifications = async () => {
@@ -33,7 +32,6 @@ const App = () => {
 
     initializeNotifications();
 
-    // Limpiar al desmontar la app (opcional, raramente se ejecuta)
     return () => {
       errorHandler.restore();
     };

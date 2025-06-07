@@ -119,14 +119,6 @@ export function RoundTrip({ onVolver }: RoundTripProps) {
     }
 
     if (hasErrors) return
-
-    console.log("Buscando viajes de ida y vuelta:", {
-      origen,
-      destino,
-      fechaIda,
-      fechaVuelta,
-      pasajeros,
-    })
   }
 
   const getPasajerosLabel = () => {

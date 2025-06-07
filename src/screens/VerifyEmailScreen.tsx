@@ -37,7 +37,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
   }
 
   const validateCodigo = (value: string) => {
-    //Solo permite números y un máximo de 6 dígitos
     const onlyNumbers = value.replace(/\D/g, '').slice(0, 6)
     setCodigo(onlyNumbers)
     
@@ -51,10 +50,8 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
   }
 
   const handleVerificar = async () => {
-    // Limpiar errores previos
     setCodigoError("")
     
-    //Valida que el código tenga 6 dígitos
     if (!codigo.trim()) {
       setCodigoError("El código es obligatorio")
       return
@@ -83,9 +80,8 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
           ]
         )
       } catch (verifyError: any) {
-        console.log("Error capturado en verificación:", verifyError.message)
         
-        // Manejar errores específicos y mostrarlos en la UI
+        // Maneja errores específicos y mostrarlos en la UI
         if (verifyError.message && verifyError.message.includes('inválido')) {
           setCodigoError("Código de verificación inválido")
           setCodigo("")
@@ -107,39 +103,15 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
           }
         }
         
-        // NO hacer throw aquí - esto es clave
-        return; // Salir sin propagar el error
+        return;
       }
 
     } catch (outerError: any) {
-      // Este catch nunca debería ejecutarse ahora
-      console.log("Error externo capturado:", outerError.message)
       Alert.alert("Error", "Error inesperado")
     } finally {
       setIsLoading(false)
     }
   }
-
-  /*const handleReenviarCodigo = async () => {
-    try {
-      await resendVerificationCode(email)
-      
-      Alert.alert(
-        "Código reenviado", 
-        "Se ha enviado un nuevo código a tu correo electrónico"
-      )
-      
-      setCodigo("")
-      setCodigoError("")
-    } catch (error: any) {
-      console.error("Error al reenviar código:", error.message)
-      
-      Alert.alert(
-        "Error", 
-        error.message || "No se pudo reenviar el código. Inténtalo más tarde."
-      )
-    }
-  }*/
 
   return (
     <SafeAreaView style={styles.container}>
