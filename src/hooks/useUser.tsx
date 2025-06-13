@@ -1,30 +1,7 @@
 import { useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '../context/AuthContext';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  apellido?: string;
-  rol?: string;
-}
-
-interface DecodedToken {
-  id?: number | string;
-  email?: string;
-  name?: string;
-  role?: string;
-  exp?: number;
-  iat?: number;
-  sub?: string;
-}
-
-interface UseUserReturn {
-  user: User | null;
-  loading: boolean;
-  refreshUser: () => void;
-}
+import { User, DecodedToken, UseUserReturn } from '../types/userType';
 
 export const useUser = (): UseUserReturn => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,14 +20,18 @@ export const useUser = (): UseUserReturn => {
         const userData: User = {
           id: String(decodedToken.id || decodedToken.sub || ''),
           name: decodedToken.name || 'Usuario',
-          email: decodedToken.sub || '',
+          email: decodedToken.sub || decodedToken.email || '',
+          apellido: decodedToken.apellido,
           rol: decodedToken.role,
+          situacionLaboral: decodedToken.situacionLaboral,
         };
+        
         setUser(userData);
       } else {
         setUser(null);
       }
     } catch (error) {
+      console.error('Error decodificando token:', error);
       setUser(null);
     } finally {
       setLoading(false);

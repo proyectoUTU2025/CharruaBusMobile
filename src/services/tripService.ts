@@ -1,62 +1,14 @@
-const API_BASE_URL = 'http://192.168.1.7:8080';
+import {
+  Trip,
+  SearchTripsParams,
+  SearchTripsResponse,
+  TripStop,
+  TripDetails,
+  PaginatedResponse,
+  TripDetailsResponse
+} from '../types/tripType';
 
-export interface Trip {
-  idViaje: number;
-  origen: string;
-  destino: string;
-  fechaHoraSalida: string;
-  fechaHoraLlegada: string;
-  asientosDisponibles: number;
-  precioEstimado: number;
-}
-
-export interface SearchTripsParams {
-  idLocalidadOrigen: number;
-  idLocalidadDestino: number;
-  fechaViaje: string;
-  cantidadPasajes: number;
-  page?: number;
-  size?: number;
-  sort?: string[];
-}
-
-export interface PaginatedResponse<T> {
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  content: T[];
-  number: number;
-  sort: {
-    empty: boolean;
-    unsorted: boolean;
-    sorted: boolean;
-  };
-  numberOfElements: number;
-  first: boolean;
-  last: boolean;
-  pageable: {
-    offset: number;
-    sort: {
-      empty: boolean;
-      unsorted: boolean;
-      sorted: boolean;
-    };
-    unpaged: boolean;
-    pageNumber: number;
-    pageSize: number;
-    paged: boolean;
-  };
-  empty: boolean;
-}
-
-export interface SearchTripsResponse {
-  trips: Trip[];
-  totalResults: number;
-  totalPages: number;
-  currentPage: number;
-  hasMore: boolean;
-  message?: string;
-}
+const API_BASE_URL = 'http://192.168.1.170:8080';
 
 export const searchTrips = async (
   token: string,
@@ -94,31 +46,115 @@ export const searchTrips = async (
       throw new Error(errorData.message || `Error HTTP: ${response.status}`);
     }
 
-    const data: PaginatedResponse<Trip> = await response.json();
-   
-    return {
-      trips: data.content || [],
-      totalResults: data.totalElements,
-      totalPages: data.totalPages,
-      currentPage: data.number,
-      hasMore: !data.last,
-      message: data.empty ? 'No se encontraron viajes' : 'Viajes encontrados',
+    const data: any = await response.json();
+    
+    const pageInfo = data.page || {};
+    const content = data.content || [];
+    
+    const totalPages = pageInfo.totalPages || 1;
+    const currentPage = pageInfo.number || 0;
+    const hasMorePages = currentPage < (totalPages - 1);
+    
+    const result = {
+      trips: content,
+      totalResults: pageInfo.totalElements || 0,
+      totalPages: totalPages,
+      currentPage: currentPage,
+      hasMore: hasMorePages,
+      message: content.length === 0 ? 'No se encontraron viajes' : 'Viajes encontrados',
     };
+    
+    return result;
   } catch (error) {
-    console.error('Error searching trips:', error);
+    console.error('Error completo:', error);
     throw error instanceof Error
       ? error
       : new Error('Error desconocido al buscar viajes');
   }
 };
 
+export const getTripDetails = async (
+  token: string,
+  tripId: number
+): Promise<TripDetails> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/viajes/${tripId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const responseText = await response.text();
+    if (!response.ok) {
+      let errorMessage = `Error ${response.status}: ${response.statusText}`;
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    const data: TripDetailsResponse = JSON.parse(responseText);
+    return data.data;
+  } catch (error) {
+    throw error instanceof Error
+      ? error
+      : new Error('Error desconocido al obtener detalles del viaje');
+  }
+};
+
 export const formatDateForAPI = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (!date) {
+    console.error('formatDateForAPI: Fecha es null, undefined o vacía:', date);
+    throw new Error(`Fecha inválida: ${date}`);
+  }
+
+  let dateObj: Date;
   
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  try {
+    if (typeof date === 'string') {
+      if (date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        const [day, month, year] = date.split('/');
+        dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        dateObj = new Date(date);
+      } else if (date.match(/^\d{4}-\d{2}-\d{2}T/)) {
+        dateObj = new Date(date);
+      } else {
+        dateObj = new Date(date);
+      }
+    } else if (date instanceof Date) {
+      dateObj = date;
+    } else {
+      console.error('formatDateForAPI: Tipo de fecha no soportado:', typeof date, date);
+      throw new Error(`Tipo de fecha no soportado: ${typeof date}`);
+    }
+    
+    if (isNaN(dateObj.getTime())) {
+      console.error('formatDateForAPI: Fecha inválida después del parsing:', date, '→', dateObj);
+      throw new Error(`Formato de fecha inválido: ${date}`);
+    }
+    
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    
+    const result = `${year}-${month}-${day}`;
+    
+    return result;
+    
+  } catch (error) {
+    console.error('formatDateForAPI: Error procesando fecha:', error);
+    console.error('Fecha original:', date);
+    console.error('Tipo:', typeof date);
+    
+    throw new Error(`Error al formatear fecha "${date}": ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
 };
 
 export const formatDateTime = (dateTimeString: string): string => {
@@ -158,74 +194,33 @@ export const calculateTripDuration = (
   }
 };
 
-export interface TripStop {
-  localidadId: number;
-  nombreLocalidad: string;
-  horaProgramada: string;
-  orden: number;
-}
-
-export interface Seat {
-  id: number;
-  numero: number;
-  estado: string;
-}
-
-export interface TripDetails {
-  id: number;
-  omnibusId: number;
-  omnibusMatricula: string;
-  fechaHoraSalida: string;
-  fechaHoraLlegada: string;
-  precio: number;
-  cantidadPasajesVendibles: number;
-  cantidadAsientosVendidos: number;
-  cantidadAsientosDisponibles: number;
-  cantidadAsientosReservados: number;
-  ventaDisponible: boolean;
-  precioPorTramo: number;
-  paradas: TripStop[];
-  asientos: Seat[];
-}
-
-export interface TripDetailsResponse {
-  data: TripDetails;
-  message: string;
-}
-
-export const getTripDetails = async (
-  token: string,
-  tripId: number
-): Promise<TripDetails> => {
+export const calcularPrecioPorTramos = (
+  precioPorTramo: number,
+  paradas: TripStop[],
+  localidadOrigenId: number,
+  localidadDestinoId: number
+): number => {
   try {
+    const paradaOrigen = paradas.find(p => p.localidadId === localidadOrigenId);
+    const paradaDestino = paradas.find(p => p.localidadId === localidadDestinoId);
     
-    const response = await fetch(`${API_BASE_URL}/viajes/${tripId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const responseText = await response.text();
-    if (!response.ok) {
-      let errorMessage = `Error ${response.status}: ${response.statusText}`;
-      
-      try {
-        const errorData = JSON.parse(responseText);
-        errorMessage = errorData.message || errorMessage;
-      } catch (e) {
-      }
-      
-      throw new Error(errorMessage);
+    if (!paradaOrigen || !paradaDestino) {
+      console.warn('No se encontraron las paradas de origen o destino, usando precio base');
+      console.warn('Paradas disponibles:', paradas.map(p => `${p.nombreLocalidad} (ID: ${p.localidadId}, orden: ${p.orden})`));
+      console.warn('Buscando origen ID:', localidadOrigenId, 'destino ID:', localidadDestinoId);
+      return precioPorTramo;
     }
 
-    const data: TripDetailsResponse = JSON.parse(responseText);
-    return data.data;
+    const cantidadTramos = Math.abs(paradaDestino.orden - paradaOrigen.orden);
+    
+    const tramosFinales = cantidadTramos === 0 ? 1 : cantidadTramos;
+    
+    const precioTotal = precioPorTramo * tramosFinales;
+    
+    return precioTotal;
+    
   } catch (error) {
-    console.error('Error fetching trip details:', error);
-    throw error instanceof Error
-      ? error
-      : new Error('Error desconocido al obtener detalles del viaje');
+    console.error('Error calculando precio por tramos:', error);
+    return precioPorTramo;
   }
 };

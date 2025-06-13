@@ -1,20 +1,18 @@
 import React, { useEffect } from 'react';
-import { Linking } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-
-type NavigationProp = StackNavigationProp<RootStackParamList>;
+import { Linking, Alert } from 'react-native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { confirmarCompra, cancelarCompra } from '../services/paymentService';
 
 interface DeepLinkHandlerProps {
   children: React.ReactNode;
 }
 
 export const DeepLinkHandler: React.FC<DeepLinkHandlerProps> = ({ children }) => {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<any>();
+  const { token } = useAuth();
 
   useEffect(() => {
-    // Maneja deep link cuando la app se abre desde cerrada
     const handleInitialURL = async () => {
       try {
         const initialUrl = await Linking.getInitialURL();
@@ -26,8 +24,7 @@ export const DeepLinkHandler: React.FC<DeepLinkHandlerProps> = ({ children }) =>
       }
     };
 
-    // Maneja deep links cuando la app ya está abierta
-    const handleDeepLink = (url: string) => {
+    const handleDeepLink = async (url: string) => {
       
       try {
         const urlObj = new URL(url);
@@ -36,39 +33,121 @@ export const DeepLinkHandler: React.FC<DeepLinkHandlerProps> = ({ children }) =>
         const pathname = urlObj.pathname;
         const searchParams = urlObj.searchParams;
 
-        // Verifica que sea nuestro esquema
         if (scheme !== 'charruabus') {
           return;
         }
 
-        // Extrae session_id
         const sessionId = searchParams.get('session_id');
         if (!sessionId) {
           return;
         }
 
-        // Navega según la ruta
         if (host === 'pago') {
-          if (pathname === '/exito') {
-            navigation.navigate('PaymentSuccess', { session_id: sessionId });
+          if (pathname === '/exitoso') {
+            await handlePagoExitoso(sessionId);
           } else if (pathname === '/cancelado') {
-            navigation.navigate('PaymentCancelled', { session_id: sessionId });
+            handlePagoCancelado(sessionId);
           }
         }
         
       } catch (error) {
         console.error('Error al procesar deep link:', error);
         
-        // Fallback: usa regex para extraer session_id
         const match = url.match(/session_id=([^&]+)/);
         if (match) {
           const sessionId = decodeURIComponent(match[1]);
           
-          if (url.includes('/exito')) {
-            navigation.navigate('PaymentSuccess', { session_id: sessionId });
+          if (url.includes('/exitoso')) {
+            await handlePagoExitoso(sessionId);
           } else if (url.includes('/cancelado')) {
-            navigation.navigate('PaymentCancelled', { session_id: sessionId });
+            handlePagoCancelado(sessionId);
           }
+        }
+      }
+    };
+
+    const handlePagoExitoso = async (sessionId: string) => {
+      try {
+        
+        if (token) {
+          await confirmarCompra(token, sessionId);
+        }
+        
+        Alert.alert(
+          '¡Pago exitoso!',
+          'Tu compra se procesó correctamente. Te llevamos al inicio.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigateToHome()
+            }
+          ]
+        );
+        
+      } catch (error) {
+        console.error('Error al confirmar compra:', error);
+        Alert.alert(
+          '¡Pago exitoso!',
+          'Tu compra se procesó correctamente. Te llevamos al inicio.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigateToHome()
+            }
+          ]
+        );
+      }
+    };
+
+    const handlePagoCancelado = async (sessionId: string) => {
+      try {
+        
+        if (token) {
+          await cancelarCompra(token, sessionId);
+        }
+        
+        navigateToTripSelection();
+        
+      } catch (error) {
+        console.error('Error al cancelar compra:', error);
+        navigateToTripSelection();
+      }
+    };
+
+    const navigateToHome = () => {
+      try {
+
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+        
+      } catch (error) {
+        console.error('Error navegando al inicio:', error);
+        
+        try {
+          navigation.navigate('Main');
+        } catch (fallbackError) {
+          console.error('Fallback también falló:', fallbackError);
+        }
+      }
+    };
+
+    const navigateToTripSelection = () => {
+      try {
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'TripSelection' }],
+        });
+        
+      } catch (error) {
+        console.error('Error navegando a viajes:', error);
+        
+        try {
+          navigation.navigate('TripSelection');
+        } catch (fallbackError) {
+          console.error('Fallback también falló:', fallbackError);
         }
       }
     };
@@ -77,14 +156,12 @@ export const DeepLinkHandler: React.FC<DeepLinkHandlerProps> = ({ children }) =>
       handleDeepLink(event.url);
     });
 
-    // Procesar URL inicial
     handleInitialURL();
 
-    // Cleanup
     return () => {
       subscription?.remove();
     };
-  }, [navigation]);
+  }, [navigation, token]);
 
   return <>{children}</>;
 };

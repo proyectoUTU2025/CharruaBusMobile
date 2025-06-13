@@ -1,59 +1,171 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Linking } from 'react-native';
+import { Linking, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { confirmarCompra, cancelarCompra } from '../services/paymentService';
 import BottomTabsNavigator from '../navigation/BottomTabsNavigator';
 import { OneWayTripScreen } from '../screens/OneWayTripScreen';
 import { ViewTripsScreen } from '../screens/ViewTripsScreen';
+import { SelectSeatScreen } from '../screens/SelectSeatScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import LoadingScreen from '../screens/LoadingScreen';
-import { Localidad } from '../services/locationService';
-
-// Tipos para navegación
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  VerifyEmail: { email: string };
-  Auth: undefined;
-  Main: undefined;
-  TripSelection: undefined;
-  OneWayTrip: undefined;
-  RoundTrip: undefined;
-  ViewTrips: {
-    origenSeleccionado: Localidad;
-    destinoSeleccionado: Localidad;
-    fecha: string;
-    date: string;
-    pasajeros: string;
-    tipoViaje: 'ida' | 'ida-vuelta';
-  };
-  SelectSeat: {
-    journeyId: number;
-    pasajeros: string;
-    origenSeleccionado: Localidad;
-    destinoSeleccionado: Localidad;
-    fecha: string;
-    tipoViaje: 'ida' | 'ida-vuelta';
-  };
-  PaymentSuccess: { session_id: string };
-  PaymentCancelled: { session_id: string };
-};
+import { RootStackParamList } from '../types/navigationType';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const AppNavigator = () => {
-  const { isAuthenticated, isAuthLoading } = useAuth();
+const PaymentSuccessScreen = ({ route, navigation }: any) => {
+  const { session_id } = route.params;
+  const { token } = useAuth();
 
-  // Debugging del deep linking
+  useEffect(() => {
+    const handlePaymentSuccess = async () => {
+      
+      try {
+        if (!session_id) {
+          console.error('No se recibió session_id');
+          throw new Error('No se recibió el ID de sesión');
+        }
+
+        if (!token) {
+          console.error('No hay token de autenticación');
+          throw new Error('No hay token de autenticación');
+        }
+        
+        const result = await confirmarCompra(token, session_id);
+        
+        Alert.alert(
+          '¡Pago exitoso!',
+          'Tu compra se procesó y confirmó correctamente.',
+          [
+            {
+              text: 'Cerrar',
+              onPress: () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main' }],
+                });
+              }
+            }
+          ]
+        );
+        
+      } catch (error) {
+        console.error('Error completo al confirmar compra:', error);
+        console.error('Error message:', error instanceof Error ? error.message : 'Error desconocido');
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        
+        Alert.alert(
+          'Error en confirmación',
+          `Hubo un problema al confirmar tu compra: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor contacta soporte.`,
+          [
+            {
+              text: 'Cerrar',
+              onPress: () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main' }],
+                });
+              }
+            },
+            {
+              text: 'Reintentar',
+              onPress: () => {
+                handlePaymentSuccess();
+              }
+            }
+          ]
+        );
+      }
+    };
+
+    handlePaymentSuccess();
+  }, [session_id, token, navigation]);
+
+  return <LoadingScreen />;
+};
+
+const PaymentCancelledScreen = ({ route, navigation }: any) => {
+  const { session_id } = route.params;
+  const { token } = useAuth();
+
+  useEffect(() => {
+    const handlePaymentCancelled = async () => {
+      
+      try {
+        if (!session_id) {
+          throw new Error('No se recibió el ID de sesión');
+        }
+
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+        
+        const result = await cancelarCompra(token, session_id);
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ 
+            name: 'TripSelection',
+            params: { initialTab: 'viajes' }
+          }],
+        });
+        
+      } catch (error) {
+        console.error('Error completo al cancelar compra:', error);
+        console.error('Error message:', error instanceof Error ? error.message : 'Error desconocido');
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ 
+            name: 'TripSelection',
+            params: { initialTab: 'viajes' }
+          }],
+        });
+      }
+    };
+
+    const timer = setTimeout(handlePaymentCancelled, 1000);
+    return () => clearTimeout(timer);
+  }, [session_id, token, navigation]);
+
+  return <LoadingScreen />;
+};
+
+const AppNavigator = () => {
+  const { isAuthenticated, isAuthLoading, token } = useAuth();
+
+  const linking = {
+    prefixes: ['charruabus://'],
+    config: {
+      screens: {
+        PaymentSuccess: {
+          path: 'pago/exitoso',
+          parse: {
+            session_id: (session_id: string) => {
+              return decodeURIComponent(session_id);
+            },
+          },
+        },
+        PaymentCancelled: {
+          path: 'pago/cancelado',
+          parse: {
+            session_id: (session_id: string) => {
+              return decodeURIComponent(session_id);
+            },
+          },
+        },
+      },
+    },
+  };
+
   useEffect(() => {
     const handleInitialURL = async () => {
       try {
         const url = await Linking.getInitialURL();
         if (url) {
-          handleDeepLink(url);
         }
       } catch (error) {
         console.error('Error al obtener URL inicial:', error);
@@ -61,12 +173,6 @@ const AppNavigator = () => {
     };
 
     const handleURL = (event: { url: string }) => {
-      handleDeepLink(event.url);
-    };
-
-    const handleDeepLink = (url: string) => {
-      const sessionIdMatch = url.match(/session_id=([^&]+)/);
-      const sessionId = sessionIdMatch ? sessionIdMatch[1] : null;
     };
 
     handleInitialURL();
@@ -82,32 +188,8 @@ const AppNavigator = () => {
     return <LoadingScreen />;
   }
 
-  const linking = {
-    prefixes: ['charruabus://'],
-    config: {
-      screens: {
-        PaymentSuccess: {
-          path: 'pago/exito',
-          parse: {
-            session_id: (session_id: string) => {
-              return session_id;
-            },
-          },
-        },
-        PaymentCancelled: {
-          path: 'pago/cancelado', 
-          parse: {
-            session_id: (session_id: string) => {
-              return session_id;
-            },
-          },
-        },
-      },
-    },
-  };
-
   return (
-    <NavigationContainer linking={linking} >
+    <NavigationContainer linking={linking}>
       <Stack.Navigator 
         screenOptions={{ 
           headerShown: false,
@@ -120,6 +202,23 @@ const AppNavigator = () => {
             <Stack.Screen name="TripSelection" component={BottomTabsNavigator} />
             <Stack.Screen name="OneWayTrip" component={OneWayTripScreen} />
             <Stack.Screen name="ViewTrips" component={ViewTripsScreen} />
+            <Stack.Screen name="SelectSeat" component={SelectSeatScreen} />
+            
+            {/* Pantallas de resultado de pago */}
+            <Stack.Screen 
+              name="PaymentSuccess" 
+              component={PaymentSuccessScreen}
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen 
+              name="PaymentCancelled" 
+              component={PaymentCancelledScreen}
+              options={{
+                gestureEnabled: false,
+              }}
+            />
           </>
         ) : (
           <>

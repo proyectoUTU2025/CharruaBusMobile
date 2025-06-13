@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { 
   View, 
   Text, 
@@ -17,10 +17,13 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons"
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useAuth } from '../context/AuthContext'
-import { getOrigenesPosibles, getDestinosPosibles, Localidad } from '../services/locationService'
+import { getLimitePasajes } from '../services/configService'
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { getOrigenesPosibles, getDestinosPosibles } from '../services/locationService';
+import { Localidad } from '../types/locationType';
+import { OneWayTripScreenProps } from '../types/screenPropsType';
+import { RootStackParamList } from '../types/navigationType';
 
 declare global {
   namespace ReactNavigation {
@@ -29,11 +32,6 @@ declare global {
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-interface OneWayTripScreenProps {
-  onGoBack?: () => void;
-  onNavigateToViewTrips?: (params: any) => void;
-}
 
 export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTripScreenProps) => {
   const { token } = useAuth()
@@ -64,6 +62,10 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
   const [destinoSeleccionado, setDestinoSeleccionado] = useState<Localidad | null>(null)
   const [searchDestino, setSearchDestino] = useState("")
 
+  const [limitePasajes, setLimitePasajes] = useState<number>(4)
+  const [loadingConfig, setLoadingConfig] = useState(true)
+  const [opcionesPasajeros, setOpcionesPasajeros] = useState<Array<{label: string, value: string}>>([])
+
   const handleVolver = () => {
     if (onGoBack) {
       onGoBack();
@@ -72,12 +74,42 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
     }
   };
 
-  const opcionesPasajeros = [
-    { label: "1 pasajero", value: "1" },
-    { label: "2 pasajeros", value: "2" },
-    { label: "3 pasajeros", value: "3" },
-    { label: "4 pasajeros", value: "4" },
-  ]
+  useEffect(() => {
+    const cargarLimitePasajes = async () => {
+      if (!token) return;
+
+      try {
+        setLoadingConfig(true);
+        const limite = await getLimitePasajes(token);
+        setLimitePasajes(limite);
+        
+        const opciones = [];
+        for (let i = 1; i <= limite; i++) {
+          opciones.push({
+            label: `${i} pasajero${i !== 1 ? 's' : ''}`,
+            value: i.toString(),
+          });
+        }
+        setOpcionesPasajeros(opciones);
+        
+      } catch (error) {
+        console.error('Error cargando límite de pasajes:', error);
+
+        const opcionesDefault = [
+          { label: "1 pasajero", value: "1" },
+          { label: "2 pasajeros", value: "2" },
+          { label: "3 pasajeros", value: "3" },
+          { label: "4 pasajeros", value: "4" },
+          { label: "5 pasajeros", value: "5" },
+        ];
+        setOpcionesPasajeros(opcionesDefault);
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    cargarLimitePasajes();
+  }, [token]);
 
   useEffect(() => {
     const cargarLocalidades = async () => {
@@ -365,15 +397,30 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
 
               {/* Número de pasajeros */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Número de pasajeros</Text>
+                <Text style={styles.inputLabel}>
+                  Número de pasajeros
+                  {limitePasajes > 4 && (
+                    <Text style={styles.limiteInfo}> (máximo {limitePasajes})</Text>
+                  )}
+                </Text>
                 <TouchableOpacity 
                   style={styles.selectButton} 
                   onPress={() => setShowPasajerosModal(true)}
+                  disabled={loadingConfig}
                 >
-                  <Text style={styles.selectText}>
-                    {getPasajerosLabel()}
-                  </Text>
-                  <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
+                  {loadingConfig ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="small" color="#6B7280" />
+                      <Text style={styles.loadingText}>Cargando...</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={styles.selectText}>
+                        {getPasajerosLabel()}
+                      </Text>
+                      <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -452,7 +499,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
                       renderItem={renderLocalidadItem}
                       keyExtractor={(item) => item.id.toString()}
                       style={styles.localidadesList}
-                      showsVerticalScrollIndicator={false}
+                      showsVerticalScrollIndicator={true}
                       ListEmptyComponent={
                         <Text style={styles.emptyText}>
                           No se encontraron localidades
@@ -504,7 +551,7 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
                       renderItem={renderDestinoItem}
                       keyExtractor={(item) => item.id.toString()}
                       style={styles.localidadesList}
-                      showsVerticalScrollIndicator={false}
+                      showsVerticalScrollIndicator={true}
                       ListEmptyComponent={
                         <Text style={styles.emptyText}>
                           No se encontraron destinos disponibles
@@ -531,15 +578,34 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Seleccionar pasajeros</Text>
-                {opcionesPasajeros.map((opcion) => (
-                  <TouchableOpacity 
-                    key={opcion.value} 
-                    style={styles.modalOption} 
-                    onPress={() => selectPasajeros(opcion.value, opcion.label)}
+                {loadingConfig ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#10B981" />
+                    <Text style={styles.loadingText}>Cargando opciones...</Text>
+                  </View>
+                ) : (
+                  <ScrollView 
+                    style={styles.pasajerosList}
+                    showsVerticalScrollIndicator={true}
                   >
-                    <Text style={styles.modalOptionText}>{opcion.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                    {opcionesPasajeros.map((opcion) => (
+                      <TouchableOpacity 
+                        key={opcion.value} 
+                        style={styles.modalOption} 
+                        onPress={() => selectPasajeros(opcion.value, opcion.label)}
+                      >
+                        <Text style={styles.modalOptionText}>{opcion.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={() => setShowPasajerosModal(false)}
+                >
+                  <Text style={styles.closeButtonText}>Cerrar</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -618,6 +684,11 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 8,
   },
+  limiteInfo: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "normal",
+  },
   inputWithIcon: {
     flexDirection: "row",
     alignItems: "center",
@@ -667,6 +738,17 @@ const styles = StyleSheet.create({
   selectText: {
     fontSize: 16,
     color: "#374151",
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 8,
   },
   infoContainer: {
     backgroundColor: "#ECFDF5",
@@ -769,17 +851,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   localidadesList: {
-    maxHeight: 300,
-  },
-  loadingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#6B7280",
-    marginTop: 12,
+    maxHeight: 250,
+    minHeight: 100,
   },
   emptyText: {
     fontSize: 16,
@@ -793,10 +866,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     alignItems: "center",
+    marginTop: 16,
   },
   closeButtonText: {
     fontSize: 16,
     fontWeight: "500",
     color: "#374151",
+  },
+  pasajerosList: {
+    maxHeight: 250,
+    minHeight: 100,
   },
 });
