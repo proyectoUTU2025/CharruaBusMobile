@@ -1,9 +1,6 @@
-const API_BASE_URL = 'http://192.168.1.7:8080';
+import { Localidad } from '../types/locationType';
 
-export interface Localidad {
-  id: number;
-  nombreConDepartamento: string;
-}
+const API_BASE_URL = 'http://192.168.1.170:8080';
 
 export const getOrigenesPosibles = async (authToken: string): Promise<Localidad[]> => {
   try {

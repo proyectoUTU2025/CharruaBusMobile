@@ -16,8 +16,8 @@ import {
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { RootStackParamList } from '../navigation/AppNavigator'
-import { verifyEmailCode, /*resendVerificationCode*/ } from '../services/authService'
+import { RootStackParamList } from '../types/navigationType';
+import { verifyEmailCode } from '../services/authService'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VerifyEmail'>
 
@@ -65,7 +65,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
     setIsLoading(true)
     
     try {
-      // Doble try-catch para manejar errores sin propagación
       try {
         const response = await verifyEmailCode(email, codigo)
         
@@ -81,7 +80,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
         )
       } catch (verifyError: any) {
         
-        // Maneja errores específicos y mostrarlos en la UI
         if (verifyError.message && verifyError.message.includes('inválido')) {
           setCodigoError("Código de verificación inválido")
           setCodigo("")
@@ -95,7 +93,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
         } else if (verifyError.message && verifyError.message.includes('Error de conexión')) {
           Alert.alert("Error de conexión", "No se pudo conectar al servidor. Verifica tu internet")
         } else {
-          // Para otros errores, mostrar en el campo o como alerta
           if (verifyError.message) {
             setCodigoError(verifyError.message)
           } else {

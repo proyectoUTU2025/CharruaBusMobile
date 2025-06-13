@@ -1,46 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MainScreen from '../screens/MainScreen';
 import { TripSelectionScreen } from '../screens/TripSelectionScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from '../hooks/useUser';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
 import { OneWayTripScreen } from '../screens/OneWayTripScreen';
+import { RoundTripScreen } from '../screens/RoundTripScreen';
 import { ViewTripsScreen } from '../screens/ViewTripsScreen';
 import { SelectSeatScreen } from '../screens/SelectSeatScreen';
+import { RoundTripState } from '../types/roundTripType';
+import { NavigationState, ViewTripsParams, RootStackParamList } from '../types/navigationType';
 
-type NavigationState = 
-  | { type: 'tab'; activeTab: string }
-  | { type: 'oneWayTrip' }
-  | { type: 'viewTrips'; params: any }
-  | { type: 'selectSeat'; params: any };
-
-interface ViewTripsParams {
-  origenSeleccionado: any;
-  destinoSeleccionado: any;
-  fecha: string;
-  date: string;
-  pasajeros: string;
-  tipoViaje: 'ida' | 'ida-vuelta';
-}
-
-const BottomTabsNavigator = () => {
+const BottomTabsNavigator = ({ route }: any) => {
+  const initialTab = route?.params?.initialTab || 'inicio';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const { user, loading } = useUser();
   
-  const [navigationState, setNavigationState] = useState<NavigationState>({ 
-    type: 'tab', 
-    activeTab: 'inicio' 
-  });
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTabRef = useRef(activeTab);
+  
+  const [navigationState, setNavigationState] = useState<NavigationState>({ type: 'tab' });
   
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
-  // Datos de ejemplo para las notificaciones
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -76,33 +68,179 @@ const BottomTabsNavigator = () => {
     }
   ]);
 
+  const navigateToChangePassword = () => {
+    setNavigationState({ type: 'changePassword' });
+    setMenuVisible(false);
+  };
+
   const navigateToTab = (tab: string) => {
-    setNavigationState({ type: 'tab', activeTab: tab });
+    setActiveTab(tab);
+    activeTabRef.current = tab;
+    setNavigationState({ type: 'tab' });
   };
 
   const navigateToOneWayTrip = () => {
     setNavigationState({ type: 'oneWayTrip' });
   };
 
+  const navigateToRoundTrip = () => {
+    setNavigationState({ type: 'roundTrip' });
+  };
+
   const navigateToViewTrips = (params: ViewTripsParams) => {
     setNavigationState({ type: 'viewTrips', params });
   };
 
- const navigateToSelectSeat = (params: any) => {
-  setNavigationState({ type: 'selectSeat', params });
-};
+  const navigateToSelectSeat = (params: any) => {
+    setNavigationState({ type: 'selectSeat', params });
+  };
 
-  // Función para volver desde cualquier pantalla
-  // Actualizar la función goBack
-  const goBack = () => {
-    if (navigationState.type === 'selectSeat') {
-      // Si estamos en SelectSeat, volver a ViewTrips
-      // Necesitarías guardar los parámetros de ViewTrips, por ahora volvemos a OneWayTrip
-      setNavigationState({ type: 'oneWayTrip' });
+  const goBack = (roundTripState?: RoundTripState) => {
+    if (navigationState.type === 'changePassword') {
+      setActiveTab('inicio');
+      activeTabRef.current = 'inicio';
+      setNavigationState({ type: 'tab' });
+    } else if (navigationState.type === 'selectSeat') {
+      const params = navigationState.params;
+      
+      if (params.tipoViaje === 'ida-vuelta' && params.roundTripState) {
+        const currentRoundTripState = params.roundTripState as RoundTripState;
+        
+        if (currentRoundTripState.currentStep === 'select-seat-ida') {
+          const resetState = {
+            ...currentRoundTripState,
+            currentStep: 'select-trip-ida' as const,
+            viajeIda: {
+              ...currentRoundTripState.viajeIda!,
+              tripId: undefined,
+              trip: undefined,
+              asientosSeleccionados: undefined
+            },
+          };
+          
+          setNavigationState({ 
+            type: 'viewTrips', 
+            params: {
+              origenSeleccionado: resetState.viajeIda!.origenSeleccionado,
+              destinoSeleccionado: resetState.viajeIda!.destinoSeleccionado,
+              fecha: resetState.viajeIda!.fecha,
+              date: resetState.viajeIda!.date,
+              pasajeros: resetState.viajeIda!.pasajeros,
+              tipoViaje: 'ida-vuelta' as const,
+              roundTripState: resetState,
+            }
+          });
+        } else if (currentRoundTripState.currentStep === 'select-seat-vuelta') {
+          const resetState = {
+            ...currentRoundTripState,
+            currentStep: 'select-trip-vuelta' as const,
+            viajeVuelta: {
+              ...currentRoundTripState.viajeVuelta!,
+              tripId: undefined,
+              trip: undefined,
+              asientosSeleccionados: undefined
+            },
+          };
+          
+          setNavigationState({ 
+            type: 'viewTrips', 
+            params: {
+              origenSeleccionado: resetState.viajeVuelta!.origenSeleccionado,
+              destinoSeleccionado: resetState.viajeVuelta!.destinoSeleccionado,
+              fecha: resetState.viajeVuelta!.fecha,
+              date: resetState.viajeVuelta!.date,
+              pasajeros: resetState.viajeVuelta!.pasajeros,
+              tipoViaje: 'ida-vuelta' as const,
+              roundTripState: resetState,
+            }
+          });
+        }
+      } else {
+        setNavigationState({ 
+          type: 'viewTrips', 
+          params: {
+            origenSeleccionado: params.origenSeleccionado,
+            destinoSeleccionado: params.destinoSeleccionado,
+            fecha: params.fecha,
+            date: params.date || params.fecha,
+            pasajeros: params.pasajeros,
+            tipoViaje: 'ida' as const,
+          }
+        });
+      }
+      
     } else if (navigationState.type === 'viewTrips') {
-      setNavigationState({ type: 'oneWayTrip' });
-    } else if (navigationState.type === 'oneWayTrip') {
-      setNavigationState({ type: 'tab', activeTab: 'viajes' });
+      const params = navigationState.params;
+      
+      if (!roundTripState && params.tipoViaje === 'ida-vuelta') {
+        setNavigationState({ type: 'roundTrip' });
+        return;
+      }
+      
+      if (roundTripState) {
+        
+        if (roundTripState.currentStep === 'select-seat-ida') {
+          setNavigationState({ 
+            type: 'selectSeat', 
+            params: {
+              tripId: roundTripState.viajeIda!.tripId!,
+              origenSeleccionado: roundTripState.viajeIda!.origenSeleccionado,
+              destinoSeleccionado: roundTripState.viajeIda!.destinoSeleccionado,
+              fecha: roundTripState.viajeIda!.fecha,
+              pasajeros: roundTripState.viajeIda!.pasajeros,
+              trip: roundTripState.viajeIda!.trip,
+              tipoViaje: 'ida-vuelta' as const,
+              roundTripState: roundTripState,
+            }
+          });
+          return;
+        }
+        
+        if (roundTripState.currentStep === 'select-trip-ida') {
+          setNavigationState({ type: 'roundTrip' });
+          return;
+        }
+      }
+      
+      if (params.tipoViaje === 'ida-vuelta' && params.roundTripState) {
+        const currentRoundTripState = params.roundTripState as RoundTripState;
+        
+        if (currentRoundTripState.currentStep === 'select-trip-ida') {
+          setNavigationState({ type: 'roundTrip' });
+        } else if (currentRoundTripState.currentStep === 'select-trip-vuelta') {
+          const resetState = {
+            ...currentRoundTripState,
+            currentStep: 'select-seat-ida' as const,
+            viajeVuelta: {
+              ...currentRoundTripState.viajeVuelta!,
+              tripId: undefined,
+              trip: undefined,
+              asientosSeleccionados: undefined
+            }
+          };
+          
+          setNavigationState({ 
+            type: 'selectSeat', 
+            params: {
+              tripId: resetState.viajeIda!.tripId!,
+              origenSeleccionado: resetState.viajeIda!.origenSeleccionado,
+              destinoSeleccionado: resetState.viajeIda!.destinoSeleccionado,
+              fecha: resetState.viajeIda!.fecha,
+              pasajeros: resetState.viajeIda!.pasajeros,
+              trip: resetState.viajeIda!.trip,
+              tipoViaje: 'ida-vuelta' as const,
+              roundTripState: resetState,
+            }
+          });
+        }
+      } else {
+        setNavigationState({ type: 'oneWayTrip' });
+      }
+      
+    } else if (navigationState.type === 'oneWayTrip' || navigationState.type === 'roundTrip') {
+      setActiveTab('viajes');
+      activeTabRef.current = 'viajes';
+      setNavigationState({ type: 'tab' });
     }
   };
 
@@ -127,6 +265,8 @@ const BottomTabsNavigator = () => {
     
     if (action === 'logout') {
       handleLogout();
+    } else if (action === 'changePassword') {
+      navigateToChangePassword();
     }
   };
 
@@ -167,7 +307,7 @@ const BottomTabsNavigator = () => {
 
   const getCurrentActiveTab = () => {
     if (navigationState.type === 'tab') {
-      return navigationState.activeTab;
+      return activeTabRef.current;
     }
     return 'viajes';
   };
@@ -177,70 +317,101 @@ const BottomTabsNavigator = () => {
   };
 
   const renderContent = () => {
-  switch (navigationState.type) {
-    case 'viewTrips':
-      return (
-        <ViewTripsScreen 
-          route={{ params: navigationState.params }}
-          navigation={{ 
-            goBack, 
-            navigate: navigateToSelectSeat
-          }}
-          onGoBack={goBack}
-        />
-      );
-    case 'oneWayTrip':
-      return (
-        <OneWayTripScreen 
-          onGoBack={goBack}
-          onNavigateToViewTrips={navigateToViewTrips}
-        />
-      );
-    case 'selectSeat':
-          return (
-            <SelectSeatScreen 
-              route={{ params: navigationState.params }}
-              navigation={{ goBack }}
-            />
-          );
-    case 'viewTrips':
-      return (
-        <ViewTripsScreen 
-          route={{ params: navigationState.params }}
-          navigation={{ goBack, navigate: navigateToSelectSeat }}
-          onGoBack={goBack}
-        />
-      ); 
-    case 'tab':
-      switch (navigationState.activeTab) {
-        case "inicio":
-          return <MainScreen />;
-        case "viajes":
-          return (
-            <TripSelectionScreen 
-              activeTab={navigationState.activeTab}
-              onTabPress={handleTabPress}
-              onNavigateToOneWay={navigateToOneWayTrip}
-              onNavigateToRoundTrip={() => console.log('RoundTrip pendiente')}
-            />
-          );
-    case "historial":
-      return (
-        <View style={styles.placeholderContainer}>
-          <Icon name="history" size={64} color="#CAC4D0" />
-          <Text style={styles.placeholderTitle}>Historial de Compras</Text>
-          <Text style={styles.placeholderSubtitle}>
-            Aquí podrás ver todas tus compras anteriores
-          </Text>
-        </View>
-      );
-    default:
-      return <MainScreen />;
+    switch (navigationState.type) {
+      case 'changePassword':
+        return (
+          <ChangePasswordScreen 
+            onGoBack={goBack}
+            onSuccess={() => {
+              setActiveTab('inicio');
+              activeTabRef.current = 'inicio';
+              setNavigationState({ type: 'tab' });
+            }}
+            token={token || ''}
+          />
+        );
+      case 'viewTrips':
+        return (
+          <ViewTripsScreen 
+            route={{ params: navigationState.params }}
+            navigation={{ 
+              goBack, 
+              navigate: navigateToSelectSeat
+            }}
+            onGoBack={goBack}
+          />
+        );
+      case 'oneWayTrip':
+        return (
+          <OneWayTripScreen 
+            onGoBack={goBack}
+            onNavigateToViewTrips={navigateToViewTrips}
+          />
+        );
+      case 'roundTrip':
+        return (
+          <RoundTripScreen 
+            onVolver={goBack}
+            onNavigateToViewTrips={navigateToViewTrips}
+          />
+        );
+      case 'selectSeat':
+        return (
+          <SelectSeatScreen 
+            route={{ 
+              params: {
+                ...navigationState.params,
+                onWentToPayment: () => {
+                  if (navigationState.type === 'selectSeat') {
+                    const updatedParams = {
+                      ...navigationState.params,
+                      wentToPayment: true
+                    };
+                    
+                    setNavigationState({
+                      ...navigationState,
+                      params: updatedParams
+                    });
+                  }
+                }
+              }
+            }}
+            navigation={{ 
+              goBack,
+              navigate: navigateToViewTrips
+            }}
+          />
+        );
+      case 'tab':
+        switch (activeTab) {
+          case "inicio":
+            return <MainScreen />;
+          case "viajes":
+            return (
+              <TripSelectionScreen 
+                activeTab={activeTab}
+                onTabPress={handleTabPress}
+                onNavigateToOneWay={navigateToOneWayTrip}
+                onNavigateToRoundTrip={navigateToRoundTrip}
+              />
+            );
+          case "historial":
+            return (
+              <View style={styles.placeholderContainer}>
+                <Icon name="history" size={64} color="#CAC4D0" />
+                <Text style={styles.placeholderTitle}>Historial de Compras</Text>
+                <Text style={styles.placeholderSubtitle}>
+                  Aquí podrás ver todas tus compras anteriores
+                </Text>
+              </View>
+            );
+          default:
+            return <MainScreen />;
+        }
+      default:
+        return <MainScreen />;
     }
-    default:
-      return <MainScreen />;
-  }
-};
+  };
 
   const MenuDropdown = () => (
     <Modal
@@ -422,36 +593,63 @@ const BottomTabsNavigator = () => {
       {shouldShowBottomNavigation() && (
         <View style={styles.navigationBar}>
           <TouchableOpacity
-            style={[styles.navigationItem, currentActiveTab === "inicio" && styles.activeNavigationItem]}
+            key={`inicio-${currentActiveTab === "inicio"}`}
+            style={styles.navigationItem}
             onPress={() => handleTabPress("inicio")}
             activeOpacity={0.7}
           >
-            <View style={[styles.navigationIndicator, currentActiveTab === "inicio" && styles.activeNavigationIndicator]}>
+            <View style={[
+              styles.navigationIndicator, 
+              currentActiveTab === "inicio" && styles.activeNavigationIndicator
+            ]}>
               <Icon name="home" size={24} color={currentActiveTab === "inicio" ? "#3B82F6" : "#49454F"} />
             </View>
-            <Text style={[styles.navigationLabel, currentActiveTab === "inicio" && styles.activeNavigationLabel]}>Inicio</Text>
+            <Text style={[
+              styles.navigationLabel, 
+              currentActiveTab === "inicio" && styles.activeNavigationLabel
+            ]}>
+              Inicio
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navigationItem, currentActiveTab === "viajes" && styles.activeNavigationItem]}
+            key={`viajes-${currentActiveTab === "viajes"}`}
+            style={styles.navigationItem}
             onPress={() => handleTabPress("viajes")}
             activeOpacity={0.7}
           >
-            <View style={[styles.navigationIndicator, currentActiveTab === "viajes" && styles.activeNavigationIndicator]}>
+            <View style={[
+              styles.navigationIndicator, 
+              currentActiveTab === "viajes" && styles.activeNavigationIndicator
+            ]}>
               <Icon name="search" size={24} color={currentActiveTab === "viajes" ? "#3B82F6" : "#49454F"} />
             </View>
-            <Text style={[styles.navigationLabel, currentActiveTab === "viajes" && styles.activeNavigationLabel]}>Viajes</Text>
+            <Text style={[
+              styles.navigationLabel, 
+              currentActiveTab === "viajes" && styles.activeNavigationLabel
+            ]}>
+              Viajes
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navigationItem, currentActiveTab === "historial" && styles.activeNavigationItem]}
+            key={`historial-${currentActiveTab === "historial"}`}
+            style={styles.navigationItem}
             onPress={() => handleTabPress("historial")}
             activeOpacity={0.7}
           >
-            <View style={[styles.navigationIndicator, currentActiveTab === "historial" && styles.activeNavigationIndicator]}>
+            <View style={[
+              styles.navigationIndicator, 
+              currentActiveTab === "historial" && styles.activeNavigationIndicator
+            ]}>
               <Icon name="history" size={24} color={currentActiveTab === "historial" ? "#3B82F6" : "#49454F"} />
             </View>
-            <Text style={[styles.navigationLabel, currentActiveTab === "historial" && styles.activeNavigationLabel]}>Historial</Text>
+            <Text style={[
+              styles.navigationLabel, 
+              currentActiveTab === "historial" && styles.activeNavigationLabel
+            ]}>
+              Historial
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -463,7 +661,6 @@ const BottomTabsNavigator = () => {
   );
 };
 
-// Estilos (manteniendo los originales, pero agregando algunos nuevos si es necesario)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -528,15 +725,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
   },
-  activeNavigationItem: {
-    // Mantener estilos actuales
-  },
   navigationIndicator: {
-    padding: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 16,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   activeNavigationIndicator: {
     backgroundColor: '#E0F2FE',
+    borderRadius: 16,
   },
   navigationLabel: {
     fontSize: 12,

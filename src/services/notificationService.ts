@@ -31,8 +31,10 @@ export async function requestUserPermission(): Promise<void> {
         return;
       }
     }
+
     const messaging = getMessaging(getApp());
     const authStatus = await requestPermission(messaging);
+    
     
     const enabled =
       authStatus === AuthorizationStatus.AUTHORIZED ||
@@ -66,21 +68,18 @@ export function setupNotifications(onNotification: NotificationCallback): (() =>
   try {
     const messaging = getMessaging(getApp());
 
-    // Maneja notificaciones en primer plano
     const unsubscribeForeground = onMessage(messaging, async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
       if (onNotification) {
         onNotification(remoteMessage);
       }
     });
 
-    // Maneja notificaciones cuando la app está en segundo plano y se abre
     const unsubscribeOpenedApp = onNotificationOpenedApp(messaging, (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
       if (onNotification) {
         onNotification(remoteMessage);
       }
     });
 
-    // Maneja notificación inicial (cuando la app está cerrada)
     getInitialNotification(messaging)
       .then((remoteMessage: FirebaseMessagingTypes.RemoteMessage | null) => {
         if (remoteMessage) {

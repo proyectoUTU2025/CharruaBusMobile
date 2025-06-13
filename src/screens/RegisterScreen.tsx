@@ -17,7 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from "react-native-vector-icons/MaterialIcons"
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { RootStackParamList } from '../types/navigationType';
 import { registerUser } from '../services/authService';
 
 const PasswordRequirements = ({ password }: { password: string }) => {
@@ -425,7 +425,7 @@ export default function RegisterScreen() {
                       autoCorrect={false} 
                       value={formatearCedula(cedula)} 
                       onChangeText={validateCedula}
-                      maxLength={11} //Contempla los puntos y guión en el formato X.XXX.XXX-X
+                      maxLength={11}
                     />
                     {cedulaError ? (
                       <Text style={styles.errorText}>{cedulaError}</Text>
@@ -706,7 +706,6 @@ const styles = StyleSheet.create({
  eyeButton: {
    padding: 15,
  },
- // Estilos para los requisitos de contraseña
  passwordRequirements: {
    marginTop: 8,
    paddingHorizontal: 4,

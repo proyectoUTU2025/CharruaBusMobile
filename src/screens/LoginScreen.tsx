@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from '../types/navigationType';
 import { useAuth } from "../context/AuthContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;

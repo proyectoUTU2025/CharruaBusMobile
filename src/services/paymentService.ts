@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://192.168.1.7:8080';
+const API_BASE_URL = 'http://192.168.1.170:8080';
 
 export async function crearSesionStripe(token: string, payload: any) {
   const payloadLimpio = {
@@ -28,12 +28,55 @@ export async function crearSesionStripe(token: string, payload: any) {
 export const confirmarCompra = async (token: string, sessionId: string) => {
   try {
 
-    const response = await fetch(`${API_BASE_URL}/compras/confirmar/${sessionId}`, {
+
+    const response = await fetch(`${API_BASE_URL}/compras/confirmar`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ sessionId: sessionId }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response body:', errorText);
+      
+      let errorMessage = `Error ${response.status}`;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.mensaje || errorData.message || errorMessage;
+        console.error('Parsed error data:', errorData);
+      } catch (parseError) {
+        console.error('Could not parse error response as JSON');
+        errorMessage = errorText || errorMessage;
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result;
+    
+  } catch (error) {
+    console.error('==> ERROR EN CONFIRMACIÓN DE COMPRA <==');
+    console.error('Error tipo:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error mensaje:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack available');
+    throw error;
+  }
+};
+
+export const cancelarCompra = async (token: string, sessionId: string) => {
+  try {
+
+    const response = await fetch(`${API_BASE_URL}/compras/cancelar`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionId: sessionId }),
     });
 
     if (!response.ok) {
@@ -52,7 +95,7 @@ export const confirmarCompra = async (token: string, sessionId: string) => {
     return result;
     
   } catch (error) {
-    console.error('Error en confirmarCompra:', error);
+    console.error('Error en cancelarCompra:', error);
     throw error;
   }
 };

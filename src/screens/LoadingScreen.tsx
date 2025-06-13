@@ -14,14 +14,14 @@ const LoadingScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ImageBackground
-        source={require("../assets/background.png")}
+        source={require("../assets/backgroundLoading.png")}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <View style={styles.content}>
           <View style={styles.logoContainer}>
             <Image
-              source={require("../assets/CharruaBusLogo.png")}
+              source={require("../assets/CharruaBusLogoSinFondo.png")}
               style={styles.logoImage}
               resizeMode="contain"
             />
@@ -44,18 +44,21 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    paddingBottom: 190,
   },
   logoContainer: {
     marginBottom: 40,
+    backgroundColor: 'transparent',
   },
   logoImage: {
     width: 200,
     height: 100,
+    backgroundColor: 'transparent',
   },
   loader: {
-    marginTop: 20,
+    marginTop: 80,
   },
 });
 

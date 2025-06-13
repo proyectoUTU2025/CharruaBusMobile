@@ -3,9 +3,11 @@ import React, {
   useContext,
   useEffect,
   useState,
-  ReactNode
+  ReactNode,
+  useRef
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState, AppStateStatus } from 'react-native';
 import { login as loginService, logout as logoutService } from '../services/authService';
 
 type AuthContextType = {
@@ -27,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
 
   const login = async (email: string, password: string) => {
     setError(null);
@@ -35,7 +38,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const newToken = await loginService(email, password);
       await AsyncStorage.setItem('authToken', newToken);
+      await AsyncStorage.setItem('appHeartbeat', Date.now().toString());
+      await AsyncStorage.setItem('sessionActive', 'true');
       setToken(newToken);
+      
+      startHeartbeat();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error en login';
       setError(errorMessage);
@@ -47,17 +54,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
+      
+      stopHeartbeat();
+      
       await logoutService(token || undefined);
-      await AsyncStorage.removeItem('authToken');
+      
+      await AsyncStorage.multiRemove(['authToken', 'sessionActive', 'appHeartbeat']);
+      
       setToken(null);
       setError(null);
+      
     } catch (error) {
-      console.error('Error en logout real:', error);
-      // En caso de error, limpiamos el token de todos modos
+      console.error('Error en logout:', error);
       try {
-        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.multiRemove(['authToken', 'sessionActive', 'appHeartbeat']);
       } catch (removeError) {
-        console.error('Error removiendo token después de fallo:', removeError);
+        console.error('Error removiendo datos después de fallo:', removeError);
       }
       setToken(null);
     } finally {
@@ -69,24 +81,100 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
   };
 
+  const startHeartbeat = () => {
+    stopHeartbeat();
+    
+    heartbeatInterval.current = setInterval(async () => {
+      try {
+        if (AppState.currentState === 'active') {
+          await AsyncStorage.setItem('appHeartbeat', Date.now().toString());
+        }
+      } catch (error) {
+        console.error('Error en heartbeat:', error);
+      }
+    }, 5000);
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatInterval.current) {
+      clearInterval(heartbeatInterval.current);
+      heartbeatInterval.current = null;
+    }
+  };
+
   const checkToken = async () => {
     try {
+      
       const storedToken = await AsyncStorage.getItem('authToken');
-      if (storedToken) {
+      const sessionActive = await AsyncStorage.getItem('sessionActive');
+      const lastHeartbeat = await AsyncStorage.getItem('appHeartbeat');
+      
+      if (storedToken && sessionActive === 'true') {
+        if (lastHeartbeat) {
+          const lastTime = parseInt(lastHeartbeat);
+          const timeSinceHeartbeat = Date.now() - lastTime;
+          
+          if (timeSinceHeartbeat > 15000) {
+            await AsyncStorage.multiRemove(['authToken', 'sessionActive', 'appHeartbeat']);
+            setToken(null);
+            setIsAuthLoading(false);
+            return;
+          }
+        }
+        
         setToken(storedToken);
+        startHeartbeat();
+      } else {
+        await AsyncStorage.multiRemove(['authToken', 'sessionActive', 'appHeartbeat']);
+        setToken(null);
       }
     } catch (error) {
-      console.error('Error checking stored token:', error);
-      // En caso de error, limpiamos cualquier token corrupto
+      console.error('Error verificando token almacenado:', error);
       try {
-        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.multiRemove(['authToken', 'sessionActive', 'appHeartbeat']);
       } catch (removeError) {
-        console.error('Error removing corrupted token:', removeError);
+        console.error('Error removiendo token corrupto:', removeError);
       }
+      setToken(null);
     } finally {
       setIsAuthLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background') {
+        stopHeartbeat();
+      } else if (nextAppState === 'active') {
+        if (token) {
+          startHeartbeat();
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription?.remove();
+      stopHeartbeat();
+      
+      if (token) {
+        logoutService(token).catch(error => {
+          console.error('Error en logout durante cierre:', error);
+        });
+        
+        AsyncStorage.multiRemove(['authToken', 'sessionActive', 'appHeartbeat']).catch(error => {
+          console.error('Error limpiando storage durante cierre:', error);
+        });
+      }
+    };
+  }, [token]);
+
+  useEffect(() => {
+    return () => {
+      stopHeartbeat();
+    };
+  }, []);
 
   useEffect(() => {
     checkToken();

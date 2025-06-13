@@ -1,11 +1,7 @@
 import React from "react"
 import { StyleSheet, View, Text, ImageBackground, Image } from "react-native"
 
-interface MainScreenProps {
-  userEmail?: string
-}
-
-export default function MainScreen({ userEmail = "usuario@ejemplo.com" }: MainScreenProps) {
+export default function MainScreen() {
   return (
     <ImageBackground 
       source={require("../assets/background.png")} 
