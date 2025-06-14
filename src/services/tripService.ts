@@ -8,7 +8,7 @@ import {
   TripDetailsResponse
 } from '../types/tripType';
 
-const API_BASE_URL = 'http://192.168.1.170:8080';
+const API_BASE_URL = 'http://192.168.43.101:8080';
 
 export const searchTrips = async (
   token: string,

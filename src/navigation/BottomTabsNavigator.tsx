@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import MainScreen from '../screens/MainScreen';
 import { TripSelectionScreen } from '../screens/TripSelectionScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import PurchasesScreen from '../screens/PurchasesScreen';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from '../hooks/useUser';
 import { useNavigation } from '@react-navigation/native';
@@ -93,6 +94,10 @@ const BottomTabsNavigator = ({ route }: any) => {
 
   const navigateToSelectSeat = (params: any) => {
     setNavigationState({ type: 'selectSeat', params });
+  };
+
+  const navigateToPurchaseDetail = (purchaseId: number) => {
+    navigation.navigate('PurchaseDetail', { purchaseId });
   };
 
   const goBack = (roundTripState?: RoundTripState) => {
@@ -395,15 +400,11 @@ const BottomTabsNavigator = ({ route }: any) => {
                 onNavigateToRoundTrip={navigateToRoundTrip}
               />
             );
-          case "historial":
+          case "compras":
             return (
-              <View style={styles.placeholderContainer}>
-                <Icon name="history" size={64} color="#CAC4D0" />
-                <Text style={styles.placeholderTitle}>Historial de Compras</Text>
-                <Text style={styles.placeholderSubtitle}>
-                  Aquí podrás ver todas tus compras anteriores
-                </Text>
-              </View>
+              <PurchasesScreen 
+                onNavigateToPurchaseDetail={navigateToPurchaseDetail}
+              />
             );
           default:
             return <MainScreen />;
@@ -632,23 +633,24 @@ const BottomTabsNavigator = ({ route }: any) => {
             </Text>
           </TouchableOpacity>
 
+          {/* ✅ CAMBIO: Cambiar historial por compras */}
           <TouchableOpacity
-            key={`historial-${currentActiveTab === "historial"}`}
+            key={`compras-${currentActiveTab === "compras"}`}
             style={styles.navigationItem}
-            onPress={() => handleTabPress("historial")}
+            onPress={() => handleTabPress("compras")}
             activeOpacity={0.7}
           >
             <View style={[
               styles.navigationIndicator, 
-              currentActiveTab === "historial" && styles.activeNavigationIndicator
+              currentActiveTab === "compras" && styles.activeNavigationIndicator
             ]}>
-              <Icon name="history" size={24} color={currentActiveTab === "historial" ? "#3B82F6" : "#49454F"} />
+              <Icon name="shopping-cart" size={24} color={currentActiveTab === "compras" ? "#3B82F6" : "#49454F"} />
             </View>
             <Text style={[
               styles.navigationLabel, 
-              currentActiveTab === "historial" && styles.activeNavigationLabel
+              currentActiveTab === "compras" && styles.activeNavigationLabel
             ]}>
-              Historial
+              Compras
             </Text>
           </TouchableOpacity>
         </View>

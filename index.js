@@ -4,14 +4,12 @@ import { name as appName } from './app.json';
 import { getApp, getApps, initializeApp } from '@react-native-firebase/app';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 
-//Asegura que Firebase está inicializado correctamente
 try {
   const app = getApps().length ? getApp() : null;
 
   if (app) {
     const messaging = getMessaging(app);
 
-    //Configura el manejador de mensajes en segundo plano
     setBackgroundMessageHandler(messaging, async remoteMessage => {
       try {
         return Promise.resolve();

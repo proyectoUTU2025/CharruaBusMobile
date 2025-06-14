@@ -12,6 +12,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import LoadingScreen from '../screens/LoadingScreen';
+import PurchaseDetailScreen from '../screens/PurchaseDetailScreen';
 import { RootStackParamList } from '../types/navigationType';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,7 +23,6 @@ const PaymentSuccessScreen = ({ route, navigation }: any) => {
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
-      
       try {
         if (!session_id) {
           console.error('No se recibió session_id');
@@ -36,6 +36,13 @@ const PaymentSuccessScreen = ({ route, navigation }: any) => {
         
         const result = await confirmarCompra(token, session_id);
         
+        const compraId = result.data?.compraId;
+        
+        if (!compraId) {
+          console.error('No se recibió compraId en la respuesta:', result);
+          throw new Error('No se recibió el ID de la compra');
+        }
+        
         Alert.alert(
           '¡Pago exitoso!',
           'Tu compra se procesó y confirmó correctamente.',
@@ -45,11 +52,18 @@ const PaymentSuccessScreen = ({ route, navigation }: any) => {
               onPress: () => {
                 navigation.reset({
                   index: 0,
-                  routes: [{ name: 'Main' }],
+                  routes: [
+                    { name: 'Main' },
+                    { 
+                      name: 'PurchaseDetail', 
+                      params: { purchaseId: compraId }
+                    }
+                  ],
                 });
               }
             }
-          ]
+          ],
+          { cancelable: false }
         );
         
       } catch (error) {
@@ -62,7 +76,7 @@ const PaymentSuccessScreen = ({ route, navigation }: any) => {
           `Hubo un problema al confirmar tu compra: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor contacta soporte.`,
           [
             {
-              text: 'Cerrar',
+              text: 'Ir al inicio',
               onPress: () => {
                 navigation.reset({
                   index: 0,
@@ -93,7 +107,6 @@ const PaymentCancelledScreen = ({ route, navigation }: any) => {
 
   useEffect(() => {
     const handlePaymentCancelled = async () => {
-      
       try {
         if (!session_id) {
           throw new Error('No se recibió el ID de sesión');
@@ -165,15 +178,12 @@ const AppNavigator = () => {
     const handleInitialURL = async () => {
       try {
         const url = await Linking.getInitialURL();
-        if (url) {
-        }
       } catch (error) {
         console.error('Error al obtener URL inicial:', error);
       }
     };
 
-    const handleURL = (event: { url: string }) => {
-    };
+    const handleURL = (event: { url: string }) => {};
 
     handleInitialURL();
     
@@ -203,6 +213,15 @@ const AppNavigator = () => {
             <Stack.Screen name="OneWayTrip" component={OneWayTripScreen} />
             <Stack.Screen name="ViewTrips" component={ViewTripsScreen} />
             <Stack.Screen name="SelectSeat" component={SelectSeatScreen} />
+            
+            {/*NUEVA: Pantalla de detalle de compra */}
+            <Stack.Screen 
+              name="PurchaseDetail" 
+              component={PurchaseDetailScreen}
+              options={{
+                gestureEnabled: false,
+              }}
+            />
             
             {/* Pantallas de resultado de pago */}
             <Stack.Screen 

@@ -29,6 +29,9 @@ export type RootStackParamList = {
   };
   PaymentSuccess: { session_id: string };
   PaymentCancelled: { session_id: string };
+  
+  // ✅ NUEVO: Pantalla de detalle de compra
+  PurchaseDetail: { purchaseId: number };
 };
 
 export type NavigationState = 
