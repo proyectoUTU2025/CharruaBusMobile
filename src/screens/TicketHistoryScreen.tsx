@@ -71,6 +71,7 @@ export default function TicketHistoryScreen({ onGoBack, filters }: TicketHistory
         console.log("Cargando pasajes - Página:", page)
         console.log("Filtros aplicados:", filters)
 
+        // ✅ CORREGIDO: Llamar directamente al servicio sin JSON.parse adicional
         const response = await pasajeService.obtenerHistorialPasajes(
           Number.parseInt(user.id),
           user.email,
@@ -83,44 +84,36 @@ export default function TicketHistoryScreen({ onGoBack, filters }: TicketHistory
           token,
         )
 
-        // Parsear la respuesta JSON
-        let result
-        try {
-          result = JSON.parse(response)
-          console.log("✅ Historial de pasajes obtenido:", {
-            totalElements: result.totalElements || 0,
-            contentLength: result.content?.length || 0,
-            hasPageable: !!result.pageable,
-            firstItem: result.content && result.content.length > 0 ? JSON.stringify(result.content[0]) : "No items",
-          })
-        } catch (parseError) {
-          console.error("❌ Error parsing JSON:", parseError)
-          throw new Error("Error al procesar la respuesta del servidor")
-        }
+        console.log("✅ Historial de pasajes obtenido:", {
+          totalElements: response.totalElements || 0,
+          contentLength: response.content?.length || 0,
+          hasPageable: !!response.pageable,
+          firstItem: response.content && response.content.length > 0 ? JSON.stringify(response.content[0]) : "No items",
+        })
 
         console.log("Respuesta recibida:", {
-          totalElements: result.totalElements,
-          totalPages: result.totalPages,
-          currentPage: result.pageable?.pageNumber || 0,
-          contentLength: result.content?.length || 0,
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+          currentPage: response.pageable?.pageNumber || 0,
+          contentLength: response.content?.length || 0,
         })
 
         // Verificar si la respuesta tiene la estructura esperada
-        if (!result.content) {
-          console.error("❌ Estructura de respuesta inesperada:", result)
+        if (!response.content) {
+          console.error("❌ Estructura de respuesta inesperada:", response)
           throw new Error("El servidor devolvió una estructura de datos inesperada")
         }
 
         if (isRefresh || page === 0) {
-          setPasajes(result.content)
+          setPasajes(response.content)
         } else {
-          setPasajes((prev) => [...prev, ...result.content])
+          setPasajes((prev) => [...prev, ...response.content])
         }
 
         // Manejar la paginación con valores por defecto si no están presentes
-        const currentPageNumber = result.pageable?.pageNumber ?? page
-        const totalPagesCount = result.totalPages ?? 1
-        const totalElementsCount = result.totalElements ?? result.content.length
+        const currentPageNumber = response.pageable?.pageNumber ?? page
+        const totalPagesCount = response.totalPages ?? 1
+        const totalElementsCount = response.totalElements ?? response.content.length
 
         setCurrentPage(currentPageNumber)
         setTotalPages(totalPagesCount)
@@ -128,7 +121,27 @@ export default function TicketHistoryScreen({ onGoBack, filters }: TicketHistory
         setHasMore(currentPageNumber < totalPagesCount - 1)
       } catch (error: any) {
         console.error("Error cargando pasajes:", error)
-        setError(error.message || "Error al cargar el historial de pasajes")
+
+        // ✅ MEJORADO: Manejo de errores más específico
+        let errorMessage = "Error al cargar el historial de pasajes"
+
+        if (error.message) {
+          if (error.message.includes("JSON")) {
+            errorMessage = "Error de formato en la respuesta del servidor"
+          } else if (error.message.includes("Network")) {
+            errorMessage = "Error de conexión. Verifica tu internet."
+          } else if (error.message.includes("401")) {
+            errorMessage = "Sesión expirada. Inicia sesión nuevamente."
+          } else if (error.message.includes("403")) {
+            errorMessage = "No tienes permisos para acceder a esta información."
+          } else if (error.message.includes("500")) {
+            errorMessage = "Error del servidor. Intenta más tarde."
+          } else {
+            errorMessage = error.message
+          }
+        }
+
+        setError(errorMessage)
       } finally {
         setLoading(false)
         setRefreshing(false)

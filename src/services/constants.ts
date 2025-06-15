@@ -17,7 +17,7 @@ export const ESTADOS_PASAJE = [
   { label: "Devuelto", value: "DEVUELTO" },
 ]
 
-export const API_BASE_URL = "http://10.0.2.2:8080"
+export const API_BASE_URL = "http://192.168.1.2:8080"
 
 export const API_ROUTES = {
   // Rutas de autenticación
@@ -35,7 +35,14 @@ export const API_ROUTES = {
   PASAJES_CLIENTE: "/pasajes/cliente",
   PASAJES_PDF: "/pasajes",
 
-  // Rutas de localidades
-  LOCALIDADES_ORIGENES: "/localidades/origenes",
-  LOCALIDADES_DESTINOS: "/localidades/destinos",
+  // ✅ ACTUALIZADO: Rutas de localidades (endpoints correctos del backend)
+  LOCALIDADES_ALL: "/localidades/all",
+  LOCALIDADES_ORIGENES_POSIBLES: "/localidades/origenes-posibles",
+  LOCALIDADES_DESTINOS_POSIBLES: "/localidades/destinos-posibles",
+  LOCALIDADES_DETALLE: "/localidades",
+
+  // ✅ NUEVO: Rutas adicionales que podrían ser útiles
+  VIAJES_BUSCAR: "/viajes/buscar",
+  VIAJES_DETALLE: "/viajes",
+  ASIENTOS_DISPONIBLES: "/viajes/{id}/asientos-disponibles",
 }

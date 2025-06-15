@@ -1,164 +1,67 @@
-"use client"
-
-import { API_BASE_URL } from "./constants"
+// ✅ ACTUALIZADO: Usar las constantes de rutas
+import { API_BASE_URL, API_ROUTES } from "./constants"
 // Importar las utilidades de PDF
 import { handlePdfDownload } from "../utils/pdfUtils"
 
-// ✅ Enum de estados de pasaje según el backend
-export enum TipoEstadoPasaje {
-  CONFIRMADO = "CONFIRMADO",
-  CANCELADO = "CANCELADO",
-  DEVUELTO = "DEVUELTO",
-  PENDIENTE = "PENDIENTE",
-}
-
-// ✅ Interfaces que coinciden con el backend
-export interface PasajeDto {
+interface PasajeDto {
   id: number
-  precio: number // BigDecimal precio
-  descuento: number // BigDecimal descuento
-  subtotal: number // BigDecimal subtotal
-  estadoPasaje: TipoEstadoPasaje | string
-  viajeAsiento: {
-    id: number
-    asiento: {
-      numero: number
-      tipo: string
-    }
-    viaje: {
-      id: number
-      fechaHoraSalida: string // LocalDateTime
-      fechaHoraLlegada: string // LocalDateTime
-    }
-  }
-  paradaOrigen: {
-    id: number
-    localidad: {
-      nombre: string
-      departamento: string
-    }
-  }
-  paradaDestino: {
-    id: number
-    localidad: {
-      nombre: string
-      departamento: string
-    }
-  }
-  compra: {
-    id: number
-    fechaCompra: string
-  }
-  devolucion?: {
-    id: number
-    montoReintegrado: number
-    fechaDevolucion: string
-  }
+  fechaCompra: string
+  precioTotal: number
+  estado: string
+  origen: string
+  destino: string
+  clienteId: number
 }
 
-export interface FiltroBusquedaPasajeDto {
-  estados?: string[]
-  fechaDesde?: string
-  fechaHasta?: string
+interface PageResponseDto<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  sort: string | null
+  first: boolean
+  last: boolean
+  empty: boolean
+}
+
+interface FiltroBusquedaPasajeDto {
+  estados: string[]
+  fechaDesde: string
+  fechaHasta: string
   origenId?: number
   destinoId?: number
 }
 
-export interface PageableDto {
+interface PageableDto {
   page: number
   size: number
   sort: string
 }
 
-export interface PageResponseDto<T> {
-  content: T[]
-  pageable: {
-    pageNumber: number
-    pageSize: number
-  }
-  totalElements: number
-  totalPages: number
-  last: boolean
-  first: boolean
+enum EstadoPasaje {
+  PENDIENTE = "PENDIENTE",
+  CONFIRMADO = "CONFIRMADO",
+  CANCELADO = "CANCELADO",
+  UTILIZADO = "UTILIZADO",
 }
 
-// ✅ Funciones para formatear fechas al formato LocalDateTime
-const formatFechaDesde = (dateString: string): string => {
-  if (dateString.includes("T")) {
-    return dateString
-  }
-  return `${dateString}T00:00:00`
+// Formatear la fecha desde para que sea compatible con el backend (yyyy-MM-dd)
+const formatFechaDesde = (fecha: string): string => {
+  const date = new Date(fecha)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
-const formatFechaHasta = (dateString: string): string => {
-  if (dateString.includes("T")) {
-    return dateString
-  }
-  return `${dateString}T23:59:59`
-}
-
-// ✅ Funciones utilitarias para estados de pasajes
-export const getTicketStatusColor = (status: string): string => {
-  switch (status.toUpperCase()) {
-    case TipoEstadoPasaje.CONFIRMADO:
-      return "#4CAF50" // Verde
-    case TipoEstadoPasaje.PENDIENTE:
-      return "#FF9800" // Naranja
-    case TipoEstadoPasaje.CANCELADO:
-      return "#F44336" // Rojo
-    case TipoEstadoPasaje.DEVUELTO:
-      return "#9C27B0" // Púrpura
-    default:
-      return "#79747E" // Gris
-  }
-}
-
-export const getTicketStatusText = (status: string): string => {
-  switch (status.toUpperCase()) {
-    case TipoEstadoPasaje.CONFIRMADO:
-      return "Confirmado"
-    case TipoEstadoPasaje.PENDIENTE:
-      return "Pendiente"
-    case TipoEstadoPasaje.CANCELADO:
-      return "Cancelado"
-    case TipoEstadoPasaje.DEVUELTO:
-      return "Devuelto"
-    default:
-      return status
-  }
-}
-
-export const getTicketStatusIcon = (status: string): string => {
-  switch (status.toUpperCase()) {
-    case TipoEstadoPasaje.CONFIRMADO:
-      return "check-circle"
-    case TipoEstadoPasaje.PENDIENTE:
-      return "schedule"
-    case TipoEstadoPasaje.CANCELADO:
-      return "cancel"
-    case TipoEstadoPasaje.DEVUELTO:
-      return "undo"
-    default:
-      return "help"
-  }
-}
-
-// ✅ Función para verificar si se puede generar PDF
-export const canGenerateTicketPdf = (status: string): boolean => {
-  return [TipoEstadoPasaje.CONFIRMADO].includes(status.toUpperCase() as TipoEstadoPasaje)
-}
-
-// ✅ Función para verificar si tiene descuento (estudiantes/jubilados)
-export const hasStudentOrRetiredDiscount = (descuento: number): boolean => {
-  return descuento > 0
-}
-
-// ✅ Función para obtener el tipo de descuento
-export const getDiscountType = (descuento: number): string => {
-  if (descuento > 0) {
-    return "Estudiante/Jubilado"
-  }
-  return "Sin descuento"
+// Formatear la fecha hasta para que sea compatible con el backend (yyyy-MM-dd)
+const formatFechaHasta = (fecha: string): string => {
+  const date = new Date(fecha)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate() + 1).padStart(2, "0") // Sumar un día
+  return `${year}-${month}-${day}`
 }
 
 class PasajeService {
@@ -169,7 +72,7 @@ class PasajeService {
     }
   }
 
-  // ✅ Obtener historial de pasajes del cliente
+  // ✅ ACTUALIZADO: Usar la ruta constante
   async obtenerHistorialPasajes(
     clienteId: number,
     email: string,
@@ -220,8 +123,8 @@ class PasajeService {
         params.append("destinoId", filtro.destinoId.toString())
       }
 
-      // ✅ URL usando las constantes actualizadas
-      const url = `${API_BASE_URL}/pasajes/cliente/${clienteId}?${params.toString()}`
+      // ✅ ACTUALIZADO: Usar la ruta constante
+      const url = `${API_BASE_URL}${API_ROUTES.PASAJES_CLIENTE}/${clienteId}?${params.toString()}`
       console.log("🌐 URL completa:", url)
 
       const response = await fetch(url, {
@@ -270,13 +173,13 @@ class PasajeService {
     }
   }
 
-  // ✅ Generar PDF del pasaje
+  // ✅ ACTUALIZADO: Usar la ruta constante
   async generarPdfPasaje(pasajeId: number, token: string): Promise<void> {
     try {
       console.log("🎫 === GENERANDO PDF DE PASAJE ===")
       console.log("🆔 Pasaje ID:", pasajeId)
 
-      const url = `${API_BASE_URL}/pasajes/${pasajeId}/pdf`
+      const url = `${API_BASE_URL}${API_ROUTES.PASAJES_PDF}/${pasajeId}/pdf`
       console.log("🌐 URL:", url)
 
       const response = await fetch(url, {

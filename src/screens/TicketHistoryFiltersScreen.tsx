@@ -11,10 +11,14 @@ import {
   StatusBar,
   Modal,
   FlatList,
+  TextInput,
+  ActivityIndicator,
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 import DateTimePicker from "@react-native-community/datetimepicker"
 import { ESTADOS_PASAJE } from "../services/constants"
+import { useAuth } from "../context/AuthContext"
+import { getOrigenesPosibles, getDestinosPosibles, type Localidad } from "../services/locationService"
 
 interface TicketHistoryFiltersScreenProps {
   onGoBack: () => void
@@ -22,23 +26,97 @@ interface TicketHistoryFiltersScreenProps {
 }
 
 export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }: TicketHistoryFiltersScreenProps) {
+  const { token } = useAuth()
+
   // Estados para filtros
   const [selectedStates, setSelectedStates] = useState<string[]>([])
-  const [fechaDesde, setFechaDesde] = useState<Date | undefined>(undefined)
-  const [fechaHasta, setFechaHasta] = useState<Date | undefined>(undefined)
-  const [showDatePickerDesde, setShowDatePickerDesde] = useState(false)
-  const [showDatePickerHasta, setShowDatePickerHasta] = useState(false)
+  const [fechaSalida, setFechaSalida] = useState<Date | undefined>(undefined)
+  const [showDatePickerSalida, setShowDatePickerSalida] = useState(false)
   const [showStatesModal, setShowStatesModal] = useState(false)
+  const [showOrigenModal, setShowOrigenModal] = useState(false)
+  const [showDestinoModal, setShowDestinoModal] = useState(false)
 
-  // Configurar fechas por defecto (últimos 6 meses)
+  // Estados para origen
+  const [origenes, setOrigenes] = useState<Localidad[]>([])
+  const [filteredOrigenes, setFilteredOrigenes] = useState<Localidad[]>([])
+  const [loadingOrigenes, setLoadingOrigenes] = useState(false)
+  const [origenSeleccionado, setOrigenSeleccionado] = useState<Localidad | null>(null)
+  const [searchOrigen, setSearchOrigen] = useState("")
+
+  // Estados para destino
+  const [destinos, setDestinos] = useState<Localidad[]>([])
+  const [filteredDestinos, setFilteredDestinos] = useState<Localidad[]>([])
+  const [loadingDestinos, setLoadingDestinos] = useState(false)
+  const [destinoSeleccionado, setDestinoSeleccionado] = useState<Localidad | null>(null)
+  const [searchDestino, setSearchDestino] = useState("")
+
+  // ✅ ACTUALIZADO: Cargar orígenes usando el endpoint correcto
   useEffect(() => {
-    const hoy = new Date()
-    const seiseMesesAtras = new Date()
-    seiseMesesAtras.setMonth(hoy.getMonth() - 6)
-    
-    setFechaDesde(seiseMesesAtras)
-    setFechaHasta(hoy)
-  }, [])
+    const cargarOrigenes = async () => {
+      if (!token) return
+
+      try {
+        setLoadingOrigenes(true)
+        console.log("Cargando orígenes desde /localidades/origenes-posibles")
+        const origenesData = await getOrigenesPosibles(token)
+        console.log("Orígenes cargados:", origenesData.length)
+        setOrigenes(origenesData)
+        setFilteredOrigenes(origenesData)
+      } catch (error) {
+        console.error("Error cargando orígenes:", error)
+      } finally {
+        setLoadingOrigenes(false)
+      }
+    }
+
+    cargarOrigenes()
+  }, [token])
+
+  // ✅ ACTUALIZADO: Cargar destinos usando el endpoint correcto
+  useEffect(() => {
+    const cargarDestinos = async () => {
+      if (!token || !origenSeleccionado) return
+
+      try {
+        setLoadingDestinos(true)
+        console.log("Cargando destinos desde /localidades/destinos-posibles/" + origenSeleccionado.id)
+        const destinosData = await getDestinosPosibles(token, origenSeleccionado.id)
+        console.log("Destinos cargados:", destinosData.length)
+        setDestinos(destinosData)
+        setFilteredDestinos(destinosData)
+      } catch (error) {
+        console.error("Error cargando destinos:", error)
+      } finally {
+        setLoadingDestinos(false)
+      }
+    }
+
+    cargarDestinos()
+  }, [token, origenSeleccionado])
+
+  // Filtrar orígenes por búsqueda
+  useEffect(() => {
+    if (searchOrigen.trim() === "") {
+      setFilteredOrigenes(origenes)
+    } else {
+      const filtered = origenes.filter((origen) =>
+        origen.nombreConDepartamento.toLowerCase().includes(searchOrigen.toLowerCase()),
+      )
+      setFilteredOrigenes(filtered)
+    }
+  }, [searchOrigen, origenes])
+
+  // Filtrar destinos por búsqueda
+  useEffect(() => {
+    if (searchDestino.trim() === "") {
+      setFilteredDestinos(destinos)
+    } else {
+      const filtered = destinos.filter((destino) =>
+        destino.nombreConDepartamento.toLowerCase().includes(searchDestino.toLowerCase()),
+      )
+      setFilteredDestinos(filtered)
+    }
+  }, [searchDestino, destinos])
 
   const formatDate = (date: Date): string => {
     const day = String(date.getDate()).padStart(2, "0")
@@ -80,29 +158,38 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
     return `${selectedStates.length} estados seleccionados`
   }
 
-  const onChangeDateDesde = (event: any, selectedDate?: Date) => {
-    setShowDatePickerDesde(false)
-    if (selectedDate) {
-      setFechaDesde(selectedDate)
-      // Si la fecha desde es posterior a la fecha hasta, ajustar fecha hasta
-      if (fechaHasta && selectedDate > fechaHasta) {
-        setFechaHasta(selectedDate)
-      }
-    }
+  const selectOrigen = (localidad: Localidad) => {
+    console.log("Origen seleccionado:", localidad.nombreConDepartamento)
+    setOrigenSeleccionado(localidad)
+    setShowOrigenModal(false)
+    setSearchOrigen("")
+
+    // Limpiar destino cuando se cambia el origen
+    setDestinoSeleccionado(null)
+    setDestinos([])
+    setFilteredDestinos([])
   }
 
-  const onChangeDateHasta = (event: any, selectedDate?: Date) => {
-    setShowDatePickerHasta(false)
+  const selectDestino = (localidad: Localidad) => {
+    console.log("Destino seleccionado:", localidad.nombreConDepartamento)
+    setDestinoSeleccionado(localidad)
+    setShowDestinoModal(false)
+    setSearchDestino("")
+  }
+
+  const onChangeDateSalida = (event: any, selectedDate?: Date) => {
+    setShowDatePickerSalida(false)
     if (selectedDate) {
-      setFechaHasta(selectedDate)
+      setFechaSalida(selectedDate)
     }
   }
 
   const handleApplyFilters = () => {
     const filters = {
       estados: selectedStates,
-      fechaDesde: fechaDesde ? formatDateForApi(fechaDesde) : undefined,
-      fechaHasta: fechaHasta ? formatDateForApi(fechaHasta) : undefined,
+      fechaSalida: fechaSalida ? formatDateForApi(fechaSalida) : undefined,
+      origenId: origenSeleccionado?.id,
+      destinoId: destinoSeleccionado?.id,
     }
 
     console.log("Aplicando filtros de pasajes:", filters)
@@ -111,11 +198,25 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
 
   const handleClearFilters = () => {
     setSelectedStates([])
-    const hoy = new Date()
-    const seiseMesesAtras = new Date()
-    seiseMesesAtras.setMonth(hoy.getMonth() - 6)
-    setFechaDesde(seiseMesesAtras)
-    setFechaHasta(hoy)
+    setFechaSalida(undefined)
+    setOrigenSeleccionado(null)
+    setDestinoSeleccionado(null)
+    setDestinos([])
+    setFilteredDestinos([])
+  }
+
+  const handleConfirmStatesSelection = () => {
+    setShowStatesModal(false)
+  }
+
+  const handleConfirmOrigenSelection = () => {
+    setShowOrigenModal(false)
+    setSearchOrigen("")
+  }
+
+  const handleConfirmDestinoSelection = () => {
+    setShowDestinoModal(false)
+    setSearchDestino("")
   }
 
   const renderStateItem = ({ item }: { item: { label: string; value: string } }) => {
@@ -132,6 +233,18 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
       </TouchableOpacity>
     )
   }
+
+  const renderOrigenItem = ({ item }: { item: Localidad }) => (
+    <TouchableOpacity style={styles.locationItem} onPress={() => selectOrigen(item)} activeOpacity={0.7}>
+      <Text style={styles.locationItemText}>{item.nombreConDepartamento}</Text>
+    </TouchableOpacity>
+  )
+
+  const renderDestinoItem = ({ item }: { item: Localidad }) => (
+    <TouchableOpacity style={styles.locationItem} onPress={() => selectDestino(item)} activeOpacity={0.7}>
+      <Text style={styles.locationItemText}>{item.nombreConDepartamento}</Text>
+    </TouchableOpacity>
+  )
 
   return (
     <SafeAreaView style={styles.container}>
@@ -156,21 +269,48 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
           </TouchableOpacity>
         </View>
 
-        {/* Fecha Desde */}
+        {/* Fecha de Salida */}
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Fecha Desde</Text>
-          <TouchableOpacity style={styles.filterButton} onPress={() => setShowDatePickerDesde(true)} activeOpacity={0.7}>
-            <Text style={styles.filterButtonText}>{fechaDesde ? formatDate(fechaDesde) : "Seleccionar fecha"}</Text>
+          <Text style={styles.filterLabel}>Fecha de Salida</Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowDatePickerSalida(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.filterButtonText}>
+              {fechaSalida ? formatDate(fechaSalida) : "Seleccionar fecha de salida"}
+            </Text>
             <Icon name="event" size={20} color="#6B7280" />
           </TouchableOpacity>
         </View>
 
-        {/* Fecha Hasta */}
+        {/* Origen */}
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Fecha Hasta</Text>
-          <TouchableOpacity style={styles.filterButton} onPress={() => setShowDatePickerHasta(true)} activeOpacity={0.7}>
-            <Text style={styles.filterButtonText}>{fechaHasta ? formatDate(fechaHasta) : "Seleccionar fecha"}</Text>
-            <Icon name="event" size={20} color="#6B7280" />
+          <Text style={styles.filterLabel}>Origen</Text>
+          <TouchableOpacity style={styles.filterButton} onPress={() => setShowOrigenModal(true)} activeOpacity={0.7}>
+            <Text style={styles.filterButtonText}>
+              {origenSeleccionado ? origenSeleccionado.nombreConDepartamento : "Seleccionar origen"}
+            </Text>
+            <Icon name="place" size={20} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Destino */}
+        <View style={styles.filterSection}>
+          <Text style={styles.filterLabel}>Destino</Text>
+          <TouchableOpacity
+            style={[styles.filterButton, !origenSeleccionado && styles.filterButtonDisabled]}
+            onPress={() => origenSeleccionado && setShowDestinoModal(true)}
+            activeOpacity={origenSeleccionado ? 0.7 : 1}
+          >
+            <Text style={[styles.filterButtonText, !origenSeleccionado && styles.filterButtonTextDisabled]}>
+              {origenSeleccionado
+                ? destinoSeleccionado
+                  ? destinoSeleccionado.nombreConDepartamento
+                  : "Seleccionar destino"
+                : "Primero selecciona un origen"}
+            </Text>
+            <Icon name="place" size={20} color={origenSeleccionado ? "#6B7280" : "#D1D5DB"} />
           </TouchableOpacity>
         </View>
 
@@ -178,7 +318,8 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
         <View style={styles.infoContainer}>
           <Icon name="info" size={20} color="#3B82F6" />
           <Text style={styles.infoText}>
-            Los filtros te ayudan a encontrar pasajes específicos en tu historial. Los descuentos mostrados corresponden a estudiantes y jubilados.
+            Usa estos filtros para encontrar pasajes específicos en tu historial. Puedes combinar múltiples filtros para
+            una búsqueda más precisa.
           </Text>
         </View>
       </ScrollView>
@@ -194,7 +335,12 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
       </View>
 
       {/* Modal de Estados */}
-      <Modal visible={showStatesModal} transparent animationType="fade" onRequestClose={() => setShowStatesModal(false)}>
+      <Modal
+        visible={showStatesModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStatesModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -203,34 +349,143 @@ export default function TicketHistoryFiltersScreen({ onGoBack, onApplyFilters }:
                 <Icon name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
+
             <FlatList
               data={ESTADOS_PASAJE}
               renderItem={renderStateItem}
               keyExtractor={(item) => item.value}
               style={styles.statesList}
             />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmStatesSelection} activeOpacity={0.7}>
+                <Icon name="check" size={20} color="white" />
+                <Text style={styles.confirmButtonText}>Listo</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
 
-      {/* Date Pickers */}
-      {showDatePickerDesde && (
-        <DateTimePicker
-          value={fechaDesde || new Date()}
-          mode="date"
-          display="default"
-          onChange={onChangeDateDesde}
-          maximumDate={fechaHasta || new Date()}
-        />
-      )}
+      {/* Modal de Origen */}
+      <Modal
+        visible={showOrigenModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOrigenModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Origen</Text>
+              <TouchableOpacity onPress={() => setShowOrigenModal(false)}>
+                <Icon name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
 
-      {showDatePickerHasta && (
+            {/* Buscador */}
+            <View style={styles.searchContainer}>
+              <Icon name="search" size={20} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar ciudad..."
+                placeholderTextColor="#9CA3AF"
+                value={searchOrigen}
+                onChangeText={setSearchOrigen}
+              />
+            </View>
+
+            {loadingOrigenes ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.loadingText}>Cargando orígenes...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredOrigenes}
+                renderItem={renderOrigenItem}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.locationsList}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<Text style={styles.emptyText}>No se encontraron orígenes</Text>}
+              />
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrigenSelection} activeOpacity={0.7}>
+                <Icon name="check" size={20} color="white" />
+                <Text style={styles.confirmButtonText}>Listo</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Destino */}
+      <Modal
+        visible={showDestinoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDestinoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Destino</Text>
+              <TouchableOpacity onPress={() => setShowDestinoModal(false)}>
+                <Icon name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Buscador */}
+            <View style={styles.searchContainer}>
+              <Icon name="search" size={20} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar ciudad..."
+                placeholderTextColor="#9CA3AF"
+                value={searchDestino}
+                onChangeText={setSearchDestino}
+              />
+            </View>
+
+            {loadingDestinos ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.loadingText}>Cargando destinos...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredDestinos}
+                renderItem={renderDestinoItem}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.locationsList}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<Text style={styles.emptyText}>No se encontraron destinos disponibles</Text>}
+              />
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handleConfirmDestinoSelection}
+                activeOpacity={0.7}
+              >
+                <Icon name="check" size={20} color="white" />
+                <Text style={styles.confirmButtonText}>Listo</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Date Picker */}
+      {showDatePickerSalida && (
         <DateTimePicker
-          value={fechaHasta || new Date()}
+          value={fechaSalida || new Date()}
           mode="date"
           display="default"
-          onChange={onChangeDateHasta}
-          minimumDate={fechaDesde}
+          onChange={onChangeDateSalida}
           maximumDate={new Date()}
         />
       )}
@@ -292,10 +547,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 48,
   },
+  filterButtonDisabled: {
+    backgroundColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
+  },
   filterButtonText: {
     fontSize: 16,
     color: "#374151",
     flex: 1,
+  },
+  filterButtonTextDisabled: {
+    color: "#9CA3AF",
   },
   infoContainer: {
     flexDirection: "row",
@@ -355,6 +617,12 @@ const styles = StyleSheet.create({
     width: "90%",
     maxHeight: "70%",
   },
+  modalContentLarge: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    width: "90%",
+    maxHeight: "80%",
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -390,5 +658,71 @@ const styles = StyleSheet.create({
   stateItemTextSelected: {
     color: "#3B82F6",
     fontWeight: "500",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    margin: 16,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#374151",
+    marginLeft: 8,
+  },
+  locationsList: {
+    maxHeight: 300,
+  },
+  locationItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  locationItemText: {
+    fontSize: 16,
+    color: "#374151",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#6B7280",
+    marginTop: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingVertical: 20,
+  },
+  modalActions: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  confirmButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#10B981",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+    marginLeft: 8,
   },
 })
