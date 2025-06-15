@@ -15,7 +15,16 @@ import {
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 import { useAuth } from "../context/AuthContext"
-import { purchaseService, type CompraDto, type FiltroBusquedaCompraDto } from "../services/purchaseService"
+import { useUser } from "../hooks/useUser"
+import {
+  purchaseService,
+  type CompraDto,
+  type FiltroBusquedaCompraDto,
+  getStatusColor,
+  getStatusText,
+  getStatusIcon,
+} from "../services/purchaseService"
+import PurchaseDetailScreen from "./PurchaseDetailScreen"
 
 interface PurchaseHistoryScreenProps {
   onGoBack?: () => void
@@ -29,7 +38,9 @@ interface PurchaseHistoryScreenProps {
 }
 
 const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack, filters }) => {
-  const { user, token } = useAuth()
+  const { token } = useAuth()
+  const { user, loading: userLoading } = useUser()
+  
   const [purchases, setPurchases] = useState<CompraDto[]>([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -39,10 +50,18 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [loadAttempts, setLoadAttempts] = useState(0)
+  const [selectedCompraId, setSelectedCompraId] = useState<number | null>(null)
 
-  // Verificar si tenemos los datos necesarios
-  const hasRequiredData = user?.id && user?.email && token
+  // Verificar si tenemos los datos necesarios del usuario
+  const hasRequiredData = Boolean(user?.id && user?.email && token && !userLoading)
+
+  useEffect(() => {
+    console.log("🔍 Estado de autenticación:")
+    console.log("👤 Usuario:", user ? `ID: ${user.id}, Email: ${user.email}` : "No disponible")
+    console.log("🔑 Token:", token ? "Disponible" : "No disponible")
+    console.log("⏳ Cargando usuario:", userLoading)
+    console.log("✅ Datos requeridos:", hasRequiredData ? "Completos" : "Incompletos")
+  }, [user, token, userLoading])
 
   // Función para construir filtros para la API
   const buildApiFilters = (): FiltroBusquedaCompraDto => {
@@ -68,8 +87,15 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
     return filtro
   }
 
-  // Función para cargar el historial de compras
+  // Función para cargar el historial usando los datos de useUser
   const loadPurchaseHistory = async (page = 0, refresh = false) => {
+    if (!hasRequiredData) {
+      console.error("❌ Faltan datos requeridos para cargar el historial")
+      setError("No se pudo cargar el historial. Faltan datos de autenticación.")
+      setLoading(false)
+      return
+    }
+
     try {
       if (refresh) {
         setRefreshing(true)
@@ -92,34 +118,39 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
 
       console.log("🔄 Cargando historial con filtros:", filtro)
       console.log("📄 Página:", page)
-      console.log("👤 Usuario:", user?.id, user?.email)
-      console.log("🔢 Intento #", loadAttempts + 1)
+      console.log("👤 Usuario:", user!.id, user!.email)
 
-      const result = await purchaseService.obtenerHistorialCompras(user!.id, user!.email, filtro, pageable, token)
+      // Convertir user.id a number si es string (según useUser.tsx)
+      const clienteId = typeof user!.id === 'string' ? parseInt(user!.id) : user!.id
+
+      const result = await purchaseService.obtenerHistorialCompras(
+        clienteId, 
+        user!.email, 
+        filtro, 
+        pageable, 
+        token!
+      )
 
       console.log("✅ Resultado obtenido:", {
         totalElements: result.totalElements,
-        contentLength: result.content.length,
+        contentLength: result.content?.length,
       })
 
       // Actualizar estado con los datos
       if (page === 0 || refresh) {
-        setPurchases(result.content)
+        setPurchases(result.content || [])
       } else {
-        setPurchases((prev) => [...prev, ...result.content])
+        setPurchases((prev) => [...prev, ...(result.content || [])])
       }
 
-      setCurrentPage(result.pageable.pageNumber)
-      setTotalPages(result.totalPages)
-      setTotalElements(result.totalElements)
-      setHasMore(!result.last)
-      setLoadAttempts(0) // Resetear contador de intentos si es exitoso
+      setCurrentPage(result.pageable?.pageNumber || 0)
+      setTotalPages(result.totalPages || 0)
+      setTotalElements(result.totalElements || 0)
+      setHasMore(!(result.last || false))
     } catch (error: any) {
       console.error("❌ Error cargando historial:", error)
       setError(error.message || "Error cargando historial")
-      setLoadAttempts((prev) => prev + 1)
 
-      // Solo mostrar alert si es el primer intento de carga
       if (page === 0 && !refresh) {
         Alert.alert("Error", error.message || "No se pudo cargar el historial de compras")
       }
@@ -130,13 +161,11 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
     }
   }
 
-  // Cargar datos cuando el componente se monta y tenemos los datos necesarios
+  // Cargar datos cuando tenemos los datos necesarios
   useEffect(() => {
     if (hasRequiredData) {
       console.log("🚀 Iniciando carga de historial...")
       loadPurchaseHistory()
-    } else {
-      console.log("⏳ Esperando datos del usuario...")
     }
   }, [hasRequiredData])
 
@@ -154,7 +183,7 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
     }
   }
 
-  // Función para formatear fecha
+  // Funciones de formato
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("es-UY", {
@@ -166,56 +195,16 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
     })
   }
 
-  // Función para formatear moneda
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString("es-UY")}`
   }
 
-  // Función para obtener color según estado
-  const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "COMPLETADA":
-      case "COMPLETED":
-      case "PAGADO":
-        return "#4CAF50"
-      case "PENDIENTE":
-      case "PENDING":
-        return "#FF9800"
-      case "CANCELADA":
-      case "CANCELLED":
-      case "CANCELADO":
-        return "#F44336"
-      default:
-        return "#79747E"
-    }
-  }
-
-  // Función para obtener texto según estado
-  const getStatusText = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "COMPLETADA":
-      case "COMPLETED":
-      case "PAGADO":
-        return "Completada"
-      case "PENDIENTE":
-      case "PENDING":
-        return "Pendiente"
-      case "CANCELADA":
-      case "CANCELLED":
-      case "CANCELADO":
-        return "Cancelada"
-      default:
-        return status
-    }
-  }
-
-  // Función para manejar tap en una compra
   const handlePurchasePress = (purchase: CompraDto) => {
-    Alert.alert(
-      "Detalles de Compra",
-      `ID: ${purchase.id}\nFecha: ${formatDate(purchase.fechaCompra)}\nTotal: ${formatCurrency(purchase.precioTotal)}\nEstado: ${getStatusText(purchase.estado)}\nPayment ID: ${purchase.paymentId}\nOrder ID: ${purchase.orderId}`,
-      [{ text: "OK" }],
-    )
+    setSelectedCompraId(purchase.id)
+  }
+
+  const handleBackFromDetail = () => {
+    setSelectedCompraId(null)
   }
 
   // Renderizar item de compra
@@ -227,6 +216,7 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
           <Text style={styles.dateText}>{formatDate(item.fechaCompra)}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.estado) }]}>
+          <Icon name={getStatusIcon(item.estado)} size={12} color="white" style={styles.statusIcon} />
           <Text style={styles.statusText}>{getStatusText(item.estado)}</Text>
         </View>
       </View>
@@ -234,63 +224,41 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
       <View style={styles.cardBody}>
         <View style={styles.detailRow}>
           <Icon name="attach-money" size={16} color="#79747E" />
-          <Text style={styles.amountText}>{formatCurrency(item.precioTotal)}</Text>
+          <Text style={styles.amountText}>{formatCurrency(item.precioActual)}</Text>
         </View>
+
         <View style={styles.detailRow}>
-          <Icon name="receipt" size={16} color="#79747E" />
-          <Text style={styles.detailText}>Order: {item.orderId}</Text>
+          <Icon name="confirmation-number" size={16} color="#79747E" />
+          <Text style={styles.detailText}>Pasajes: {item.cantidadPasajes}</Text>
         </View>
-        {item.paymentId && (
+
+        {item.precioOriginal !== item.precioActual && (
           <View style={styles.detailRow}>
-            <Icon name="payment" size={16} color="#79747E" />
-            <Text style={styles.detailText}>Payment: {item.paymentId}</Text>
+            <Icon name="local-offer" size={16} color="#4CAF50" />
+            <Text style={styles.detailText}>Precio original: {formatCurrency(item.precioOriginal)}</Text>
           </View>
         )}
+      </View>
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.viewDetailsText}>Ver detalles</Text>
+        <Icon name="chevron-right" size={20} color="#3B82F6" />
       </View>
     </TouchableOpacity>
   )
 
-  // Renderizar estado vacío
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="shopping-cart" size={64} color="#CAC4D0" />
-      <Text style={styles.emptyTitle}>No hay compras</Text>
-      <Text style={styles.emptySubtitle}>No se encontraron compras con los criterios seleccionados</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={onGoBack}>
-        <Text style={styles.retryButtonText}>Cambiar filtros</Text>
-      </TouchableOpacity>
-    </View>
-  )
-
-  // Renderizar estado de error
-  const renderErrorState = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="error-outline" size={64} color="#F44336" />
-      <Text style={styles.emptyTitle}>Error al cargar</Text>
-      <Text style={styles.emptySubtitle}>{error}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={() => loadPurchaseHistory()}>
-        <Text style={styles.retryButtonText}>Reintentar</Text>
-      </TouchableOpacity>
-    </View>
-  )
-
-  // Renderizar footer de lista
-  const renderFooter = () => {
-    if (!loadingMore) return null
-
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#3B82F6" />
-        <Text style={styles.footerText}>Cargando más compras...</Text>
-      </View>
-    )
-  }
-
-  // Si no tenemos los datos necesarios, mostrar pantalla de carga
-  if (!hasRequiredData) {
+  // Estados de carga y error
+  if (userLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
+            <Icon name="arrow-back" size={24} color="#3B82F6" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Historial de Compras</Text>
+          <View style={styles.headerSpacer} />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={styles.loadingText}>Cargando datos del usuario...</Text>
@@ -299,13 +267,10 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
     )
   }
 
-  // Renderizar pantalla de carga inicial
-  if (loading) {
+  if (!user || !token) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
-
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
             <Icon name="arrow-back" size={24} color="#3B82F6" />
@@ -313,27 +278,45 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
           <Text style={styles.headerTitle}>Historial de Compras</Text>
           <View style={styles.headerSpacer} />
         </View>
-
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Cargando historial...</Text>
-
-          {/* Mostrar botón de cancelar después de varios intentos */}
-          {loadAttempts > 0 && (
-            <TouchableOpacity style={styles.cancelButton} onPress={onGoBack}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.errorContainer}>
+          <Icon name="account-circle" size={64} color="#F44336" />
+          <Text style={styles.errorTitle}>Sesión requerida</Text>
+          <Text style={styles.errorText}>Debes iniciar sesión para ver tu historial de compras</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={onGoBack}>
+            <Text style={styles.retryButtonText}>Volver</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     )
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
+            <Icon name="arrow-back" size={24} color="#3B82F6" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Historial de Compras</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Cargando historial...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (selectedCompraId) {
+    return <PurchaseDetailScreen compraId={selectedCompraId} onGoBack={handleBackFromDetail} />
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
           <Icon name="arrow-back" size={24} color="#3B82F6" />
@@ -342,21 +325,43 @@ const PurchaseHistoryScreen: React.FC<PurchaseHistoryScreenProps> = ({ onGoBack,
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Información de resultados */}
       <View style={styles.resultsInfo}>
         <Text style={styles.resultsText}>
           {totalElements} compra{totalElements !== 1 ? "s" : ""} encontrada{totalElements !== 1 ? "s" : ""}
         </Text>
       </View>
 
-      {/* Lista de compras */}
       <FlatList
         data={purchases}
         renderItem={renderPurchaseItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={error ? renderErrorState : renderEmptyState}
-        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          error ? (
+            <View style={styles.emptyContainer}>
+              <Icon name="error-outline" size={64} color="#F44336" />
+              <Text style={styles.emptyTitle}>Error al cargar</Text>
+              <Text style={styles.emptySubtitle}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => loadPurchaseHistory()}>
+                <Text style={styles.retryButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Icon name="shopping-cart" size={64} color="#CAC4D0" />
+              <Text style={styles.emptyTitle}>No hay compras</Text>
+              <Text style={styles.emptySubtitle}>No se encontraron compras con los criterios seleccionados</Text>
+            </View>
+          )
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator size="small" color="#3B82F6" />
+              <Text style={styles.footerText}>Cargando más compras...</Text>
+            </View>
+          ) : null
+        }
         onRefresh={handleRefresh}
         refreshing={refreshing}
         onEndReached={handleLoadMore}
@@ -381,7 +386,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: "#49454F",
-    marginBottom: 20,
   },
   header: {
     flexDirection: "row",
@@ -433,10 +437,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     borderWidth: 1,
@@ -473,6 +474,20 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     gap: 8,
+    marginBottom: 12,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingTop: 12,
+  },
+  viewDetailsText: {
+    fontSize: 14,
+    color: "#3B82F6",
+    marginRight: 4,
   },
   detailRow: {
     flexDirection: "row",
@@ -515,21 +530,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "#E8F0FE",
     borderRadius: 20,
-    marginHorizontal: 8,
   },
   retryButtonText: {
     color: "#3B82F6",
-    fontWeight: "500",
-  },
-  cancelButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 20,
-    marginTop: 16,
-  },
-  cancelButtonText: {
-    color: "#F44336",
     fontWeight: "500",
   },
   footerLoader: {
@@ -541,6 +544,28 @@ const styles = StyleSheet.create({
   footerText: {
     marginLeft: 8,
     color: "#49454F",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1C1B1F",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#79747E",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  statusIcon: {
+    marginRight: 4,
   },
 })
 

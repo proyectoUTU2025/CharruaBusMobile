@@ -3,7 +3,7 @@
 import { getFCMToken } from "./notificationService"
 
 // Configuración de la API - puede ser modificada según el entorno
-const API_BASE_URL = "http://192.168.1.7:8080"
+const API_BASE_URL = "http://192.168.1.2:8080"
 
 // Función robusta para obtener el token de dispositivo usando el servicio de notificaciones
 const getDeviceToken = async (): Promise<string> => {
@@ -166,7 +166,7 @@ export const logout = async (authToken?: string): Promise<void> => {
     }
   } catch (error) {
     console.error("Error al cerrar sesión:", error)
-    // No lanzar error para permitir logout local incluso si falla el servidor
+    // No lanzar error para permitir logout local incluso
   }
 }
 
@@ -323,21 +323,16 @@ export const verifyEmailCode = async (email: string, verificationCode: string) =
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.name === "AbortError") {
-        console.log("Verificación cancelada por timeout")
         throw new Error("La petición tardó demasiado. Verifica tu conexión a internet.")
       }
-
       if (error.message.includes("fetch") || error.message.includes("Network request failed")) {
         console.log("Error de red en verificación")
         throw new Error("Error de conexión. Verifica tu internet.")
       }
-
-      console.log("Error en verificación:", error.message)
+      // ⚠️ IMPORTANTE: Re-lanzar el error original sin modificar
       throw error
     }
-
-    console.log("Error inesperado en verificación:", error)
-    throw new Error("Error inesperado en la verificación.")
+    throw new Error("Error inesperado en verificación.")
   }
 }
 
@@ -388,7 +383,7 @@ export const resendVerificationCode = async (email: string) => {
         console.log("Error 500+ en reenvío")
         throw new Error("Error del servidor. Inténtalo más tarde.")
       } else {
-        const errorMessage = result.message || "Error al reenviar código"
+        const errorMessage = result.message || result.error || "Error al reenviar código"
         console.log("Error genérico en reenvío:", errorMessage)
         throw new Error(errorMessage)
       }
@@ -414,6 +409,378 @@ export const resendVerificationCode = async (email: string) => {
 
     console.log("Error inesperado en reenvío:", error)
     throw new Error("Error inesperado al reenviar código.")
+  }
+}
+
+// ========================================
+// FUNCIONES DE RECUPERACIÓN DE CONTRASEÑA MEJORADAS
+// Correspondientes exactamente a los métodos del backend Java:
+// - solicitarResetPassword() -> requestPasswordReset()
+// - verifyResetCode() -> verifyResetCode()
+// - resetearPassword() -> resetPassword()
+// ========================================
+
+// Interfaces para los DTOs de recuperación de contraseña (CORREGIDAS SEGÚN BACKEND)
+interface ResetPasswordRequestDto {
+  email: string
+  verificationCode: string // ⚠️ CORREGIDO: El backend espera 'verificationCode', no 'token'
+  newPassword: string
+  confirmPassword: string
+}
+
+interface VerifyResetCodeRequestDto {
+  email: string
+  verificationCode: string // El backend espera 'verificationCode'
+}
+
+interface ChangePasswordRequestDto {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+// Solicitar código de recuperación de contraseña
+// Corresponde al método: solicitarResetPassword(String email)
+export const requestPasswordReset = async (email: string): Promise<void> => {
+  try {
+    console.log("🔍 === SOLICITUD DE RECUPERACIÓN ===")
+    console.log("📧 Email:", email.trim())
+    console.log("🌐 URL:", `${API_BASE_URL}/auth/forgot-password`)
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      console.log("⏰ Timeout de recuperación alcanzado")
+      controller.abort()
+    }, 15000)
+
+    const requestBody = { email: email.trim() }
+    console.log("📤 Body:", JSON.stringify(requestBody))
+
+    console.log("🚀 Enviando petición...")
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    console.log("📊 Status:", response.status)
+
+    let result
+    try {
+      const responseText = await response.text()
+      console.log("📄 Respuesta texto:", responseText)
+
+      if (responseText) {
+        result = JSON.parse(responseText)
+        console.log("📦 Respuesta parseada:", result)
+      } else {
+        result = {}
+      }
+    } catch (parseError) {
+      console.error("❌ Error parseando respuesta:", parseError)
+      throw new Error("El servidor envió una respuesta inválida.")
+    }
+
+    if (!response.ok) {
+      const errorMessage = result.message || result.error || "Error desconocido"
+      console.log("🚨 Error del servidor:", errorMessage)
+
+      // Manejo específico según las excepciones del backend Java
+      if (response.status === 404) {
+        // UsernameNotFoundException: "El correo ingresado no existe o la cuenta está inactiva."
+        throw new Error("El correo ingresado no existe o la cuenta está inactiva.")
+      } else if (response.status === 400) {
+        // Otros errores de validación
+        throw new Error(errorMessage)
+      } else if (response.status >= 500) {
+        throw new Error("Error del servidor. Inténtalo más tarde.")
+      } else {
+        throw new Error(errorMessage)
+      }
+    }
+
+    console.log("✅ Solicitud de recuperación exitosa")
+  } catch (error: unknown) {
+    console.error("💥 Error en requestPasswordReset:", error)
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        throw new Error("La petición tardó demasiado. Verifica tu conexión a internet.")
+      }
+      if (
+        error.message.includes("fetch") ||
+        error.message.includes("Network request failed") ||
+        error.message.includes("TypeError")
+      ) {
+        throw new Error("Error de conexión. Verifica tu internet.")
+      }
+      throw error
+    }
+    throw new Error("Error inesperado al solicitar recuperación.")
+  }
+}
+
+// ⚠️ FUNCIÓN COMPLETAMENTE REESCRITA PARA MANEJAR ERRORES CORRECTAMENTE
+export const verifyResetCode = async (data: VerifyResetCodeRequestDto): Promise<void> => {
+  console.log("🔍 === VERIFICACIÓN DE CÓDIGO ===")
+  console.log("📧 Email:", data.email)
+  console.log("🔑 Código:", data.verificationCode)
+  console.log("🌐 URL:", `${API_BASE_URL}/auth/verify-reset-code`)
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    console.log("⏰ Timeout de verificación alcanzado")
+    controller.abort()
+  }, 10000)
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-reset-code`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+    console.log("📊 Status:", response.status)
+
+    // Intentar obtener la respuesta como texto primero
+    const responseText = await response.text()
+    console.log("📄 Respuesta completa:", responseText)
+
+    let result = {}
+    if (responseText) {
+      try {
+        result = JSON.parse(responseText)
+        console.log("📦 JSON parseado:", result)
+      } catch (parseError) {
+        console.log("⚠️ No se pudo parsear JSON, usando texto plano")
+        result = { message: responseText }
+      }
+    }
+
+    // Si hay error HTTP, lanzar excepción con mensaje del backend
+    if (!response.ok) {
+      const backendMessage = result.message || result.error || responseText || "Error desconocido"
+      console.log("🚨 Error del backend:", backendMessage)
+
+      // Lanzar directamente el mensaje del backend sin modificar
+      throw new Error(backendMessage)
+    }
+
+    console.log("✅ Verificación exitosa")
+  } catch (error) {
+    clearTimeout(timeoutId)
+    console.error("💥 Error capturado:", error)
+
+    if (error instanceof Error) {
+      // Solo manejar timeouts como errores de conexión
+      if (error.name === "AbortError") {
+        throw new Error("La petición tardó demasiado. Verifica tu conexión a internet.")
+      }
+
+      // Para errores de fetch reales (sin conexión)
+      if (
+        error.message.includes("Failed to fetch") ||
+        error.message.includes("ERR_NETWORK") ||
+        error.message.includes("ERR_INTERNET_DISCONNECTED")
+      ) {
+        throw new Error("Error de conexión. Verifica tu internet.")
+      }
+
+      // Todos los demás errores son del backend, re-lanzar tal como vienen
+      throw error
+    }
+
+    throw new Error("Error inesperado al verificar código.")
+  }
+}
+
+// Resetear contraseña con código de verificación
+// Corresponde al método: resetearPassword(ResetPasswordRequestDto request)
+export const resetPassword = async (data: ResetPasswordRequestDto): Promise<void> => {
+  try {
+    console.log("🔍 === RESETEO DE CONTRASEÑA ===")
+    console.log("📧 Email:", data.email)
+    console.log("🔑 Código:", data.verificationCode)
+    console.log("🌐 URL:", `${API_BASE_URL}/auth/reset-password`)
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      console.log("⏰ Timeout de reseteo alcanzado")
+      controller.abort()
+    }, 15000)
+
+    console.log(
+      "📤 Body:",
+      JSON.stringify({
+        email: data.email,
+        verificationCode: data.verificationCode,
+        newPassword: "***",
+        confirmPassword: "***",
+      }),
+    )
+
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    console.log("📊 Status:", response.status)
+
+    let result
+    try {
+      const responseText = await response.text()
+      console.log("📄 Respuesta texto:", responseText)
+
+      if (responseText) {
+        result = JSON.parse(responseText)
+        console.log("📦 Respuesta parseada:", result)
+      } else {
+        result = {}
+      }
+    } catch (parseError) {
+      console.error("❌ Error parseando respuesta:", parseError)
+      // Si no se puede parsear la respuesta pero el status es de error, es un error del servidor
+      if (!response.ok) {
+        throw new Error("El servidor envió una respuesta inválida.")
+      }
+      result = {}
+    }
+
+    if (!response.ok) {
+      const errorMessage = result.message || result.error || "Error al resetear contraseña"
+      console.log("🚨 Error del servidor:", errorMessage)
+
+      // Manejo específico según las excepciones del backend Java
+      if (response.status === 400) {
+        // IllegalArgumentException con diferentes casos específicos
+        if (errorMessage.includes("Código inválido") || errorMessage.includes("expirado")) {
+          throw new Error("Código inválido o expirado.")
+        } else if (errorMessage.includes("contraseñas no coinciden")) {
+          throw new Error("Las contraseñas no coinciden.")
+        } else if (
+          errorMessage.includes("nueva contraseña debe ser distinta") ||
+          errorMessage.includes("distinta a la anterior")
+        ) {
+          throw new Error("La nueva contraseña debe ser distinta a la anterior.")
+        } else if (errorMessage.includes("no debe estar vacío") || errorMessage.includes("NotBlank")) {
+          throw new Error("Todos los campos son obligatorios.")
+        } else {
+          // Cualquier otro error 400, mostrar mensaje exacto del backend
+          throw new Error(errorMessage)
+        }
+      } else if (response.status === 404) {
+        // UsernameNotFoundException: "El correo ingresado no existe o la cuenta está inactiva."
+        throw new Error("El correo ingresado no existe o la cuenta está inactiva.")
+      } else if (response.status >= 500) {
+        throw new Error("Error del servidor. Inténtalo más tarde.")
+      } else {
+        // Para otros códigos de estado, mostrar el mensaje exacto del backend
+        throw new Error(errorMessage)
+      }
+    }
+
+    console.log("✅ Reseteo de contraseña exitoso")
+  } catch (error: unknown) {
+    console.error("💥 Error en resetPassword:", error)
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        throw new Error("La petición tardó demasiado. Verifica tu conexión a internet.")
+      }
+      if (
+        error.message.includes("fetch") ||
+        error.message.includes("Network request failed") ||
+        error.message.includes("ERR_NETWORK")
+      ) {
+        console.log("Error de red en reseteo")
+        throw new Error("Error de conexión. Verifica tu internet.")
+      }
+      // ⚠️ IMPORTANTE: Re-lanzar el error original sin modificar
+      throw error
+    }
+    throw new Error("Error inesperado al resetear contraseña.")
+  }
+}
+
+// Cambiar contraseña (usuario autenticado)
+export const changePassword = async (data: ChangePasswordRequestDto, authToken: string): Promise<void> => {
+  try {
+    console.log("Iniciando cambio de contraseña...")
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      console.log("Timeout de cambio de contraseña alcanzado")
+      controller.abort()
+    }, 15000)
+
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    let result
+    try {
+      result = await response.json()
+    } catch (parseError) {
+      console.error("Error parseando respuesta de cambio:", parseError)
+      throw new Error("El servidor envió una respuesta inválida.")
+    }
+
+    if (!response.ok) {
+      const errorMessage = result.message || result.error || "Error al cambiar contraseña"
+
+      if (response.status === 400) {
+        if (errorMessage.includes("contraseña actual es incorrecta")) {
+          throw new Error("La contraseña actual es incorrecta.")
+        } else if (errorMessage.includes("contraseñas no coinciden")) {
+          throw new Error("La nueva contraseña y la confirmación no coinciden.")
+        } else if (errorMessage.includes("nueva contraseña debe ser distinta")) {
+          throw new Error("La nueva contraseña debe ser distinta a la anterior.")
+        } else {
+          throw new Error(errorMessage)
+        }
+      } else if (response.status === 401) {
+        throw new Error("Sesión expirada. Inicia sesión nuevamente.")
+      } else if (response.status === 404) {
+        throw new Error("Usuario no encontrado.")
+      } else {
+        throw new Error(errorMessage)
+      }
+    }
+
+    console.log("Cambio de contraseña exitoso")
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        throw new Error("La petición tardó demasiado. Verifica tu conexión a internet.")
+      }
+      if (error.message.includes("fetch") || error.message.includes("Network request failed")) {
+        console.log("Error de red en cambio de contraseña")
+        throw new Error("Error de conexión. Verifica tu internet.")
+      }
+      throw error
+    }
+    throw new Error("Error inesperado al cambiar contraseña.")
   }
 }
 

@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ImageBackground } from "react-native"
-import { RoundTrip } from "./RoundTripScreen"
-import { OneWayTripScreen } from "./OneWayTripScreen"
+// ✅ CORREGIDO: Cambiar a importaciones default
+import RoundTripScreen from "./RoundTripScreen"
+import OneWayTripScreen from "./OneWayTripScreen"
 import Icon from "react-native-vector-icons/MaterialIcons"
 
 type TipoViaje = "ida" | "ida-vuelta" | null
@@ -9,35 +10,29 @@ type TipoViaje = "ida" | "ida-vuelta" | null
 interface TripSelectionScreenProps {
   activeTab?: string;
   onTabPress?: (tab: string) => void;
-  onNavigateToOneWay?: () => void;
-  onNavigateToRoundTrip?: () => void;
 }
 
-export function TripSelectionScreen({ activeTab, onTabPress, onNavigateToOneWay, onNavigateToRoundTrip }: TripSelectionScreenProps) {
+export default function TripSelectionScreen({ activeTab, onTabPress }: TripSelectionScreenProps) {
   const [tipoViaje, setTipoViaje] = useState<TipoViaje>(null)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
 
-const handleContinuar = () => {
-  if (tipoViaje === "ida" && onNavigateToOneWay) {
-    onNavigateToOneWay();
-  } else if (tipoViaje === "ida-vuelta" && onNavigateToRoundTrip) {
-    onNavigateToRoundTrip();
-  } else if (tipoViaje) {
-    setMostrarFormulario(true);
+  const handleContinuar = () => {
+    if (tipoViaje) {
+      setMostrarFormulario(true)
+    }
   }
-}
 
   const handleVolver = () => {
     setMostrarFormulario(false)
   }
 
   if (mostrarFormulario && tipoViaje === "ida-vuelta") {
-    return <RoundTrip onVolver={handleVolver} />
+    return <RoundTripScreen onVolver={handleVolver} />
   }
 
-    if (mostrarFormulario && tipoViaje === "ida") {
-      return <OneWayTripScreen onGoBack={handleVolver} />
-    }
+  if (mostrarFormulario && tipoViaje === "ida") {
+    return <OneWayTripScreen onVolver={handleVolver} />
+  }
 
   return (
     <ImageBackground 
@@ -135,7 +130,7 @@ const styles = StyleSheet.create({
     paddingTop: 32,
   },
   card: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // Agregamos transparencia para que se vea el fondo
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 24,
     padding: 24,
     marginHorizontal: 8,

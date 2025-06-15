@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+"use client"
+
+import type React from "react"
+import { useState } from "react"
 import {
   View,
   Text,
@@ -6,614 +9,511 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  TextInput,
-  Modal,
-  Platform,
   ScrollView,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+  TextInput,
+  Alert,
+} from "react-native"
+import Icon from "react-native-vector-icons/MaterialIcons"
+import DateTimePicker from "@react-native-community/datetimepicker"
+import { ESTADOS_COMPRA } from "../services/constants" // Usar desde constants
 
 interface PurchaseHistoryFiltersScreenProps {
-  onGoBack?: () => void;
-  onApplyFilters: (filters: FilterData) => void;
+  onGoBack?: () => void
+  onApplyFilters?: (filters: any) => void
+  initialFilters?: {
+    estados: string[]
+    fechaDesde?: Date
+    fechaHasta?: Date
+    montoMin?: number
+    montoMax?: number
+  }
 }
 
-interface FilterData {
-  estados: string[];
-  fechaDesde?: Date;
-  fechaHasta?: Date;
-  montoMin?: number;
-  montoMax?: number;
-}
-
-const PurchaseHistoryFiltersScreen: React.FC<PurchaseHistoryFiltersScreenProps> = ({ 
+const PurchaseHistoryFiltersScreen: React.FC<PurchaseHistoryFiltersScreenProps> = ({
   onGoBack,
-  onApplyFilters
+  onApplyFilters,
+  initialFilters,
 }) => {
-  // Estados para filtros
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [dateFrom, setDateFrom] = useState<Date | null>(null);
-  const [dateTo, setDateTo] = useState<Date | null>(null);
-  const [minAmount, setMinAmount] = useState<string>('');
-  const [maxAmount, setMaxAmount] = useState<string>('');
-  
-  // Estados para selección de fecha
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [datePickerMode, setDatePickerMode] = useState<'from' | 'to'>('from');
-  
-  // Función para manejar selección de estado
-  const toggleStatusFilter = (status: string) => {
-    if (selectedStatus.includes(status)) {
-      setSelectedStatus(selectedStatus.filter(s => s !== status));
-    } else {
-      setSelectedStatus([...selectedStatus, status]);
-    }
-  };
-  
-  // Función para mostrar selector de fecha
-  const showDatePickerModal = (mode: 'from' | 'to') => {
-    setDatePickerMode(mode);
-    setShowDatePicker(true);
-  };
-  
-  // Función para manejar cambio de fecha
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    
+  // Estados para los filtros
+  const [selectedEstados, setSelectedEstados] = useState<string[]>(initialFilters?.estados || [])
+  const [fechaDesde, setFechaDesde] = useState<Date | undefined>(initialFilters?.fechaDesde)
+  const [fechaHasta, setFechaHasta] = useState<Date | undefined>(initialFilters?.fechaHasta)
+  const [montoMin, setMontoMin] = useState<string>(initialFilters?.montoMin?.toString() || "")
+  const [montoMax, setMontoMax] = useState<string>(initialFilters?.montoMax?.toString() || "")
+
+  // Estados para los date pickers
+  const [showDatePickerDesde, setShowDatePickerDesde] = useState(false)
+  const [showDatePickerHasta, setShowDatePickerHasta] = useState(false)
+
+  // Función para alternar estados
+  const toggleEstado = (estado: string) => {
+    setSelectedEstados((prev) => (prev.includes(estado) ? prev.filter((e) => e !== estado) : [...prev, estado]))
+  }
+
+  // Función para manejar cambio de fecha desde
+  const handleFechaDesdeChange = (event: any, selectedDate?: Date) => {
+    setShowDatePickerDesde(false)
     if (selectedDate) {
-      if (datePickerMode === 'from') {
-        setDateFrom(selectedDate);
-      } else {
-        setDateTo(selectedDate);
-      }
+      setFechaDesde(selectedDate)
     }
-  };
-  
+  }
+
+  // Función para manejar cambio de fecha hasta
+  const handleFechaHastaChange = (event: any, selectedDate?: Date) => {
+    setShowDatePickerHasta(false)
+    if (selectedDate) {
+      setFechaHasta(selectedDate)
+    }
+  }
+
   // Función para formatear fecha
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('es-UY', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-  
-  // Función para obtener texto según estado
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'COMPLETADA': return 'Completada';
-      case 'PENDIENTE': return 'Pendiente';
-      case 'CANCELADA': return 'Cancelada';
-      default: return status;
+    return date.toLocaleDateString("es-UY", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  // Función para validar filtros
+  const validateFilters = () => {
+    if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+      Alert.alert("Error", "La fecha desde no puede ser mayor que la fecha hasta")
+      return false
     }
-  };
-  
+
+    const minAmount = montoMin ? Number.parseFloat(montoMin) : undefined
+    const maxAmount = montoMax ? Number.parseFloat(montoMax) : undefined
+
+    if (minAmount && minAmount < 0) {
+      Alert.alert("Error", "El monto mínimo no puede ser negativo")
+      return false
+    }
+
+    if (maxAmount && maxAmount < 0) {
+      Alert.alert("Error", "El monto máximo no puede ser negativo")
+      return false
+    }
+
+    if (minAmount && maxAmount && minAmount > maxAmount) {
+      Alert.alert("Error", "El monto mínimo no puede ser mayor que el monto máximo")
+      return false
+    }
+
+    return true
+  }
+
   // Función para aplicar filtros
   const handleApplyFilters = () => {
-    const filters: FilterData = {
-      estados: selectedStatus,
-      fechaDesde: dateFrom || undefined,
-      fechaHasta: dateTo || undefined,
-      montoMin: minAmount ? parseFloat(minAmount) : undefined,
-      montoMax: maxAmount ? parseFloat(maxAmount) : undefined,
-    };
-    
-    onApplyFilters(filters);
-  };
-  
-  // Función para resetear filtros
-  const resetFilters = () => {
-    setSelectedStatus([]);
-    setDateFrom(null);
-    setDateTo(null);
-    setMinAmount('');
-    setMaxAmount('');
-  };
-  
-  // Función para buscar sin filtros
-  const searchWithoutFilters = () => {
-    onApplyFilters({
-      estados: [],
-    });
-  };
-  
-  // Verificar si hay filtros aplicados
-  const hasFilters = selectedStatus.length > 0 || dateFrom || dateTo || minAmount || maxAmount;
-  
+    if (!validateFilters()) {
+      return
+    }
+
+    const filters = {
+      estados: selectedEstados,
+      fechaDesde,
+      fechaHasta,
+      montoMin: montoMin ? Number.parseFloat(montoMin) : undefined,
+      montoMax: montoMax ? Number.parseFloat(montoMax) : undefined,
+    }
+
+    console.log("Aplicando filtros:", filters)
+    onApplyFilters?.(filters)
+  }
+
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSelectedEstados([])
+    setFechaDesde(undefined)
+    setFechaHasta(undefined)
+    setMontoMin("")
+    setMontoMax("")
+  }
+
+  // Función para verificar si hay filtros aplicados
+  const hasFiltersApplied = () => {
+    return selectedEstados.length > 0 || fechaDesde || fechaHasta || montoMin.trim() !== "" || montoMax.trim() !== ""
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
           <Icon name="arrow-back" size={24} color="#3B82F6" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Filtros de Búsqueda</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity style={styles.clearButton} onPress={handleClearFilters} disabled={!hasFiltersApplied()}>
+          <Text style={[styles.clearButtonText, !hasFiltersApplied() && styles.clearButtonTextDisabled]}>Limpiar</Text>
+        </TouchableOpacity>
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Información */}
-        <View style={styles.infoCard}>
-          <Icon name="info" size={24} color="#3B82F6" style={styles.infoIcon} />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Buscar Compras</Text>
-            <Text style={styles.infoText}>
-              Aplica filtros para encontrar compras específicas o busca todas las compras sin filtros.
-            </Text>
-          </View>
-        </View>
-        
-        {/* Filtro por estado */}
-        <View style={styles.filterSection}>
-          <Text style={styles.filterSectionTitle}>Estado de la Compra</Text>
-          <Text style={styles.filterSectionSubtitle}>Selecciona uno o más estados</Text>
-          
-          <View style={styles.statusCheckboxes}>
-            {['COMPLETADA', 'PENDIENTE', 'CANCELADA'].map((status) => (
+        {/* Sección de Estados */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Estados</Text>
+          <Text style={styles.sectionSubtitle}>Selecciona los estados de compra que deseas incluir</Text>
+
+          <View style={styles.checkboxContainer}>
+            {ESTADOS_COMPRA.map((estado) => (
               <TouchableOpacity
-                key={status}
-                style={styles.checkboxContainer}
-                onPress={() => toggleStatusFilter(status)}
+                key={estado.value}
+                style={styles.checkboxItem}
+                onPress={() => toggleEstado(estado.value)}
+                activeOpacity={0.7}
               >
-                <View style={[
-                  styles.checkbox,
-                  selectedStatus.includes(status) && styles.checkboxSelected
-                ]}>
-                  {selectedStatus.includes(status) && (
-                    <Icon name="check" size={16} color="white" />
-                  )}
+                <View style={[styles.checkbox, selectedEstados.includes(estado.value) && styles.checkboxSelected]}>
+                  {selectedEstados.includes(estado.value) && <Icon name="check" size={16} color="white" />}
                 </View>
-                <Text style={styles.checkboxLabel}>{getStatusText(status)}</Text>
+                <Text style={styles.checkboxLabel}>{estado.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
-        
-        {/* Filtro por fecha */}
-        <View style={styles.filterSection}>
-          <Text style={styles.filterSectionTitle}>Rango de Fechas</Text>
-          <Text style={styles.filterSectionSubtitle}>Filtra por fecha de compra</Text>
-          
-          <View style={styles.dateFilters}>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => showDatePickerModal('from')}
-            >
-              <Icon name="calendar-today" size={20} color="#49454F" style={styles.dateIcon} />
-              <Text style={styles.dateButtonText}>
-                {dateFrom ? formatDate(dateFrom) : 'Fecha desde'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => showDatePickerModal('to')}
-            >
-              <Icon name="calendar-today" size={20} color="#49454F" style={styles.dateIcon} />
-              <Text style={styles.dateButtonText}>
-                {dateTo ? formatDate(dateTo) : 'Fecha hasta'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          {(dateFrom || dateTo) && (
-            <TouchableOpacity 
-              style={styles.clearDatesButton}
-              onPress={() => {
-                setDateFrom(null);
-                setDateTo(null);
-              }}
-            >
-              <Icon name="clear" size={16} color="#F44336" />
-              <Text style={styles.clearDatesText}>Limpiar fechas</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        
-        {/* Filtro por monto */}
-        <View style={styles.filterSection}>
-          <Text style={styles.filterSectionTitle}>Rango de Montos</Text>
-          <Text style={styles.filterSectionSubtitle}>Filtra por monto total de la compra</Text>
-          
-          <View style={styles.amountFilters}>
-            <View style={styles.amountInputContainer}>
-              <Text style={styles.amountPrefix}>$</Text>
-              <TextInput
-                style={styles.amountInput}
-                placeholder="Mínimo"
-                keyboardType="numeric"
-                value={minAmount}
-                onChangeText={setMinAmount}
-              />
+
+        {/* Resto del componente permanece igual... */}
+        {/* Sección de Fechas */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Rango de Fechas</Text>
+          <Text style={styles.sectionSubtitle}>Filtra las compras por fecha de realización</Text>
+
+          <View style={styles.dateContainer}>
+            <View style={styles.dateInputContainer}>
+              <Text style={styles.dateLabel}>Desde</Text>
+              <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePickerDesde(true)}>
+                <Icon name="calendar-today" size={20} color="#79747E" />
+                <Text style={[styles.dateText, !fechaDesde && styles.datePlaceholder]}>
+                  {fechaDesde ? formatDate(fechaDesde) : "Seleccionar fecha"}
+                </Text>
+              </TouchableOpacity>
+              {fechaDesde && (
+                <TouchableOpacity style={styles.clearDateButton} onPress={() => setFechaDesde(undefined)}>
+                  <Icon name="clear" size={20} color="#79747E" />
+                </TouchableOpacity>
+              )}
             </View>
-            
-            <View style={styles.amountInputContainer}>
-              <Text style={styles.amountPrefix}>$</Text>
-              <TextInput
-                style={styles.amountInput}
-                placeholder="Máximo"
-                keyboardType="numeric"
-                value={maxAmount}
-                onChangeText={setMaxAmount}
-              />
+
+            <View style={styles.dateInputContainer}>
+              <Text style={styles.dateLabel}>Hasta</Text>
+              <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePickerHasta(true)}>
+                <Icon name="calendar-today" size={20} color="#79747E" />
+                <Text style={[styles.dateText, !fechaHasta && styles.datePlaceholder]}>
+                  {fechaHasta ? formatDate(fechaHasta) : "Seleccionar fecha"}
+                </Text>
+              </TouchableOpacity>
+              {fechaHasta && (
+                <TouchableOpacity style={styles.clearDateButton} onPress={() => setFechaHasta(undefined)}>
+                  <Icon name="clear" size={20} color="#79747E" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
-        
+
+        {/* Sección de Montos */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Rango de Montos</Text>
+          <Text style={styles.sectionSubtitle}>Filtra las compras por monto total</Text>
+
+          <View style={styles.amountContainer}>
+            <View style={styles.amountInputContainer}>
+              <Text style={styles.amountLabel}>Monto mínimo</Text>
+              <View style={styles.amountInput}>
+                <Text style={styles.currencySymbol}>$</Text>
+                <TextInput
+                  style={styles.amountTextInput}
+                  placeholder="0"
+                  placeholderTextColor="#79747E"
+                  keyboardType="numeric"
+                  value={montoMin}
+                  onChangeText={setMontoMin}
+                />
+              </View>
+            </View>
+
+            <View style={styles.amountInputContainer}>
+              <Text style={styles.amountLabel}>Monto máximo</Text>
+              <View style={styles.amountInput}>
+                <Text style={styles.currencySymbol}>$</Text>
+                <TextInput
+                  style={styles.amountTextInput}
+                  placeholder="Sin límite"
+                  placeholderTextColor="#79747E"
+                  keyboardType="numeric"
+                  value={montoMax}
+                  onChangeText={setMontoMax}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
         {/* Resumen de filtros */}
-        {hasFilters && (
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Filtros Aplicados</Text>
-            {selectedStatus.length > 0 && (
-              <Text style={styles.summaryItem}>
-                • Estados: {selectedStatus.map(getStatusText).join(', ')}
-              </Text>
-            )}
-            {dateFrom && (
-              <Text style={styles.summaryItem}>
-                • Desde: {formatDate(dateFrom)}
-              </Text>
-            )}
-            {dateTo && (
-              <Text style={styles.summaryItem}>
-                • Hasta: {formatDate(dateTo)}
-              </Text>
-            )}
-            {minAmount && (
-              <Text style={styles.summaryItem}>
-                • Monto mínimo: ${minAmount}
-              </Text>
-            )}
-            {maxAmount && (
-              <Text style={styles.summaryItem}>
-                • Monto máximo: ${maxAmount}
-              </Text>
-            )}
+        {hasFiltersApplied() && (
+          <View style={styles.summarySection}>
+            <Text style={styles.summaryTitle}>Resumen de filtros</Text>
+            <View style={styles.summaryContent}>
+              {selectedEstados.length > 0 && (
+                <Text style={styles.summaryText}>
+                  Estados:{" "}
+                  {selectedEstados.map((estado) => ESTADOS_COMPRA.find((e) => e.value === estado)?.label).join(", ")}
+                </Text>
+              )}
+              {fechaDesde && <Text style={styles.summaryText}>Desde: {formatDate(fechaDesde)}</Text>}
+              {fechaHasta && <Text style={styles.summaryText}>Hasta: {formatDate(fechaHasta)}</Text>}
+              {montoMin && <Text style={styles.summaryText}>Monto mín: ${montoMin}</Text>}
+              {montoMax && <Text style={styles.summaryText}>Monto máx: ${montoMax}</Text>}
+            </View>
           </View>
         )}
       </ScrollView>
-      
+
       {/* Botones de acción */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.searchAllButton}
-          onPress={searchWithoutFilters}
-        >
-          <Icon name="search" size={20} color="#3B82F6" style={styles.buttonIcon} />
-          <Text style={styles.searchAllButtonText}>Ver Todas</Text>
+        <TouchableOpacity style={styles.cancelButton} onPress={onGoBack}>
+          <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.applyFiltersButton, !hasFilters && styles.disabledButton]}
-          onPress={handleApplyFilters}
-          disabled={!hasFilters}
-        >
-          <Icon name="filter-list" size={20} color="white" style={styles.buttonIcon} />
-          <Text style={styles.applyFiltersButtonText}>
-            Aplicar Filtros
-          </Text>
+        <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilters}>
+          <Text style={styles.applyButtonText}>Aplicar Filtros</Text>
         </TouchableOpacity>
       </View>
-      
-      {hasFilters && (
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={resetFilters}
-        >
-          <Text style={styles.resetButtonText}>Limpiar todos los filtros</Text>
-        </TouchableOpacity>
+
+      {/* Date Pickers */}
+      {showDatePickerDesde && (
+        <DateTimePicker
+          value={fechaDesde || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleFechaDesdeChange}
+          maximumDate={new Date()}
+        />
       )}
-      
-      {/* Selector de fecha */}
-      {Platform.OS === 'ios' ? (
-        <Modal
-          visible={showDatePicker}
-          transparent={true}
-          animationType="slide"
-        >
-          <View style={styles.datePickerModal}>
-            <View style={styles.datePickerContainer}>
-              <View style={styles.datePickerHeader}>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.datePickerCancel}>Cancelar</Text>
-                </TouchableOpacity>
-                <Text style={styles.datePickerTitle}>
-                  {datePickerMode === 'from' ? 'Fecha desde' : 'Fecha hasta'}
-                </Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.datePickerDone}>Listo</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={datePickerMode === 'from' ? (dateFrom || new Date()) : (dateTo || new Date())}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                style={styles.iosDatePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      ) : (
-        showDatePicker && (
-          <DateTimePicker
-            value={datePickerMode === 'from' ? (dateFrom || new Date()) : (dateTo || new Date())}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )
+
+      {showDatePickerHasta && (
+        <DateTimePicker
+          value={fechaHasta || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleFechaHastaChange}
+          maximumDate={new Date()}
+          minimumDate={fechaDesde}
+        />
       )}
     </SafeAreaView>
-  );
-};
+  )
+}
 
+// Estilos permanecen iguales...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFBFE',
+    backgroundColor: "#FFFBFE",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#E7E0EC',
+    borderBottomColor: "#E7E0EC",
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#1C1B1F",
+    textAlign: "center",
   },
-  headerSpacer: {
-    width: 40,
+  clearButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  clearButtonText: {
+    color: "#3B82F6",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  clearButtonTextDisabled: {
+    color: "#CAC4D0",
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: '#E8F0FE',
-    borderRadius: 12,
-    padding: 16,
+  section: {
     marginBottom: 24,
   },
-  infoIcon: {
-    marginRight: 12,
-    marginTop: 2,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1B1F',
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#49454F',
-    lineHeight: 20,
-  },
-  filterSection: {
-    marginBottom: 24,
-  },
-  filterSectionTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1B1F',
+    fontWeight: "600",
+    color: "#1C1B1F",
     marginBottom: 4,
   },
-  filterSectionSubtitle: {
+  sectionSubtitle: {
     fontSize: 14,
-    color: '#79747E',
+    color: "#79747E",
     marginBottom: 16,
   },
-  statusCheckboxes: {
+  checkboxContainer: {
     gap: 12,
   },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  checkboxItem: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 8,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#79747E',
+    borderColor: "#79747E",
     marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   checkboxSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
   },
   checkboxLabel: {
     fontSize: 16,
-    color: '#49454F',
+    color: "#1C1B1F",
   },
-  dateFilters: {
-    gap: 12,
+  dateContainer: {
+    gap: 16,
   },
-  datePickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E7E0EC',
+  dateInputContainer: {
+    position: "relative",
   },
-  dateIcon: {
-    marginRight: 12,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: '#49454F',
-  },
-  clearDatesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    paddingVertical: 4,
-  },
-  clearDatesText: {
+  dateLabel: {
     fontSize: 14,
-    color: '#F44336',
-    marginLeft: 4,
+    fontWeight: "500",
+    color: "#49454F",
+    marginBottom: 8,
   },
-  amountFilters: {
-    flexDirection: 'row',
-    gap: 12,
+  dateInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#79747E",
+    borderRadius: 8,
+    backgroundColor: "white",
+  },
+  dateText: {
+    flex: 1,
+    fontSize: 16,
+    color: "#1C1B1F",
+    marginLeft: 12,
+  },
+  datePlaceholder: {
+    color: "#79747E",
+  },
+  clearDateButton: {
+    position: "absolute",
+    right: 12,
+    top: 36,
+    padding: 4,
+  },
+  amountContainer: {
+    gap: 16,
   },
   amountInputContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E7E0EC',
-    paddingHorizontal: 16,
   },
-  amountPrefix: {
-    fontSize: 16,
-    color: '#49454F',
-    marginRight: 8,
+  amountLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#49454F",
+    marginBottom: 8,
   },
   amountInput: {
-    flex: 1,
-    height: 48,
-    fontSize: 16,
-    color: '#1C1B1F',
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#79747E",
+    borderRadius: 8,
+    backgroundColor: "white",
+    paddingHorizontal: 16,
   },
-  summaryCard: {
-    backgroundColor: '#F0F9FF',
+  currencySymbol: {
+    fontSize: 16,
+    color: "#49454F",
+    marginRight: 8,
+  },
+  amountTextInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#1C1B1F",
+  },
+  summarySection: {
+    backgroundColor: "#F8F9FF",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginTop: 8,
   },
   summaryTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1B1F',
+    fontWeight: "600",
+    color: "#1C1B1F",
     marginBottom: 8,
   },
-  summaryItem: {
+  summaryContent: {
+    gap: 4,
+  },
+  summaryText: {
     fontSize: 14,
-    color: '#49454F',
-    marginBottom: 4,
+    color: "#49454F",
   },
   actionButtons: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#E7E0EC',
-  },
-  searchAllButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E8F0FE',
-    borderRadius: 12,
-    paddingVertical: 16,
-  },
-  searchAllButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-  applyFiltersButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 16,
-  },
-  disabledButton: {
-    backgroundColor: '#CAC4D0',
-  },
-  applyFiltersButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  resetButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
+    flexDirection: "row",
     paddingHorizontal: 16,
-    backgroundColor: 'white',
+    paddingVertical: 16,
+    backgroundColor: "white",
     borderTopWidth: 1,
-    borderTopColor: '#E7E0EC',
+    borderTopColor: "#E7E0EC",
+    gap: 12,
   },
-  resetButtonText: {
-    fontSize: 14,
-    color: '#F44336',
-    fontWeight: '500',
-  },
-  datePickerModal: {
+  cancelButton: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#79747E",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  datePickerContainer: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E7E0EC',
-  },
-  datePickerTitle: {
+  cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1B1F',
+    fontWeight: "500",
+    color: "#49454F",
   },
-  datePickerCancel: {
-    color: '#49454F',
-    fontSize: 14,
+  applyButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#3B82F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  datePickerDone: {
-    color: '#3B82F6',
-    fontSize: 14,
-    fontWeight: '600',
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
   },
-  iosDatePicker: {
-    height: 200,
-  },
-});
+})
 
-export default PurchaseHistoryFiltersScreen;
+export default PurchaseHistoryFiltersScreen

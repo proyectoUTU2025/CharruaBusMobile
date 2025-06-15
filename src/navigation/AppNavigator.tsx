@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -12,7 +11,8 @@ import VerifyEmailScreen from "../screens/VerifyEmailScreen"
 import LoadingScreen from "../screens/LoadingScreen"
 import RecoverPasswordScreen from "../screens/RecoverPasswordScreen"
 import BottomTabsNavigator from "./BottomTabsNavigator"
-import { OneWayTripScreen } from "../screens/OneWayTripScreen"
+// ✅ CORREGIDO: Cambiar a importación por defecto
+import OneWayTripScreen from "../screens/OneWayTripScreen"
 import { ViewTripsScreen } from "../screens/ViewTripsScreen"
 
 // Importaciones de servicios y contextos
@@ -32,7 +32,6 @@ export type RootStackParamList = {
   // Rutas principales
   Main: undefined
 
-
   // Rutas de viajes
   TripSelection: undefined
   OneWayTrip: undefined
@@ -49,7 +48,6 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 const AppNavigator = () => {
-
   // Combinando estados de autenticación de ambas versiones
   const { isAuthenticated, isAuthLoading, checkAuthStatus } = useAuth()
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -108,7 +106,6 @@ const AppNavigator = () => {
         </Stack.Navigator>
       </NavigationContainer>
     )
-
   }
 
   // Una vez que terminó la verificación, mostrar las rutas correspondientes
@@ -116,9 +113,7 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-
           // Usuario autenticado - mostrar navegación principal y rutas de viajes
-
           <>
             <Stack.Screen name="Main" component={BottomTabsNavigator} />
             <Stack.Screen name="TripSelection" component={BottomTabsNavigator} />

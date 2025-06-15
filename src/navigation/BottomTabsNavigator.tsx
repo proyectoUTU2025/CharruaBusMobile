@@ -1,21 +1,33 @@
-
 "use client"
 
-import { useState } from "react"
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal, ScrollView } from "react-native"
+import { useState, useEffect } from "react"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  Platform,
+} from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 
-// Importaciones de pantallas de ambas versiones
+// ✅ CORREGIDO: Importaciones actualizadas - cambiar a importaciones por defecto
 import MainScreen from "../screens/MainScreen"
 import ProfileScreen from "../screens/ProfileScreen"
 import NewPasswordScreen from "../screens/NewPasswordScreen"
-import { TripSelectionScreen } from "../screens/TripSelectionScreen"
-import { OneWayTripScreen } from "../screens/OneWayTripScreen"
-import { ViewTripsScreen } from "../screens/ViewTripsScreen"
-import { SelectSeatScreen } from "../screens/SelectSeatScreen"
+import TripSelectionScreen from "../screens/TripSelectionScreen"
+import OneWayTripScreen from "../screens/OneWayTripScreen"
+import ViewTripsScreen from "../screens/ViewTripsScreen"
+import SelectSeatScreen from "../screens/SelectSeatScreen"
 import HistorySelectionScreen from "../screens/HistorySelectionScreen"
 import PurchaseHistoryScreen from "../screens/PurchaseHistoryScreen"
 import PurchaseHistoryFiltersScreen from "../screens/PurchaseHistoryFiltersScreen"
+// ✅ NUEVO: Importaciones para historial de pasajes
+import TicketHistoryScreen from "../screens/TicketHistoryScreen"
+import TicketHistoryFiltersScreen from "../screens/TicketHistoryFiltersScreen"
 
 // Importaciones de contextos y hooks
 import { useAuth } from "../context/AuthContext"
@@ -39,10 +51,18 @@ interface ViewTripsParams {
   pasajeros: string
 }
 
+const APP_BAR_COLOR = "#3B82F6" // Color azul de la barra de la app
+
 const BottomTabsNavigator = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const { logout } = useAuth()
   const { user, loading } = useUser()
+
+  // Configurar la barra de estado al montar el componente
+  useEffect(() => {
+    StatusBar.setBackgroundColor(APP_BAR_COLOR)
+    StatusBar.setBarStyle("light-content")
+  }, [])
 
   // Estados de navegación combinados
   const [navigationState, setNavigationState] = useState<NavigationState>({
@@ -53,8 +73,10 @@ const BottomTabsNavigator = () => {
   const [menuVisible, setMenuVisible] = useState(false)
   const [notificationsVisible, setNotificationsVisible] = useState(false)
 
-  // Estados para el historial con el nuevo flujo de filtros (de la versión 2)
-  const [historyView, setHistoryView] = useState<"selection" | "filters" | "purchases" | "tickets">("selection")
+  // ✅ ACTUALIZADO: Estados para el historial con soporte para pasajes
+  const [historyView, setHistoryView] = useState<
+    "selection" | "purchaseFilters" | "purchases" | "ticketFilters" | "tickets"
+  >("selection")
   const [purchaseFilters, setPurchaseFilters] = useState({
     estados: [],
     fechaDesde: undefined,
@@ -62,7 +84,14 @@ const BottomTabsNavigator = () => {
     montoMin: undefined,
     montoMax: undefined,
   })
-
+  // ✅ NUEVO: Estados para filtros de pasajes
+  const [ticketFilters, setTicketFilters] = useState({
+    estados: [],
+    fechaDesde: undefined,
+    fechaHasta: undefined,
+    origenId: undefined,
+    destinoId: undefined,
+  })
 
   // Datos de ejemplo para las notificaciones
   const [notifications, setNotifications] = useState([
@@ -100,7 +129,7 @@ const BottomTabsNavigator = () => {
     },
   ])
 
-  // Funciones de navegación para viajes (de la versión 1)
+  // Funciones de navegación para viajes
   const navigateToTab = (tab: string) => {
     console.log("Navegando a tab:", tab)
     setNavigationState({ type: "tab", activeTab: tab })
@@ -123,11 +152,10 @@ const BottomTabsNavigator = () => {
     console.log("Navigation state updated to selectSeat")
   }
 
-  // Función para volver desde cualquier pantalla (de la versión 1)
+  // Función para volver desde cualquier pantalla
   const goBack = () => {
     console.log("goBack llamado desde:", navigationState.type)
     if (navigationState.type === "selectSeat") {
-      // Si estamos en SelectSeat, volver a ViewTrips
       setNavigationState({ type: "oneWayTrip" })
     } else if (navigationState.type === "viewTrips") {
       setNavigationState({ type: "oneWayTrip" })
@@ -136,29 +164,36 @@ const BottomTabsNavigator = () => {
     }
   }
 
-  // Funciones para el historial (de la versión 2)
+  // ✅ ACTUALIZADO: Funciones para el historial con soporte para pasajes
   const handleHistoryNavigation = (type: "purchases" | "tickets") => {
     console.log("Navegación de historial:", type)
     if (type === "purchases") {
-      setHistoryView("filters")
-    } else {
-      setHistoryView(type)
+      setHistoryView("purchaseFilters")
+    } else if (type === "tickets") {
+      setHistoryView("ticketFilters")
     }
   }
 
-  const handleFiltersApplied = (filters: any) => {
-    console.log("Filtros aplicados:", filters)
+  const handlePurchaseFiltersApplied = (filters: any) => {
+    console.log("Filtros de compras aplicados:", filters)
     setPurchaseFilters(filters)
     setHistoryView("purchases")
+  }
+
+  // ✅ NUEVO: Función para aplicar filtros de pasajes
+  const handleTicketFiltersApplied = (filters: any) => {
+    console.log("Filtros de pasajes aplicados:", filters)
+    setTicketFilters(filters)
+    setHistoryView("tickets")
   }
 
   const handleHistoryGoBack = () => {
     console.log("Historial goBack desde:", historyView)
     switch (historyView) {
       case "purchases":
-        setHistoryView("filters")
+        setHistoryView("purchaseFilters")
         break
-      case "filters":
+      case "purchaseFilters":
         setHistoryView("selection")
         setPurchaseFilters({
           estados: [],
@@ -169,7 +204,17 @@ const BottomTabsNavigator = () => {
         })
         break
       case "tickets":
+        setHistoryView("ticketFilters")
+        break
+      case "ticketFilters":
         setHistoryView("selection")
+        setTicketFilters({
+          estados: [],
+          fechaDesde: undefined,
+          fechaHasta: undefined,
+          origenId: undefined,
+          destinoId: undefined,
+        })
         break
       default:
         setHistoryView("selection")
@@ -177,49 +222,12 @@ const BottomTabsNavigator = () => {
     }
   }
 
-  // Función para volver al estado de pestañas
-  const navigateToTab = (tab: string) => {
-    setNavigationState({ type: 'tab', activeTab: tab });
-  };
-
-  // Función para navegar a viaje de ida
-  const navigateToOneWayTrip = () => {
-    setNavigationState({ type: 'oneWayTrip' });
-  };
-
-  // Función para navegar a ver viajes
-  const navigateToViewTrips = (params: ViewTripsParams) => {
-    setNavigationState({ type: 'viewTrips', params });
-  };
-
- const navigateToSelectSeat = (params: any) => {
-  console.log('=== navigateToSelectSeat called ===');
-  console.log('Params received:', params);
-  setNavigationState({ type: 'selectSeat', params });
-  console.log('Navigation state updated to selectSeat');
-};
-
-  // Función para volver desde cualquier pantalla
-  // Actualizar la función goBack
-  const goBack = () => {
-    if (navigationState.type === 'selectSeat') {
-      // Si estamos en SelectSeat, volver a ViewTrips
-      // Necesitarías guardar los parámetros de ViewTrips, por ahora volvemos a OneWayTrip
-      setNavigationState({ type: 'oneWayTrip' });
-    } else if (navigationState.type === 'viewTrips') {
-      setNavigationState({ type: 'oneWayTrip' });
-    } else if (navigationState.type === 'oneWayTrip') {
-      setNavigationState({ type: 'tab', activeTab: 'viajes' });
-    }
-  };
-
   const handleLogout = () => {
     console.log("Cerrando sesión")
     logout()
   }
 
   const handleTabPress = (tab: string) => {
-
     console.log("Tab presionado:", tab)
     navigateToTab(tab)
 
@@ -233,11 +241,17 @@ const BottomTabsNavigator = () => {
         montoMin: undefined,
         montoMax: undefined,
       })
+      setTicketFilters({
+        estados: [],
+        fechaDesde: undefined,
+        fechaHasta: undefined,
+        origenId: undefined,
+        destinoId: undefined,
+      })
     }
 
     if (tab === "historial") {
-      console.log("Navegando a historial de compras")
-
+      console.log("Navegando a historial")
     }
   }
 
@@ -313,8 +327,7 @@ const BottomTabsNavigator = () => {
     return true
   }
 
-
-  // Función de renderizado combinada
+  // ✅ ACTUALIZADO: Función de renderizado con soporte para historial de pasajes
   const renderContent = () => {
     console.log("=== renderContent called ===")
     console.log("Current navigation state:", navigationState)
@@ -357,23 +370,24 @@ const BottomTabsNavigator = () => {
             switch (historyView) {
               case "selection":
                 return <HistorySelectionScreen onNavigateToHistory={handleHistoryNavigation} />
-              case "filters":
+              case "purchaseFilters":
                 return (
-                  <PurchaseHistoryFiltersScreen onGoBack={handleHistoryGoBack} onApplyFilters={handleFiltersApplied} />
+                  <PurchaseHistoryFiltersScreen
+                    onGoBack={handleHistoryGoBack}
+                    onApplyFilters={handlePurchaseFiltersApplied}
+                  />
                 )
               case "purchases":
                 return <PurchaseHistoryScreen onGoBack={handleHistoryGoBack} filters={purchaseFilters} />
-              case "tickets":
+              case "ticketFilters":
                 return (
-                  <View style={styles.placeholderContainer}>
-                    <Icon name="confirmation-number" size={64} color="#CAC4D0" />
-                    <Text style={styles.placeholderTitle}>Historial de Pasajes</Text>
-                    <Text style={styles.placeholderSubtitle}>Próximamente: Aquí podrás ver todos tus pasajes</Text>
-                    <TouchableOpacity style={styles.backToHistoryButton} onPress={handleHistoryGoBack}>
-                      <Text style={styles.backToHistoryText}>Volver a Historial</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <TicketHistoryFiltersScreen
+                    onGoBack={handleHistoryGoBack}
+                    onApplyFilters={handleTicketFiltersApplied}
+                  />
                 )
+              case "tickets":
+                return <TicketHistoryScreen onGoBack={handleHistoryGoBack} filters={ticketFilters} />
               default:
                 return <HistorySelectionScreen onNavigateToHistory={handleHistoryNavigation} />
             }
@@ -384,76 +398,6 @@ const BottomTabsNavigator = () => {
         return <MainScreen />
     }
   }
-
-
-  const renderContent = () => {
-  console.log('=== renderContent called ===');
-  console.log('Current navigation state:', navigationState);
-  switch (navigationState.type) {
-    case 'viewTrips':
-      return (
-        <ViewTripsScreen 
-          route={{ params: navigationState.params }}
-          navigation={{ 
-            goBack, 
-            navigate: navigateToSelectSeat // Agregar esta línea
-          }}
-          onGoBack={goBack}
-        />
-      );
-    case 'oneWayTrip':
-      return (
-        <OneWayTripScreen 
-          onGoBack={goBack}
-          onNavigateToViewTrips={navigateToViewTrips}
-        />
-      );
-    case 'selectSeat':
-          console.log('Rendering SelectSeatScreen');
-          return (
-            <SelectSeatScreen 
-              route={{ params: navigationState.params }}
-              navigation={{ goBack }}
-            />
-          );
-    case 'viewTrips':
-      return (
-        <ViewTripsScreen 
-          route={{ params: navigationState.params }}
-          navigation={{ goBack, navigate: navigateToSelectSeat }} // Actualizar para pasar navigate
-          onGoBack={goBack}
-        />
-      ); 
-    case 'tab':
-      switch (navigationState.activeTab) {
-        case "inicio":
-          return <MainScreen />;
-        case "viajes":
-          return (
-            <TripSelectionScreen 
-              activeTab={navigationState.activeTab}
-              onTabPress={handleTabPress}
-              onNavigateToOneWay={navigateToOneWayTrip}
-              onNavigateToRoundTrip={() => console.log('RoundTrip pendiente')}
-            />
-          );
-    case "historial":
-      return (
-        <View style={styles.placeholderContainer}>
-          <Icon name="history" size={64} color="#CAC4D0" />
-          <Text style={styles.placeholderTitle}>Historial de Compras</Text>
-          <Text style={styles.placeholderSubtitle}>
-            Aquí podrás ver todas tus compras anteriores
-          </Text>
-        </View>
-      );
-    default:
-      return <MainScreen />;
-    }
-    default:
-      return <MainScreen />;
-  }
-};
 
   const MenuDropdown = () => (
     <Modal visible={menuVisible} transparent={true} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
@@ -558,25 +502,19 @@ const BottomTabsNavigator = () => {
 
   const currentActiveTab = getCurrentActiveTab()
 
-  const currentActiveTab = getCurrentActiveTab();
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={APP_BAR_COLOR} translucent={false} />
 
       {/* Barra Superior */}
       <View style={styles.topAppBar}>
-
         <TouchableOpacity style={styles.menuButton} onPress={toggleMenu} activeOpacity={0.7}>
-
           <Icon name="menu" size={24} color="white" />
         </TouchableOpacity>
 
         <View style={styles.titleContainer} />
 
-
         <TouchableOpacity style={styles.notificationButton} onPress={toggleNotifications} activeOpacity={0.7}>
-
           <Icon name="notifications" size={24} color="white" />
           {getUnreadNotificationsCount() > 0 && (
             <View style={styles.notificationBadge}>
@@ -589,9 +527,9 @@ const BottomTabsNavigator = () => {
       </View>
 
       {/* Contenido Principal */}
-      <View style={styles.mainContent}>{renderContent()}</View>
+      <SafeAreaView style={styles.mainContent}>{renderContent()}</SafeAreaView>
 
-      {/* Barra Inferior de Navegación - Siempre visible */}
+      {/* Barra Inferior de Navegación */}
       {shouldShowBottomNavigation() && (
         <View style={styles.navigationBar}>
           <TouchableOpacity
@@ -599,7 +537,6 @@ const BottomTabsNavigator = () => {
             onPress={() => handleTabPress("inicio")}
             activeOpacity={0.7}
           >
-
             <View
               style={[styles.navigationIndicator, currentActiveTab === "inicio" && styles.activeNavigationIndicator]}
             >
@@ -608,7 +545,6 @@ const BottomTabsNavigator = () => {
             <Text style={[styles.navigationLabel, currentActiveTab === "inicio" && styles.activeNavigationLabel]}>
               Inicio
             </Text>
-
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -616,7 +552,6 @@ const BottomTabsNavigator = () => {
             onPress={() => handleTabPress("viajes")}
             activeOpacity={0.7}
           >
-
             <View
               style={[styles.navigationIndicator, currentActiveTab === "viajes" && styles.activeNavigationIndicator]}
             >
@@ -625,7 +560,6 @@ const BottomTabsNavigator = () => {
             <Text style={[styles.navigationLabel, currentActiveTab === "viajes" && styles.activeNavigationLabel]}>
               Viajes
             </Text>
-
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -633,7 +567,6 @@ const BottomTabsNavigator = () => {
             onPress={() => handleTabPress("historial")}
             activeOpacity={0.7}
           >
-
             <View
               style={[styles.navigationIndicator, currentActiveTab === "historial" && styles.activeNavigationIndicator]}
             >
@@ -642,7 +575,6 @@ const BottomTabsNavigator = () => {
             <Text style={[styles.navigationLabel, currentActiveTab === "historial" && styles.activeNavigationLabel]}>
               Historial
             </Text>
-
           </TouchableOpacity>
         </View>
       )}
@@ -650,12 +582,11 @@ const BottomTabsNavigator = () => {
       {/* Menús Desplegables */}
       <MenuDropdown />
       <NotificationsDropdown />
-    </SafeAreaView>
+    </View>
   )
 }
 
-
-// Estilos combinados de ambas versiones
+// Los estilos permanecen iguales...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -667,13 +598,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#3B82F6",
+    backgroundColor: APP_BAR_COLOR,
     elevation: 4,
     shadowColor: "#000",
-
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 12,
   },
   menuButton: {
     padding: 8,
@@ -683,7 +614,6 @@ const styles = StyleSheet.create({
   },
   notificationButton: {
     padding: 8,
-
     position: "relative",
   },
   notificationBadge: {
@@ -701,13 +631,12 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "bold",
-
   },
   mainContent: {
     flex: 1,
+    backgroundColor: "#F5F5F5",
   },
   navigationBar: {
-
     flexDirection: "row",
     backgroundColor: "white",
     paddingVertical: 8,
@@ -715,17 +644,14 @@ const styles = StyleSheet.create({
     borderTopColor: "#E5E7EB",
     elevation: 8,
     shadowColor: "#000",
-
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   navigationItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
-
-
   },
   activeNavigationItem: {},
   navigationIndicator: {
@@ -733,94 +659,38 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   activeNavigationIndicator: {
-
     backgroundColor: "#E0F2FE",
   },
   navigationLabel: {
     fontSize: 12,
     color: "#49454F",
-
     marginTop: 4,
   },
   activeNavigationLabel: {
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginTop: 16,
-  },
-  placeholderSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#374151",
-    marginTop: 16,
-  },
-  placeholderSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    marginTop: 8,
-  },
-  backToHistoryButton: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#E8F0FE",
-    borderRadius: 20,
-  },
-  backToHistoryText: {
     color: "#3B82F6",
-    fontWeight: "500",
-    fontSize: 14,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-start",
-    paddingTop: 60,
+    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 60 : 60,
   },
   menuContainer: {
     backgroundColor: "white",
-
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
     padding: 16,
     elevation: 8,
-
     shadowColor: "#000",
-
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   menuHeader: {
-
     flexDirection: "row",
     alignItems: "center",
-
     marginBottom: 16,
   },
   avatarContainer: {
@@ -830,37 +700,31 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-
     backgroundColor: "#E0F2FE",
     justifyContent: "center",
     alignItems: "center",
-
   },
   userInfoContainer: {
     flex: 1,
   },
   greetingText: {
     fontSize: 16,
-
     fontWeight: "bold",
     color: "#1F2937",
   },
   userEmailText: {
     fontSize: 14,
     color: "#6B7280",
-
     marginTop: 2,
   },
   menuDivider: {
     height: 1,
-
     backgroundColor: "#E5E7EB",
     marginVertical: 8,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-
     paddingVertical: 12,
     paddingHorizontal: 8,
   },
@@ -869,53 +733,42 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-
     color: "#49454F",
   },
   notificationsContainer: {
     backgroundColor: "white",
-
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
     maxHeight: 400,
     elevation: 8,
-
     shadowColor: "#000",
-
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   notificationsHeader: {
-
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-
     padding: 16,
   },
   notificationsTitle: {
     fontSize: 18,
-
     fontWeight: "bold",
     color: "#1F2937",
-
   },
   markAllReadButton: {
     padding: 8,
   },
   markAllReadText: {
     fontSize: 14,
-
     color: "#3B82F6",
-
   },
   notificationsList: {
     maxHeight: 300,
   },
   notificationItem: {
-
     flexDirection: "row",
     padding: 16,
     borderBottomWidth: 1,
@@ -926,14 +779,11 @@ const styles = StyleSheet.create({
   },
   notificationIconContainer: {
     position: "relative",
-
     marginRight: 12,
     padding: 8,
   },
   unreadDot: {
-
     position: "absolute",
-
     top: 4,
     right: 4,
     width: 8,
@@ -946,7 +796,6 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
-
     color: "#1F2937",
     marginBottom: 4,
   },
@@ -956,24 +805,19 @@ const styles = StyleSheet.create({
   notificationMessage: {
     fontSize: 14,
     color: "#6B7280",
-
     marginBottom: 4,
   },
   notificationTime: {
     fontSize: 12,
-
     color: "#9CA3AF",
   },
   emptyNotifications: {
     alignItems: "center",
-
     padding: 32,
   },
   emptyNotificationsText: {
     fontSize: 16,
-
     color: "#6B7280",
-
     marginTop: 16,
   },
 })

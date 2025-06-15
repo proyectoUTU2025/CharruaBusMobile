@@ -1,10 +1,9 @@
-
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Provider as PaperProvider } from "react-native-paper"
-import { Alert, StatusBar } from "react-native"
+import { Alert, StatusBar, Platform } from "react-native"
 import AppNavigator from "./src/navigation/AppNavigator"
 import { AuthProvider } from "./src/context/AuthContext"
 
@@ -43,129 +42,144 @@ try {
 }
 
 const App: React.FC = () => {
+  const [appReady, setAppReady] = useState(false)
+  const [notificationsInitialized, setNotificationsInitialized] = useState(false)
+
   useEffect(() => {
     console.log("Inicializando aplicación...")
 
-    const initializeApp = async () => {
-      try {
-        // Inicializar el error handler personalizado si está disponible
-        if (errorHandler?.init) {
-          console.log("Inicializando error handler personalizado...")
-          errorHandler.init()
-        } else {
-          console.log("Error handler no disponible - usando manejo de errores por defecto")
-        }
-
-        // Configurar notificaciones si están disponibles
-        if (requestUserPermission && setupNotifications) {
-          console.log("Configurando notificaciones...")
-          await initializeNotifications()
-        } else {
-          console.log("Notificaciones no configuradas - ejecutando en modo de desarrollo")
-        }
-
-        console.log("Inicialización de la aplicación completada")
-      } catch (error) {
-        console.error("Error durante la inicialización de la aplicación:", error)
-      }
+    // Inicializar el error handler inmediatamente
+    if (errorHandler?.init) {
+      console.log("Inicializando error handler personalizado...")
+      errorHandler.init()
+    } else {
+      console.log("Error handler no disponible - usando manejo de errores por defecto")
     }
+
+    // Marcar la app como lista después de un breve retraso
+    const readyTimer = setTimeout(() => {
+      console.log("App marcada como lista para inicialización completa")
+      setAppReady(true)
+    }, 1000)
+
+    return () => {
+      clearTimeout(readyTimer)
+      console.log("Limpiando timer de inicialización")
+    }
+  }, [])
+
+  // Efecto separado para inicializar notificaciones cuando la app esté lista
+  useEffect(() => {
+    let unsubscribeNotifications: (() => void) | undefined
 
     const initializeNotifications = async () => {
-      try {
-        console.log("Solicitando permisos de notificación...")
-        // Solicitar permisos de notificación
-        await requestUserPermission!()
-        console.log("Permisos de notificación obtenidos")
+      // Solo inicializar si la app está lista y las notificaciones no se han inicializado aún
+      if (appReady && !notificationsInitialized && requestUserPermission && setupNotifications) {
+        console.log("Inicializando notificaciones...")
+        setNotificationsInitialized(true)
 
-        // Configurar listeners de notificaciones
-        console.log("Configurando listeners de notificaciones...")
-        const unsubscribe = setupNotifications!((remoteMessage: any) => {
-          try {
-            console.log("Notificación recibida:", remoteMessage)
-
-            // Validar que el mensaje tenga la estructura esperada
-            if (remoteMessage?.notification) {
-              const title = remoteMessage.notification?.title || "Notificación"
-              const body = remoteMessage.notification?.body || "Mensaje recibido"
-
-              console.log("Mostrando alerta de notificación:", { title, body })
-
-              // Mostrar alerta cuando se reciba una notificación
-              Alert.alert(title, body, [
-                {
-                  text: "OK",
-                  onPress: () => console.log("Notificación cerrada por el usuario"),
-                },
-              ])
-            } else {
-              console.log("Notificación recibida sin contenido de notification")
-            }
-
-            // Lógica adicional para manejar datos de la notificación
-            if (remoteMessage?.data) {
-              console.log("Datos de notificación recibidos:", remoteMessage.data)
-              // Aquí se puede agregar lógica para navegar a pantallas específicas
-              // Por ejemplo: navigation.navigate('Screen', { data: remoteMessage.data });
-
-              // Procesar datos específicos de la notificación
-              handleNotificationData(remoteMessage.data)
-            }
-          } catch (error) {
-            console.error("Error al procesar notificación:", error)
-
+        try {
+          // En Android, esperar un poco más para asegurar que la Activity esté lista
+          if (Platform.OS === "android") {
+            console.log("Esperando 2 segundos adicionales en Android para Activity...")
+            await new Promise((resolve) => setTimeout(resolve, 2000))
           }
-        })
 
-        console.log("Listeners de notificaciones configurados exitosamente")
+          console.log("Solicitando permisos de notificación...")
+          await requestUserPermission()
+          console.log("Permisos de notificación procesados")
 
-        // Retornar función de cleanup
-        return unsubscribe
-      } catch (error) {
-        console.error("Error al configurar notificaciones:", error)
-        throw error
+          console.log("Configurando listeners de notificaciones...")
+          unsubscribeNotifications = setupNotifications((remoteMessage: any) => {
+            try {
+              console.log("Notificación recibida:", remoteMessage)
+
+              // Validar que el mensaje tenga la estructura esperada
+              if (remoteMessage?.notification) {
+                const title = remoteMessage.notification?.title || "Notificación"
+                const body = remoteMessage.notification?.body || "Mensaje recibido"
+
+                console.log("Mostrando alerta de notificación:", { title, body })
+
+                // Mostrar alerta cuando se reciba una notificación
+                Alert.alert(title, body, [
+                  {
+                    text: "OK",
+                    onPress: () => console.log("Notificación cerrada por el usuario"),
+                  },
+                ])
+              } else {
+                console.log("Notificación recibida sin contenido de notification")
+              }
+
+              // Lógica adicional para manejar datos de la notificación
+              if (remoteMessage?.data) {
+                console.log("Datos de notificación recibidos:", remoteMessage.data)
+                // Procesar datos específicos de la notificación
+                handleNotificationData(remoteMessage.data)
+              }
+            } catch (error) {
+              console.error("Error al procesar notificación:", error)
+            }
+          })
+
+          console.log("Listeners de notificaciones configurados exitosamente")
+        } catch (error) {
+          console.error("Error al inicializar notificaciones:", error)
+          // No marcar como inicializado para permitir reintentos
+          setNotificationsInitialized(false)
+        }
       }
     }
 
-    const handleNotificationData = (data: any) => {
-      try {
-        console.log("Procesando datos de notificación:", data)
+    initializeNotifications()
 
-
-        // Ejemplos de manejo de diferentes tipos de notificaciones
-        if (data.type) {
-          switch (data.type) {
-            case "trip_reminder":
-              console.log("Recordatorio de viaje recibido")
-              // Lógica específica para recordatorios de viaje
-              break
-            case "booking_confirmation":
-              console.log("Confirmación de reserva recibida")
-              // Lógica específica para confirmaciones
-              break
-            case "promotion":
-              console.log("Promoción recibida")
-              // Lógica específica para promociones
-              break
-            default:
-              console.log("Tipo de notificación no reconocido:", data.type)
-              break
-          }
-        }
-
-        // Guardar datos de notificación si es necesario
-        if (data.save) {
-          console.log("Guardando datos de notificación para procesamiento posterior")
-          // Aquí se podría guardar en AsyncStorage o base de datos local
-        }
-      } catch (error) {
-        console.error("Error procesando datos de notificación:", error)
+    return () => {
+      if (unsubscribeNotifications) {
+        console.log("Limpiando listeners de notificaciones...")
+        unsubscribeNotifications()
       }
     }
+  }, [appReady, notificationsInitialized])
 
-    // Ejecutar inicialización
-    initializeApp()
+  // Función para manejar datos de notificaciones
+  const handleNotificationData = (data: any) => {
+    try {
+      console.log("Procesando datos de notificación:", data)
 
-    // Función de cleanup cuando el componente se desmonte
+      // Ejemplos de manejo de diferentes tipos de notificaciones
+      if (data.type) {
+        switch (data.type) {
+          case "trip_reminder":
+            console.log("Recordatorio de viaje recibido")
+            // Lógica específica para recordatorios de viaje
+            break
+          case "booking_confirmation":
+            console.log("Confirmación de reserva recibida")
+            // Lógica específica para confirmaciones
+            break
+          case "promotion":
+            console.log("Promoción recibida")
+            // Lógica específica para promociones
+            break
+          default:
+            console.log("Tipo de notificación no reconocido:", data.type)
+            break
+        }
+      }
+
+      // Guardar datos de notificación si es necesario
+      if (data.save) {
+        console.log("Guardando datos de notificación para procesamiento posterior")
+        // Aquí se podría guardar en AsyncStorage o base de datos local
+      }
+    } catch (error) {
+      console.error("Error procesando datos de notificación:", error)
+    }
+  }
+
+  // Cleanup cuando el componente se desmonte
+  useEffect(() => {
     return () => {
       console.log("Limpiando recursos de la aplicación...")
       try {
@@ -176,14 +190,11 @@ const App: React.FC = () => {
         console.log("Cleanup completado")
       } catch (error) {
         console.error("Error durante cleanup:", error)
-
       }
     }
   }, [])
 
-
   console.log("Renderizando componente App")
-
 
   return (
     <PaperProvider>
