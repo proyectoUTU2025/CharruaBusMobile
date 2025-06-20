@@ -133,6 +133,34 @@ export default function ChangePasswordScreen({
     setFieldError,
   } = usePasswordValidation();
 
+  // Función para verificar si el formulario es válido
+  const isFormValid = (): boolean => {
+    // Verificar que todos los campos estén llenos
+    if (!state.currentPassword || !state.newPassword || !state.confirmPassword) {
+      return false;
+    }
+
+    // Verificar que no haya errores
+    if (state.currentPasswordError || state.newPasswordError || state.confirmPasswordError) {
+      return false;
+    }
+
+    // Verificar que la nueva contraseña cumpla todos los requisitos
+    const passwordRequirements = getPasswordRequirements(state.newPassword);
+    const allRequirementsMet = passwordRequirements.every(req => req.valid);
+    
+    if (!allRequirementsMet) {
+      return false;
+    }
+
+    // Verificar que las contraseñas coincidan
+    if (state.newPassword !== state.confirmPassword) {
+      return false;
+    }
+
+    return true;
+  };
+
   const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
     setShowPasswords(prev => ({
       ...prev,
@@ -196,6 +224,9 @@ export default function ChangePasswordScreen({
   const passwordsMatch = state.confirmPassword && 
                         state.newPassword === state.confirmPassword && 
                         getPasswordRequirements(state.newPassword).every(req => req.valid);
+
+  // Variable para determinar si el botón debe estar habilitado
+  const isButtonEnabled = isFormValid() && !loading;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -261,14 +292,20 @@ export default function ChangePasswordScreen({
                 onToggleVisibility={() => togglePasswordVisibility('confirm')}
               />
 
-              {/* Botón cambiar contraseña */}
+              {/* Botón cambiar contraseña - ACTUALIZADO */}
               <TouchableOpacity 
-                style={[styles.changeButton, loading && styles.changeButtonDisabled]} 
-                activeOpacity={0.8} 
+                style={[
+                  styles.changeButton, 
+                  !isButtonEnabled && styles.changeButtonDisabled
+                ]} 
+                activeOpacity={isButtonEnabled ? 0.8 : 1} 
                 onPress={handleChangePassword}
-                disabled={loading}
+                disabled={!isButtonEnabled}
               >
-                <Text style={styles.changeButtonText}>
+                <Text style={[
+                  styles.changeButtonText,
+                  !isButtonEnabled && styles.changeButtonTextDisabled
+                ]}>
                   {loading ? "Cambiando..." : "Cambiar contraseña"}
                 </Text>
               </TouchableOpacity>
@@ -423,5 +460,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  changeButtonTextDisabled: {
+    color: "#FFFFFF",
+    opacity: 0.7,
   },
 });

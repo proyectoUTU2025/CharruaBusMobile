@@ -41,3 +41,18 @@ export interface PurchaseScreenProps {
     reset: (resetState: any) => void;
   };
 }
+
+// Nuevos tipos para la funcionalidad de PDF
+export interface PdfDownloadResponse {
+  success: boolean;
+  message: string;
+  fileName?: string;
+}
+
+export interface DownloadPurchasePdfParams {
+  purchaseId: number;
+}
+
+export interface DownloadTicketPdfParams {
+  ticketId: number;
+}

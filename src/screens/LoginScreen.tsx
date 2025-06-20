@@ -78,11 +78,7 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      "Recuperar contraseña",
-      "Esta funcionalidad estará disponible próximamente.",
-      [{ text: "OK" }]
-    );
+    navigation.navigate("ResetPassword");
   };
 
   return (

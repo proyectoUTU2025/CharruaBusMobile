@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   continueButtonDisabled: {
-    backgroundColor: "#CCCCCC",
+    backgroundColor: "#9CA3AF",
   },
   continueButtonText: {
     color: "white",

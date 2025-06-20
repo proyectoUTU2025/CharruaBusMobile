@@ -56,8 +56,10 @@ export default function RegisterScreen() {
   const [nombreError, setNombreError] = useState("")
   const [apellido, setApellido] = useState("")
   const [apellidoError, setApellidoError] = useState("")
-  const [cedula, setCedula] = useState("")
-  const [cedulaError, setCedulaError] = useState("")
+  const [documento, setDocumento] = useState("")
+  const [documentoError, setDocumentoError] = useState("")
+  const [tipoDocumento, setTipoDocumento] = useState("")
+  const [tipoDocumentoError, setTipoDocumentoError] = useState("")
   const [email, setEmail] = useState("")
   const [emailError, setEmailError] = useState("")
   const [fechaNacimiento, setFechaNacimiento] = useState("")
@@ -66,6 +68,7 @@ export default function RegisterScreen() {
   const [generoError, setGeneroError] = useState("")
   const [situacionLaboral, setSituacionLaboral] = useState("")
   const [situacionLaboralError, setSituacionLaboralError] = useState("")
+  const [showTipoDocumentoModal, setShowTipoDocumentoModal] = useState(false)
   const [showSituacionModal, setShowSituacionModal] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [date, setDate] = useState<Date | undefined>(undefined)
@@ -76,6 +79,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  const tiposDocumento = ["CEDULA", "PASAPORTE", "OTRO"]
   const situacionesLaborales = ["Jubilado", "Estudiante", "Otro"]
 
   const validatePasswordRequirements = (password: string): string[] => {
@@ -139,6 +143,16 @@ export default function RegisterScreen() {
     navigation.navigate("Login")
   }
 
+  const selectTipoDocumento = (tipo: string) => {
+    setTipoDocumento(tipo)
+    setTipoDocumentoError("")
+    setShowTipoDocumentoModal(false)
+    
+    // Limpiar documento cuando cambia el tipo
+    setDocumento("")
+    setDocumentoError("")
+  }
+
   const selectSituacion = (situacion: string) => {
     setSituacionLaboral(situacion)
     setSituacionLaboralError("")
@@ -169,23 +183,68 @@ export default function RegisterScreen() {
     }
   };
 
-  const validateCedula = (value: string) => {
-    const onlyNumbers = value.replace(/\D/g, '');
-    
-    if (onlyNumbers.length <= 8) {
-      setCedula(onlyNumbers);
+  const validateDocumento = (value: string) => {
+    if (tipoDocumento === "CEDULA") {
+      const onlyNumbers = value.replace(/\D/g, '')
       
-      if (onlyNumbers.length === 0) {
-        setCedulaError("La cédula es obligatoria");
-      } else if (onlyNumbers.length < 8) {
-        setCedulaError("La cédula debe tener 8 dígitos");
-      } else if (onlyNumbers.length === 8) {
-        if (validarCedulaUruguaya(onlyNumbers)) {
-          setCedulaError("");
-        } else {
-          const digitoCalculado = calcularDigitoVerificador(onlyNumbers);
-          setCedulaError(`Dígito verificador incorrecto. Debería ser: ${digitoCalculado}`);
+      if (onlyNumbers.length <= 8) {
+        setDocumento(onlyNumbers)
+        
+        if (onlyNumbers.length === 0) {
+          setDocumentoError("La cédula es obligatoria")
+        } else if (onlyNumbers.length < 8) {
+          setDocumentoError("La cédula debe tener 8 dígitos")
+        } else if (onlyNumbers.length === 8) {
+          if (validarCedulaUruguaya(onlyNumbers)) {
+            setDocumentoError("")
+          } else {
+            const digitoCalculado = calcularDigitoVerificador(onlyNumbers)
+            setDocumentoError(`Dígito verificador incorrecto. Debería ser: ${digitoCalculado}`)
+          }
         }
+      }
+    } else if (tipoDocumento === "PASAPORTE") {
+      const cleaned = value.replace(/[^A-Za-z0-9]/g, '')
+      
+      if (cleaned.length <= 8) {
+        let formatted = ""
+        if (cleaned.length > 0) {
+          formatted = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).replace(/\D/g, '')
+        }
+        
+        setDocumento(formatted)
+        
+        if (formatted.length === 0) {
+          setDocumentoError("El pasaporte es obligatorio")
+        } else if (formatted.length < 8) {
+          const lettersCount = formatted.replace(/[0-9]/g, '').length
+          const numbersCount = formatted.replace(/[A-Z]/g, '').length
+          
+          if (lettersCount === 0) {
+            setDocumentoError("El pasaporte debe empezar con una letra")
+          } else if (lettersCount > 1) {
+            setDocumentoError("El pasaporte debe tener solo una letra al inicio")
+          } else {
+            const remainingDigits = 7 - numbersCount
+            setDocumentoError(`Faltan ${remainingDigits} dígitos (formato: A1234567)`)
+          }
+        } else {
+          const pasaporteRegex = /^[A-Z][0-9]{7}$/
+          if (pasaporteRegex.test(formatted)) {
+            setDocumentoError("")
+          } else {
+            setDocumentoError("Formato inválido. Debe ser: 1 letra + 7 dígitos (ej: A1234567)")
+          }
+        }
+      }
+    } else {
+      setDocumento(value)
+      if (!value.trim()) {
+        setDocumentoError("El documento es obligatorio")
+      } else if (value.length < 3) {
+        setDocumentoError("El documento debe tener al menos 3 caracteres")
+      } else {
+        setDocumentoError("")
       }
     }
   }
@@ -249,6 +308,58 @@ export default function RegisterScreen() {
     }
   }
 
+  const renderDocumentoInput = () => {
+    if (tipoDocumento === "CEDULA") {
+      return (
+        <TextInput 
+          style={[styles.input, documentoError ? styles.inputError : null]} 
+          placeholder="1.234.567-8" 
+          placeholderTextColor="#9CA3AF" 
+          keyboardType="numeric" 
+          autoCorrect={false} 
+          value={formatearCedula(documento)} 
+          onChangeText={validateDocumento}
+          maxLength={11}
+        />
+      )
+    } else if (tipoDocumento === "PASAPORTE") {
+      return (
+        <TextInput 
+          style={[styles.input, documentoError ? styles.inputError : null]} 
+          placeholder="A1234567" 
+          placeholderTextColor="#9CA3AF" 
+          autoCorrect={false} 
+          autoCapitalize="characters"
+          value={documento} 
+          onChangeText={validateDocumento}
+          maxLength={8}
+        />
+      )
+    } else {
+      return (
+        <TextInput 
+          style={[styles.input, documentoError ? styles.inputError : null]} 
+          placeholder="Número de documento"
+          placeholderTextColor="#9CA3AF" 
+          autoCorrect={false} 
+          value={documento} 
+          onChangeText={validateDocumento}
+        />
+      )
+    }
+  }
+
+  const renderDocumentoValidation = () => {
+    if (documentoError) {
+      return <Text style={styles.errorText}>{documentoError}</Text>
+    } else if (tipoDocumento === "CEDULA" && documento.length === 8 && validarCedulaUruguaya(documento)) {
+      return <Text style={styles.successText}>✓ Cédula válida</Text>
+    } else if (tipoDocumento === "PASAPORTE" && documento.length === 8 && /^[A-Z][0-9]{7}$/.test(documento)) {
+      return <Text style={styles.successText}>✓ Pasaporte válido</Text>
+    }
+    return null
+  }
+
   const handleRegister = async () => {
     setEmailError("");
     
@@ -264,12 +375,25 @@ export default function RegisterScreen() {
       hasErrors = true;
     }
 
-    if (!cedula) {
-      setCedulaError("La cédula es obligatoria");
+    if (!tipoDocumento) {
+      setTipoDocumentoError("Debe seleccionar un tipo de documento");
       hasErrors = true;
-    } else if (cedula.length !== 8 || !validarCedulaUruguaya(cedula)) {
-      setCedulaError("Por favor, ingrese una cédula válida");
+    }
+
+    if (!documento.trim()) {
+      setDocumentoError("El documento es obligatorio");
       hasErrors = true;
+    } else if (tipoDocumento === "CEDULA") {
+      if (documento.length !== 8 || !validarCedulaUruguaya(documento)) {
+        setDocumentoError("Por favor, ingrese una cédula válida");
+        hasErrors = true;
+      }
+    } else if (tipoDocumento === "PASAPORTE") {
+      const pasaporteRegex = /^[A-Z][0-9]{7}$/;
+      if (!pasaporteRegex.test(documento)) {
+        setDocumentoError("El pasaporte debe tener el formato: 1 letra + 7 dígitos (ej: A1234567)");
+        hasErrors = true;
+      }
     }
 
     if (!email.trim()) {
@@ -335,8 +459,8 @@ export default function RegisterScreen() {
         nombre,
         apellido,
         fechaNacimiento: fechaFormateada,
-        documento: cedula,
-        tipoDocumento: "CEDULA",
+        documento: documento,
+        tipoDocumento: tipoDocumento,
         situacionLaboral: situacionLaboral.toUpperCase(),
         genero: genero.toUpperCase(),
       };
@@ -416,23 +540,31 @@ export default function RegisterScreen() {
                   </View>
 
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Cédula</Text>
-                    <TextInput 
-                      style={[styles.input, cedulaError ? styles.inputError : null]} 
-                      placeholder="1.234.567-8" 
-                      placeholderTextColor="#9CA3AF" 
-                      keyboardType="numeric" 
-                      autoCorrect={false} 
-                      value={formatearCedula(cedula)} 
-                      onChangeText={validateCedula}
-                      maxLength={11}
-                    />
-                    {cedulaError ? (
-                      <Text style={styles.errorText}>{cedulaError}</Text>
-                    ) : cedula.length === 8 && validarCedulaUruguaya(cedula) ? (
-                      <Text style={styles.successText}>✓ Cédula válida</Text>
-                    ) : null}
+                    <Text style={styles.inputLabel}>Tipo de documento</Text>
+                    <TouchableOpacity 
+                      style={[styles.selectButton, tipoDocumentoError ? styles.inputError : null]}
+                      onPress={() => setShowTipoDocumentoModal(true)}
+                    >
+                      <Text style={[styles.selectText, !tipoDocumento && styles.selectPlaceholder]}>
+                        {tipoDocumento === "CEDULA" ? "Cédula" : 
+                         tipoDocumento === "PASAPORTE" ? "Pasaporte" : 
+                         tipoDocumento === "OTRO" ? "Otro" : "Seleccionar tipo de documento"}
+                      </Text>
+                      <Icon name="keyboard-arrow-down" size={24} color="#6B7280" />
+                    </TouchableOpacity>
+                    {tipoDocumentoError ? <Text style={styles.errorText}>{tipoDocumentoError}</Text> : null}
                   </View>
+
+                  {tipoDocumento && (
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>
+                        {tipoDocumento === "CEDULA" ? "Cédula" : 
+                         tipoDocumento === "PASAPORTE" ? "Pasaporte" : "Documento"}
+                      </Text>
+                      {renderDocumentoInput()}
+                      {renderDocumentoValidation()}
+                    </View>
+                  )}
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Correo electrónico</Text>
@@ -575,6 +707,28 @@ export default function RegisterScreen() {
                </View>
              </View>
            </ScrollView>
+
+       <Modal visible={showTipoDocumentoModal} transparent animationType="fade">
+         <TouchableWithoutFeedback onPress={() => setShowTipoDocumentoModal(false)}>
+           <View style={styles.modalOverlay}>
+             <View style={styles.modalContent}>
+               <Text style={styles.modalTitle}>Seleccionar tipo de documento</Text>
+               {tiposDocumento.map((tipo) => (
+                 <TouchableOpacity 
+                   key={tipo} 
+                   style={styles.modalOption} 
+                   onPress={() => selectTipoDocumento(tipo)}
+                 >
+                   <Text style={styles.modalOptionText}>
+                     {tipo === "CEDULA" ? "Cédula" : 
+                      tipo === "PASAPORTE" ? "Pasaporte" : "Otro"}
+                   </Text>
+                 </TouchableOpacity>
+               ))}
+             </View>
+           </View>
+         </TouchableWithoutFeedback>
+       </Modal>
 
        <Modal visible={showSituacionModal} transparent animationType="fade">
          <TouchableWithoutFeedback onPress={() => setShowSituacionModal(false)}>

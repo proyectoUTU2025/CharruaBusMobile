@@ -11,6 +11,7 @@ import { SelectSeatScreen } from '../screens/SelectSeatScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 import PurchaseDetailScreen from '../screens/PurchaseDetailScreen';
 import { RootStackParamList } from '../types/navigationType';
@@ -214,7 +215,7 @@ const AppNavigator = () => {
             <Stack.Screen name="ViewTrips" component={ViewTripsScreen} />
             <Stack.Screen name="SelectSeat" component={SelectSeatScreen} />
             
-            {/*NUEVA: Pantalla de detalle de compra */}
+            {/* Pantalla de detalle de compra */}
             <Stack.Screen 
               name="PurchaseDetail" 
               component={PurchaseDetailScreen}
@@ -244,6 +245,7 @@ const AppNavigator = () => {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         )}
       </Stack.Navigator>

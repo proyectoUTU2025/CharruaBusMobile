@@ -19,7 +19,9 @@ import {
   formatPurchaseDateTime,
   formatPurchaseDate,
   formatPurchaseTime,
-  formatPrice 
+  formatPrice,
+  downloadPurchasePdf,
+  downloadTicketPdf
 } from '../services/purchaseService';
 import { PurchaseDetail, PurchaseScreenProps } from '../types/purchaseType';
 
@@ -32,6 +34,8 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
   const [purchase, setPurchase] = useState<PurchaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingPurchase, setDownloadingPurchase] = useState(false);
+  const [downloadingTickets, setDownloadingTickets] = useState<{ [key: number]: boolean }>({});
 
   const getEstadoColor = (estado: string) => {
     switch (estado.toUpperCase()) {
@@ -144,6 +148,54 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
       console.error('Error cargando detalle de compra:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPurchasePdf = async () => {
+    if (!token) {
+      Alert.alert('Error', 'No hay token de autenticación');
+      return;
+    }
+
+    try {
+      setDownloadingPurchase(true);
+      const success = await downloadPurchasePdf(token, purchaseId);
+      
+      if (success) {
+        Alert.alert('Éxito', 'El PDF de la compra se está descargando');
+      } else {
+        Alert.alert('Error', 'No se pudo descargar el PDF de la compra');
+      }
+    } catch (error) {
+      console.error('Error descargando PDF de compra:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+    } finally {
+      setDownloadingPurchase(false);
+    }
+  };
+
+  const handleDownloadTicketPdf = async (ticketId: number) => {
+    if (!token) {
+      Alert.alert('Error', 'No hay token de autenticación');
+      return;
+    }
+
+    try {
+      setDownloadingTickets(prev => ({ ...prev, [ticketId]: true }));
+      const success = await downloadTicketPdf(token, ticketId);
+      
+      if (success) {
+        Alert.alert('Éxito', 'El PDF del pasaje se está descargando');
+      } else {
+        Alert.alert('Error', 'No se pudo descargar el PDF del pasaje');
+      }
+    } catch (error) {
+      console.error('Error descargando PDF de pasaje:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+    } finally {
+      setDownloadingTickets(prev => ({ ...prev, [ticketId]: false }));
     }
   };
 
@@ -294,6 +346,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
         
         {pasajesOrdenados.map((pasaje, index) => {
           const estadoColor = getEstadoColor(pasaje.estadoPasaje);
+          const isDownloading = downloadingTickets[pasaje.id] || false;
           
           return (
             <View key={pasaje.id} style={styles.ticketCard}>
@@ -358,11 +411,25 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                 </View>
               </View>
               
-              <View style={styles.ticketDate}>
-                <Icon name="schedule" size={14} color="#9E9E9E" />
-                <Text style={styles.ticketDateText}>
-                  {formatPurchaseDateTime(pasaje.fecha)}
-                </Text>
+              <View style={styles.ticketFooter}>
+                <TouchableOpacity
+                  style={[styles.downloadTicketButton, isDownloading && styles.downloadButtonDisabled]}
+                  onPress={() => handleDownloadTicketPdf(pasaje.id)}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? (
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                  ) : (
+                    <Icon name="file-download" size={16} color="#3B82F6" />
+                  )}
+                </TouchableOpacity>
+                
+                <View style={styles.ticketDate}>
+                  <Icon name="schedule" size={14} color="#9E9E9E" />
+                  <Text style={styles.ticketDateText}>
+                    {formatPurchaseDateTime(pasaje.fecha)}
+                  </Text>
+                </View>
               </View>
             </View>
           );
@@ -396,9 +463,22 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                 <Icon name="arrow-back" size={24} color="#374151" />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Detalle de Compra</Text>
-              <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
-                <Icon name="home" size={24} color="#374151" />
-              </TouchableOpacity>
+              <View style={styles.headerRightButtons}>
+                <TouchableOpacity
+                  style={[styles.downloadButton, downloadingPurchase && styles.downloadButtonDisabled]}
+                  onPress={handleDownloadPurchasePdf}
+                  disabled={downloadingPurchase}
+                >
+                  {downloadingPurchase ? (
+                    <ActivityIndicator size="small" color="#374151" />
+                  ) : (
+                    <Icon name="file-download" size={24} color="#374151" />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
+                  <Icon name="home" size={24} color="#374151" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Content */}
@@ -464,6 +544,18 @@ const styles = StyleSheet.create({
     color: '#374151',
     flex: 1,
     textAlign: 'center',
+  },
+  headerRightButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  downloadButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  downloadButtonDisabled: {
+    opacity: 0.5,
   },
   homeButton: {
     padding: 8,
@@ -757,10 +849,22 @@ const styles = StyleSheet.create({
   refundText: {
     color: '#FF9800',
   },
+  ticketFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  downloadTicketButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
   ticketDate: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   ticketDateText: {
     fontSize: 12,

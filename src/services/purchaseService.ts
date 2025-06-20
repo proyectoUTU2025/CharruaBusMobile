@@ -1,6 +1,8 @@
 import { PurchaseDetail, PurchaseDetailResponse } from '../types/purchaseType';
+import { Linking, Alert, Platform, PermissionsAndroid } from 'react-native';
+import RNFS from 'react-native-fs';
 
-const API_BASE_URL = 'http://192.168.43.101:8080';
+const API_BASE_URL = 'http://192.168.1.170:8080';
 
 export interface Purchase {
   id: number;
@@ -178,6 +180,165 @@ export const getPurchaseDetail = async (
     }
     
     throw new Error('Error inesperado al obtener detalle de compra.');
+  }
+};
+
+// Función para verificar conectividad y respuesta del servidor
+const validateServerResponse = async (url: string, token: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, {
+      method: 'HEAD', // Solo verificamos que el endpoint existe
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Error validando servidor:', error);
+    return false;
+  }
+};
+
+export const downloadPurchasePdf = async (
+  token: string,
+  purchaseId: number
+): Promise<boolean> => {
+  try {
+    console.log('Abriendo PDF de compra en navegador para ID:', purchaseId);
+    
+    // 1. Construir URL del PDF con token como parámetro
+    const pdfUrl = `${API_BASE_URL}/compras/${purchaseId}/pdf?token=${encodeURIComponent(token)}`;
+    
+    console.log('URL del PDF:', pdfUrl);
+
+    // 2. Verificar que el servidor responde (sin token en header para esta verificación)
+    try {
+      const testResponse = await fetch(`${API_BASE_URL}/compras/${purchaseId}/pdf`, {
+        method: 'HEAD',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!testResponse.ok && testResponse.status !== 401) {
+        throw new Error('El servidor no responde o el archivo no está disponible');
+      }
+    } catch (error) {
+      console.log('Verificación de servidor:', error);
+      // Continuamos de todas formas, ya que el endpoint podría funcionar con el token como parámetro
+    }
+
+    // 3. Abrir PDF en el navegador con token como parámetro
+    const canOpen = await Linking.canOpenURL(pdfUrl);
+    console.log('¿Se puede abrir la URL?:', canOpen);
+    
+    if (canOpen) {
+      await Linking.openURL(pdfUrl);
+      
+      Alert.alert(
+        'PDF Abierto',
+        'El PDF de la compra se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
+        [{ text: 'Entendido', style: 'default' }]
+      );
+      
+      return true;
+    } else {
+      throw new Error('No se puede abrir el navegador en este dispositivo');
+    }
+
+  } catch (error) {
+    console.error('Error abriendo PDF de compra:', error);
+    
+    let errorMessage = 'Error desconocido';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    Alert.alert(
+      'Error',
+      `No se pudo abrir el PDF: ${errorMessage}`,
+      [
+        {
+          text: 'Reintentar',
+          onPress: () => downloadPurchasePdf(token, purchaseId),
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ]
+    );
+    
+    return false;
+  }
+};
+
+export const downloadTicketPdf = async (
+  token: string,
+  ticketId: number
+): Promise<boolean> => {
+  try {
+    console.log('Abriendo PDF de pasaje en navegador para ID:', ticketId);
+    
+    // 1. Construir URL del PDF con token como parámetro
+    const pdfUrl = `${API_BASE_URL}/pasajes/${ticketId}/pdf?token=${encodeURIComponent(token)}`;
+    
+    console.log('URL del PDF de pasaje:', pdfUrl);
+
+    // 2. Verificar que el servidor responde (sin token en header para esta verificación)
+    try {
+      const testResponse = await fetch(`${API_BASE_URL}/pasajes/${ticketId}/pdf`, {
+        method: 'HEAD',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!testResponse.ok && testResponse.status !== 401) {
+        throw new Error('El servidor no responde o el archivo no está disponible');
+      }
+    } catch (error) {
+      console.log('Verificación de servidor para pasaje:', error);
+      // Continuamos de todas formas
+    }
+
+    // 3. Abrir PDF en el navegador con token como parámetro
+    const canOpen = await Linking.canOpenURL(pdfUrl);
+    console.log('¿Se puede abrir la URL del pasaje?:', canOpen);
+    
+    if (canOpen) {
+      await Linking.openURL(pdfUrl);
+      
+      Alert.alert(
+        'PDF Abierto',
+        'El PDF del pasaje se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
+        [{ text: 'Entendido', style: 'default' }]
+      );
+      
+      return true;
+    } else {
+      throw new Error('No se puede abrir el navegador en este dispositivo');
+    }
+
+  } catch (error) {
+    console.error('Error abriendo PDF de pasaje:', error);
+    
+    let errorMessage = 'Error desconocido';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    Alert.alert(
+      'Error',
+      `No se pudo abrir el PDF del pasaje: ${errorMessage}`,
+      [
+        {
+          text: 'Reintentar',
+          onPress: () => downloadTicketPdf(token, ticketId),
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ]
+    );
+    
+    return false;
   }
 };
 

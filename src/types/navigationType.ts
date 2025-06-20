@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   VerifyEmail: { email: string };
+  ResetPassword: undefined;
+  EditProfile: undefined;
   Auth: undefined;
   Main: undefined;
   TripSelection: undefined;
@@ -30,7 +32,6 @@ export type RootStackParamList = {
   PaymentSuccess: { session_id: string };
   PaymentCancelled: { session_id: string };
   
-  // ✅ NUEVO: Pantalla de detalle de compra
   PurchaseDetail: { purchaseId: number };
 };
 
@@ -40,7 +41,8 @@ export type NavigationState =
   | { type: 'roundTrip' }
   | { type: 'viewTrips'; params: any }
   | { type: 'selectSeat'; params: any }
-  | { type: 'changePassword' };
+  | { type: 'changePassword' }
+  | { type: 'editProfile' };
 
 export interface ViewTripsParams {
   origenSeleccionado: Localidad;
