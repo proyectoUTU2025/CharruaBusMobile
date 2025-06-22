@@ -1,5 +1,6 @@
 import { Localidad } from './locationType';
 import { RoundTripState } from './roundTripType';
+import { RoundTripInitialData } from './screenPropsType';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -33,12 +34,13 @@ export type RootStackParamList = {
   PaymentCancelled: { session_id: string };
   
   PurchaseDetail: { purchaseId: number };
+  TicketDetail: { ticketId: number };
 };
 
 export type NavigationState = 
   | { type: 'tab' }
   | { type: 'oneWayTrip' }
-  | { type: 'roundTrip' }
+  | { type: 'roundTrip'; initialData?: RoundTripInitialData }
   | { type: 'viewTrips'; params: any }
   | { type: 'selectSeat'; params: any }
   | { type: 'changePassword' }

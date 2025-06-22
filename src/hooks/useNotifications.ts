@@ -1,4 +1,3 @@
-// useNotifications.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from './useUser';
@@ -37,9 +36,6 @@ export const useNotifications = (): UseNotificationsReturn => {
 
   const clienteId = user?.id ? parseInt(user.id.toString()) : null;
 
-  /**
-   * Refresca el conteo de notificaciones no leídas
-   */
   const refreshUnreadCount = useCallback(async () => {
     if (!token || !clienteId) return;
 
@@ -48,13 +44,9 @@ export const useNotifications = (): UseNotificationsReturn => {
       setUnreadCount(count);
     } catch (err) {
       console.error('Error obteniendo conteo de notificaciones:', err);
-      // No mostramos error para el conteo ya que es una operación secundaria
     }
   }, [token, clienteId]);
 
-  /**
-   * Refresca la lista completa de notificaciones (reinicia la paginación)
-   */
   const refreshNotifications = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current) return;
 
@@ -80,9 +72,6 @@ export const useNotifications = (): UseNotificationsReturn => {
     }
   }, [token, clienteId]);
 
-  /**
-   * Carga más notificaciones (siguiente página)
-   */
   const loadMoreNotifications = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current || !hasMoreNotifications) return;
 
@@ -97,7 +86,6 @@ export const useNotifications = (): UseNotificationsReturn => {
       setNotifications(prev => [...prev, ...result.content]);
       currentPageRef.current = nextPage;
       
-      // Verificar si hay más páginas
       setHasMoreNotifications(nextPage < result.page.totalPages - 1);
       
     } catch (err) {
@@ -110,16 +98,12 @@ export const useNotifications = (): UseNotificationsReturn => {
     }
   }, [token, clienteId, hasMoreNotifications]);
 
-  /**
-   * Marca todas las notificaciones como leídas
-   */
   const markAsRead = useCallback(async () => {
     if (!token || !clienteId) return;
 
     try {
       await markAllNotificationsAsRead(token, clienteId);
       
-      // Actualizar el estado local
       setNotifications(prev => 
         prev.map(notification => ({ ...notification, leido: true }))
       );
@@ -132,9 +116,6 @@ export const useNotifications = (): UseNotificationsReturn => {
     }
   }, [token, clienteId]);
 
-  /**
-   * Inicializar notificaciones cuando el usuario esté disponible
-   */
   useEffect(() => {
     if (token && clienteId) {
       refreshNotifications();
@@ -142,15 +123,12 @@ export const useNotifications = (): UseNotificationsReturn => {
     }
   }, [token, clienteId, refreshNotifications, refreshUnreadCount]);
 
-  /**
-   * Refrescar conteo periódicamente cuando la app está activa
-   */
   useEffect(() => {
     if (!token || !clienteId) return;
 
     const interval = setInterval(() => {
       refreshUnreadCount();
-    }, 30000); // Cada 30 segundos
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [token, clienteId, refreshUnreadCount]);

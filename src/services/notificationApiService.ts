@@ -31,9 +31,6 @@ export interface MarkAsReadResponse {
   message: string;
 }
 
-/**
- * Obtiene las notificaciones paginadas del cliente
- */
 export const getNotifications = async (
   token: string, 
   clienteId: number, 
@@ -86,9 +83,6 @@ export const getNotifications = async (
   }
 };
 
-/**
- * Obtiene el conteo de notificaciones no leídas
- */
 export const getUnreadNotificationsCount = async (
   token: string, 
   clienteId: number
@@ -139,9 +133,6 @@ export const getUnreadNotificationsCount = async (
   }
 };
 
-/**
- * Marca todas las notificaciones como leídas
- */
 export const markAllNotificationsAsRead = async (
   token: string, 
   clienteId: number
@@ -175,7 +166,6 @@ export const markAllNotificationsAsRead = async (
       }
     }
 
-    // No necesitamos procesar la respuesta para esta operación
     return;
   } catch (error) {
     console.error('Error en markAllNotificationsAsRead:', error);
@@ -192,9 +182,6 @@ export const markAllNotificationsAsRead = async (
   }
 };
 
-/**
- * Formatea la fecha de una notificación para mostrar de forma amigable
- */
 export const formatNotificationDate = (fecha: string): string => {
   try {
     const notificationDate = new Date(fecha);
@@ -227,9 +214,6 @@ export const formatNotificationDate = (fecha: string): string => {
   }
 };
 
-/**
- * Obtiene el icono apropiado basado en el tipo de notificación
- */
 export const getNotificationIcon = (tipo: NotificationItem['tipo']): string => {
   switch (tipo) {
     case 'COMPRA':

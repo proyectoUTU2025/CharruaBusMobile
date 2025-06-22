@@ -135,17 +135,19 @@ export const DeepLinkHandler: React.FC<DeepLinkHandlerProps> = ({ children }) =>
 
     const navigateToTripSelection = () => {
       try {
-        
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'TripSelection' }],
-        });
+        navigation.setParams({ resetToTripSelection: true });
         
       } catch (error) {
         console.error('Error navegando a viajes:', error);
         
         try {
-          navigation.navigate('TripSelection');
+          navigation.reset({
+            index: 0,
+            routes: [{ 
+              name: 'Main', 
+              params: { initialTab: 'viajes' } 
+            }],
+          });
         } catch (fallbackError) {
           console.error('Fallback también falló:', fallbackError);
         }

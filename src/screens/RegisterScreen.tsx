@@ -148,7 +148,6 @@ export default function RegisterScreen() {
     setTipoDocumentoError("")
     setShowTipoDocumentoModal(false)
     
-    // Limpiar documento cuando cambia el tipo
     setDocumento("")
     setDocumentoError("")
   }

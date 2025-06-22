@@ -23,41 +23,58 @@ import { Localidad } from '../types/locationType';
 import { RoundTripState } from '../types/roundTripType';
 import { RoundTripScreenProps } from '../types/screenPropsType';
 
-export function RoundTripScreen({ onVolver, onNavigateToViewTrips }: RoundTripScreenProps) {
+export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }: RoundTripScreenProps) {
   const { token } = useAuth()
   
-  const [origen, setOrigen] = useState("")
   const [origenError, setOrigenError] = useState("")
-  const [destino, setDestino] = useState("")
   const [destinoError, setDestinoError] = useState("")
-  const [fechaIda, setFechaIda] = useState("")
   const [fechaIdaError, setFechaIdaError] = useState("")
-  const [fechaVuelta, setFechaVuelta] = useState("")
   const [fechaVueltaError, setFechaVueltaError] = useState("")
-  const [pasajeros, setPasajeros] = useState("1")
   const [showDatePickerIda, setShowDatePickerIda] = useState(false)
   const [showDatePickerVuelta, setShowDatePickerVuelta] = useState(false)
-  const [dateIda, setDateIda] = useState<Date | undefined>(undefined)
-  const [dateVuelta, setDateVuelta] = useState<Date | undefined>(undefined)
   const [showPasajerosModal, setShowPasajerosModal] = useState(false)
 
   const [localidades, setLocalidades] = useState<Localidad[]>([])
   const [filteredLocalidades, setFilteredLocalidades] = useState<Localidad[]>([])
   const [showOrigenModal, setShowOrigenModal] = useState(false)
   const [loadingLocalidades, setLoadingLocalidades] = useState(false)
-  const [origenSeleccionado, setOrigenSeleccionado] = useState<Localidad | null>(null)
   const [searchOrigen, setSearchOrigen] = useState("")
 
   const [destinos, setDestinos] = useState<Localidad[]>([])
   const [filteredDestinos, setFilteredDestinos] = useState<Localidad[]>([])
   const [showDestinoModal, setShowDestinoModal] = useState(false)
   const [loadingDestinos, setLoadingDestinos] = useState(false)
-  const [destinoSeleccionado, setDestinoSeleccionado] = useState<Localidad | null>(null)
   const [searchDestino, setSearchDestino] = useState("")
 
   const [limitePasajes, setLimitePasajes] = useState<number>(4)
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [opcionesPasajeros, setOpcionesPasajeros] = useState<Array<{label: string, value: string}>>([])
+
+  const [origen, setOrigen] = useState(initialData?.origenSeleccionado?.nombreConDepartamento || "")
+  const [destino, setDestino] = useState(initialData?.destinoSeleccionado?.nombreConDepartamento || "")
+  const [fechaIda, setFechaIda] = useState(initialData?.fechaIda || "")
+  const [fechaVuelta, setFechaVuelta] = useState(initialData?.fechaVuelta || "")
+  const [pasajeros, setPasajeros] = useState(initialData?.pasajeros || "1")
+
+  const [dateIda, setDateIda] = useState<Date | undefined>(() => {
+    if (initialData?.dateIda) {
+      return new Date(initialData.dateIda);
+    }
+    return undefined;
+  })
+  const [dateVuelta, setDateVuelta] = useState<Date | undefined>(() => {
+    if (initialData?.dateVuelta) {
+      return new Date(initialData.dateVuelta);
+    }
+    return undefined;
+  })
+
+  const [origenSeleccionado, setOrigenSeleccionado] = useState<Localidad | null>(
+    initialData?.origenSeleccionado || null
+  )
+  const [destinoSeleccionado, setDestinoSeleccionado] = useState<Localidad | null>(
+    initialData?.destinoSeleccionado || null
+  )
 
   useEffect(() => {
     const cargarLimitePasajes = async () => {

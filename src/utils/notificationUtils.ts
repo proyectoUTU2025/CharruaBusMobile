@@ -43,7 +43,7 @@ export const sortNotificationsByDate = (notifications: NotificacionUsuario[]): N
   return [...notifications].sort((a, b) => {
     const dateA = new Date(a.fecha).getTime();
     const dateB = new Date(b.fecha).getTime();
-    return dateB - dateA; // Más recientes primero
+    return dateB - dateA;
   });
 };
 
@@ -77,7 +77,6 @@ export const groupNotificationsByDate = (notifications: NotificacionUsuario[]): 
       
       groups[groupKey].push(notification);
     } catch (error) {
-      // Si hay error con la fecha, agrupar como "Fecha inválida"
       if (!groups['Fecha inválida']) {
         groups['Fecha inválida'] = [];
       }

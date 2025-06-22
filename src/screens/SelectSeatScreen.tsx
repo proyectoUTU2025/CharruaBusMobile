@@ -30,10 +30,10 @@ import { EstadoAsiento, AsientoLocal } from '../types/tripType';
 import { SelectSeatScreenProps } from '../types/screenPropsType';
 import { TripDetails } from '../types/tripType';
 
-export function SelectSeatScreen({ route, navigation }: SelectSeatScreenProps) {
+export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectSeatScreenProps & { onWentToPayment?: () => void }) {
   const { token } = useAuth();
   const { user, loading: userLoading } = useUser();
-  const { tripId, origenSeleccionado, destinoSeleccionado, fecha, pasajeros, trip, tipoViaje, roundTripState, onWentToPayment } = route.params;
+  const { tripId, origenSeleccionado, destinoSeleccionado, fecha, pasajeros, trip, tipoViaje, roundTripState } = route.params;
 
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [asientos, setAsientos] = useState<AsientoLocal[]>([]);

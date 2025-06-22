@@ -1,7 +1,4 @@
 import {
-  ForgotPasswordRequest,
-  VerifyResetCodeRequest,
-  ResetPasswordRequest,
   ResetPasswordResponse,
   PasswordValidationResult,
   ValidationResult,
@@ -10,7 +7,6 @@ import {
 
 const API_BASE_URL = 'http://192.168.1.170:8080';
 
-// Validación de email
 export const validateEmailFormat = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -34,7 +30,6 @@ export const validateEmail = (email: string): ValidationResult => {
   return { isValid: true };
 };
 
-// Validación de código
 export const sanitizeCode = (code: string): string => {
   return code.replace(/\D/g, '').slice(0, 6);
 };
@@ -59,7 +54,6 @@ export const validateCode = (code: string): ValidationResult => {
   return { isValid: true };
 };
 
-// Validación de requisitos de contraseña
 export const validatePasswordRequirements = (password: string): PasswordValidationResult => {
   const errors: string[] = [];
   
@@ -89,7 +83,6 @@ export const validatePasswordRequirements = (password: string): PasswordValidati
   };
 };
 
-// Obtener requisitos de contraseña para mostrar en UI
 export const getPasswordRequirements = (password: string): PasswordRequirement[] => {
   return [
     { text: "Mínimo 8 caracteres", valid: password.length >= 8 },
@@ -100,7 +93,6 @@ export const getPasswordRequirements = (password: string): PasswordRequirement[]
   ];
 };
 
-// Validación de contraseña principal
 export const validatePassword = (password: string): ValidationResult => {
   if (!password.trim()) {
     return {
@@ -121,7 +113,6 @@ export const validatePassword = (password: string): ValidationResult => {
   return { isValid: true };
 };
 
-// Validación de confirmación de contraseña
 export const validateConfirmPassword = (confirmPassword: string, mainPassword: string): ValidationResult => {
   if (!confirmPassword.trim()) {
     return {
@@ -149,7 +140,6 @@ export const validateConfirmPassword = (confirmPassword: string, mainPassword: s
   return { isValid: true };
 };
 
-// Solicitar código de restablecimiento
 export const forgotPassword = async (email: string): Promise<ResetPasswordResponse> => {
   try {
     const controller = new AbortController();
@@ -205,7 +195,6 @@ export const forgotPassword = async (email: string): Promise<ResetPasswordRespon
   }
 };
 
-// Verificar código de restablecimiento
 export const verifyResetCode = async (
   email: string, 
   verificationCode: string
@@ -269,7 +258,6 @@ export const verifyResetCode = async (
   }
 };
 
-// Restablecer contraseña
 export const resetPassword = async (
   email: string,
   verificationCode: string,
@@ -307,7 +295,6 @@ export const resetPassword = async (
       }
       
       if (response.status === 400) {
-        // Verificar tipos específicos de errores del backend
         if (result.message && (
           result.message.includes('nueva contraseña debe ser distinta') ||
           result.message.includes('misma contraseña') ||
@@ -365,7 +352,6 @@ export const resetPassword = async (
   }
 };
 
-// Formatear errores para mostrar en la UI
 export const formatPrice = (price: number): string => {
   return new Intl.NumberFormat('es-UY', {
     style: 'currency',

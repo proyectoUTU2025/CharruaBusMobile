@@ -64,6 +64,16 @@ export interface OneWayTripScreenProps {
   }) => void;
 }
 
+export interface RoundTripInitialData {
+  origenSeleccionado?: Localidad;
+  destinoSeleccionado?: Localidad;
+  fechaIda?: string;
+  dateIda?: string;
+  fechaVuelta?: string;
+  dateVuelta?: string;
+  pasajeros?: string;
+}
+
 export interface RoundTripScreenProps {
   onVolver?: () => void;
   onNavigateToViewTrips?: (params: {
@@ -75,6 +85,7 @@ export interface RoundTripScreenProps {
     tipoViaje: 'ida' | 'ida-vuelta';
     roundTripState?: RoundTripState;
   }) => void;
+  initialData?: RoundTripInitialData;
 }
 
 export interface ChangePasswordScreenProps {

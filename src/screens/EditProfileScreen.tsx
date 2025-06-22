@@ -31,7 +31,6 @@ interface EditProfileScreenProps {
 
 export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditProfileScreenProps) {
   
-  // Estados para los campos del formulario
   const [nombre, setNombre] = useState("")
   const [nombreError, setNombreError] = useState("")
   const [apellido, setApellido] = useState("")
@@ -45,7 +44,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   const [situacionLaboral, setSituacionLaboral] = useState("")
   const [situacionLaboralError, setSituacionLaboralError] = useState("")
   
-  // Estados para modales y controles
   const [showTipoDocumentoModal, setShowTipoDocumentoModal] = useState(false)
   const [showSituacionModal, setShowSituacionModal] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -54,11 +52,9 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Opciones para los selectores
   const tiposDocumento = ["CEDULA", "PASAPORTE", "OTRO"]
   const situacionesLaborales = ["ESTUDIANTE", "JUBILADO", "OTRO"]
 
-  // Cargar datos del usuario al montar el componente
   useEffect(() => {
     initializeUserData()
   }, [])
@@ -70,7 +66,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
       return
     }
 
-    // Obtener ID del usuario del token
     const userIdFromToken = getUserIdFromToken(token);
     if (!userIdFromToken) {
       Alert.alert("Error", "No se pudo obtener la información del usuario")
@@ -85,12 +80,9 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   const loadUserData = async (userIdToLoad: string) => {
     setIsLoadingUser(true)
     try {
-      console.log('Iniciando carga de datos del usuario...');
       
       const userData = await getCurrentUserProfile(token, userIdToLoad);
-      console.log('Datos obtenidos:', userData);
       
-      // Mapear los datos recibidos
       setNombre(userData.nombre || "")
       setApellido(userData.apellido || "")
       setDocumento(userData.documento || "")
@@ -110,8 +102,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           console.warn('Error procesando fecha de nacimiento:', dateError);
         }
       }
-      
-      console.log('Datos del usuario cargados exitosamente');
       
     } catch (error: any) {
       console.error("Error loading user data:", error)
@@ -152,7 +142,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     }
   }
 
-  // Funciones de validación para cédula uruguaya
   const calcularDigitoVerificador = (cedula: string): number => {
     if (cedula.length < 7) return -1
     
@@ -184,7 +173,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     return `${cedula.substring(0, 1)}.${cedula.substring(1, 4)}.${cedula.substring(4, 7)}-${cedula.substring(7)}`
   }
 
-  // Funciones de validación
   const validateNombre = (value: string) => {
     const onlyLetters = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
     setNombre(onlyLetters)
@@ -218,11 +206,9 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
         }
       }
     } else if (tipoDocumento === "PASAPORTE") {
-      // Validación específica para pasaporte: 1 letra + 7 dígitos
-      const cleaned = value.replace(/[^A-Za-z0-9]/g, '') // Solo letras y números
+      const cleaned = value.replace(/[^A-Za-z0-9]/g, '')
       
       if (cleaned.length <= 8) {
-        // Formatear: primera letra en mayúscula, resto números
         let formatted = ""
         if (cleaned.length > 0) {
           formatted = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).replace(/\D/g, '')
@@ -245,7 +231,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
             setDocumentoError(`Faltan ${remainingDigits} dígitos (formato: A1234567)`)
           }
         } else {
-          // Validar formato completo: 1 letra + 7 dígitos
           const pasaporteRegex = /^[A-Z][0-9]{7}$/
           if (pasaporteRegex.test(formatted)) {
             setDocumentoError("")
@@ -255,7 +240,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
         }
       }
     } else {
-      // Para otro tipo de documento
       setDocumento(value)
       if (!value.trim()) {
         setDocumentoError("El documento es obligatorio")
@@ -267,13 +251,11 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     }
   }
 
-  // Funciones para manejar selecciones
   const selectTipoDocumento = (tipo: string) => {
     setTipoDocumento(tipo)
     setTipoDocumentoError("")
     setShowTipoDocumentoModal(false)
     
-    // Limpiar documento cuando cambia el tipo
     setDocumento("")
     setDocumentoError("")
   }
@@ -284,7 +266,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     setShowSituacionModal(false)
   }
 
-  // Funciones para fecha
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -301,7 +282,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     }
   }
 
-  // Función para guardar cambios
   const handleSaveChanges = async () => {
     if (!userId) {
       Alert.alert("Error", "No se pudo identificar el usuario")
@@ -310,7 +290,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
 
     let hasErrors = false
 
-    // Validaciones
     if (!nombre.trim()) {
       setNombreError("El nombre es obligatorio")
       hasErrors = true
@@ -365,8 +344,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
         situacionLaboral,
       }
 
-      console.log('Enviando datos de actualización:', updateData);
-
       const result = await updateUserProfile(token!, userId, updateData)
 
       if (result.success) {
@@ -376,7 +353,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           [{ text: "OK", onPress: onSuccess }]
         )
       } else {
-        // Manejar errores específicos
         if (result.message.includes('documento ya existe')) {
           setDocumentoError("Ya existe un usuario con este documento")
         } else {
@@ -392,11 +368,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     }
   }
 
-  const handleBack = () => {
-    onGoBack()
-  }
-
-  // Render del input de documento según el tipo
   const renderDocumentoInput = () => {
     if (tipoDocumento === "CEDULA") {
       return (
@@ -441,7 +412,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
     }
   }
 
-  // Render del mensaje de validación de documento
   const renderDocumentoValidation = () => {
     if (documentoError) {
       return <Text style={styles.errorText}>{documentoError}</Text>
@@ -489,13 +459,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           <View style={styles.cardContainer}>
             {/* Header */}
             <View style={styles.headerContainer}>
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={handleBack}
-                disabled={isLoading}
-              >
-                <Icon name="arrow-back" size={24} color="#374151" />
-              </TouchableOpacity>
               <Text style={styles.headerTitle}>Editar Perfil</Text>
               <View style={styles.placeholder} />
             </View>
@@ -730,9 +693,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
-  },
-  backButton: {
-    padding: 8,
   },
   headerTitle: {
     fontSize: 20,

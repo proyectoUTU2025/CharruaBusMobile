@@ -14,6 +14,7 @@ import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 import PurchaseDetailScreen from '../screens/PurchaseDetailScreen';
+import TicketDetailScreen from '../screens/TicketDetailScreen';
 import { RootStackParamList } from '../types/navigationType';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -219,6 +220,15 @@ const AppNavigator = () => {
             <Stack.Screen 
               name="PurchaseDetail" 
               component={PurchaseDetailScreen}
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+            
+            {/* Pantalla de detalle de pasaje */}
+            <Stack.Screen 
+              name="TicketDetail" 
+              component={TicketDetailScreen}
               options={{
                 gestureEnabled: false,
               }}

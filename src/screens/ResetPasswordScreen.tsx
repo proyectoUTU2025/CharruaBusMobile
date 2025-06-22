@@ -35,7 +35,6 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ResetPassword'>
 
-// Componente para mostrar requisitos de contraseña
 const PasswordRequirements = ({ password }: { password: string }) => {
   const requirements = getPasswordRequirements(password);
 
@@ -60,7 +59,6 @@ const PasswordRequirements = ({ password }: { password: string }) => {
 };
 
 const ResetPasswordScreen = ({ navigation, route }: Props) => {
-  // Estados para el flujo de restablecimiento
   const [currentStep, setCurrentStep] = useState<'email' | 'verify' | 'reset'>('email')
   const [email, setEmail] = useState("")
   const [emailError, setEmailError] = useState("")
@@ -76,14 +74,12 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
   const [canResend, setCanResend] = useState(true)
   const [resendTimer, setResendTimer] = useState(0)
 
-  // Función para validar email
   const handleEmailChange = (value: string) => {
     setEmail(value)
     const validation = validateEmail(value)
     setEmailError(validation.isValid ? "" : validation.error!)
   }
 
-  // Función para validar código
   const handleCodeChange = (value: string) => {
     const sanitizedCode = sanitizeCode(value)
     setCodigo(sanitizedCode)
@@ -91,11 +87,9 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     setCodigoError(validation.isValid ? "" : validation.error!)
   }
 
-  // Función para validar contraseña
   const handlePasswordChange = (pass: string) => {
     setPassword(pass)
     
-    // Limpiar errores cuando el usuario empiece a escribir
     if (passwordError.includes("nueva contraseña debe ser diferente")) {
       setPasswordError("")
     }
@@ -113,13 +107,11 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
       setPasswordError("")
     }
     
-    // Re-validar confirmación cuando la contraseña principal cambia
     if (confirmPassword) {
       handleConfirmPasswordChange(confirmPassword, pass)
     }
   }
 
-  // Función para validar confirmación de contraseña
   const handleConfirmPasswordChange = (confirmPass: string, mainPassword?: string) => {
     setConfirmPassword(confirmPass)
     
@@ -128,7 +120,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     setConfirmPasswordError(validation.isValid ? "" : validation.error!)
   }
 
-  // Función para solicitar código de restablecimiento
   const handleForgotPassword = async () => {
     setEmailError("")
     
@@ -159,7 +150,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }
   }
 
-  // Función para verificar código
   const handleVerifyCode = async () => {
     setCodigoError("")
     
@@ -192,7 +182,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }
   }
 
-  // Función para restablecer contraseña
   const handleResetPassword = async () => {
     setPasswordError("")
     setConfirmPasswordError("")
@@ -246,7 +235,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }
   }
 
-  // Función para reenviar código
   const handleResendCode = async () => {
     if (!canResend) return
 
@@ -271,7 +259,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }
   }
 
-  // Función para iniciar timer de reenvío
   const startResendTimer = () => {
     setCanResend(false)
     setResendTimer(60)
@@ -288,7 +275,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }, 1000)
   }
 
-  // Función para volver atrás
   const handleBack = () => {
     if (currentStep === 'email') {
       navigation.goBack()
@@ -305,7 +291,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }
   }
 
-  // Función para obtener el título según el paso actual
   const getTitle = () => {
     switch (currentStep) {
       case 'email': return 'Recuperar Contraseña'
@@ -315,7 +300,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
     }
   }
 
-  // Función para renderizar el contenido según el paso actual
   const renderStepContent = () => {
     switch (currentStep) {
       case 'email':

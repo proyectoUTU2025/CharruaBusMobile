@@ -106,13 +106,11 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
 };
 
 interface ChangePasswordScreenProps {
-  onGoBack: () => void;
   onSuccess: () => void;
   token: string;
 }
 
-export default function ChangePasswordScreen({ 
-  onGoBack, 
+export default function ChangePasswordScreen({  
   onSuccess, 
   token 
 }: ChangePasswordScreenProps) {
@@ -133,19 +131,15 @@ export default function ChangePasswordScreen({
     setFieldError,
   } = usePasswordValidation();
 
-  // Función para verificar si el formulario es válido
   const isFormValid = (): boolean => {
-    // Verificar que todos los campos estén llenos
     if (!state.currentPassword || !state.newPassword || !state.confirmPassword) {
       return false;
     }
 
-    // Verificar que no haya errores
     if (state.currentPasswordError || state.newPasswordError || state.confirmPasswordError) {
       return false;
     }
 
-    // Verificar que la nueva contraseña cumpla todos los requisitos
     const passwordRequirements = getPasswordRequirements(state.newPassword);
     const allRequirementsMet = passwordRequirements.every(req => req.valid);
     
@@ -153,7 +147,6 @@ export default function ChangePasswordScreen({
       return false;
     }
 
-    // Verificar que las contraseñas coincidan
     if (state.newPassword !== state.confirmPassword) {
       return false;
     }
@@ -225,7 +218,6 @@ export default function ChangePasswordScreen({
                         state.newPassword === state.confirmPassword && 
                         getPasswordRequirements(state.newPassword).every(req => req.valid);
 
-  // Variable para determinar si el botón debe estar habilitado
   const isButtonEnabled = isFormValid() && !loading;
 
   return (
@@ -245,9 +237,6 @@ export default function ChangePasswordScreen({
           <View style={styles.cardContainer}>
             {/* Header */}
             <View style={styles.headerContainer}>
-              <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
-                <Icon name="arrow-back" size={24} color="#374151" />
-              </TouchableOpacity>
               <Text style={styles.headerTitle}>Cambiar contraseña</Text>
               <View style={styles.placeholder} />
             </View>
@@ -357,9 +346,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
-  },
-  backButton: {
-    padding: 8,
   },
   headerTitle: {
     fontSize: 20,

@@ -1,4 +1,3 @@
-// NotificationContext.tsx
 import React, {
   createContext,
   useContext,
@@ -23,21 +22,18 @@ import {
 } from '../services/notificationService';
 
 interface NotificationContextType {
-  // Estado de las notificaciones
   notifications: NotificationItem[];
   unreadCount: number;
   loading: boolean;
   error: string | null;
   hasMoreNotifications: boolean;
   
-  // Acciones
   refreshNotifications: () => Promise<void>;
   loadMoreNotifications: () => Promise<void>;
   markAsRead: () => Promise<void>;
   refreshUnreadCount: () => Promise<void>;
   clearError: () => void;
   
-  // Estados de UI
   isRefreshing: boolean;
   isLoadingMore: boolean;
 }
@@ -52,31 +48,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const { token } = useAuth();
   const { user } = useUser();
   
-  // Estados principales
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMoreNotifications, setHasMoreNotifications] = useState(true);
   
-  // Estados de UI
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
-  // Referencias para paginación
   const currentPageRef = useRef(0);
   const totalPagesRef = useRef(0);
   const isLoadingRef = useRef(false);
   
-  // Intervalos y timeouts
   const unreadCountIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const backgroundUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clienteId = user?.id ? parseInt(user.id.toString()) : null;
 
-  /**
-   * Limpia todos los intervalos y timeouts activos
-   */
   const clearIntervals = useCallback(() => {
     if (unreadCountIntervalRef.current) {
       clearInterval(unreadCountIntervalRef.current);
@@ -88,9 +77,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, []);
 
-  /**
-   * Refresca el conteo de notificaciones no leídas
-   */
   const refreshUnreadCount = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current) return;
 
@@ -100,13 +86,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       setError(null);
     } catch (err) {
       console.error('Error obteniendo conteo de notificaciones:', err);
-      // No mostramos error para el conteo ya que es una operación secundaria
     }
   }, [token, clienteId]);
 
-  /**
-   * Refresca la lista completa de notificaciones (reinicia la paginación)
-   */
   const refreshNotifications = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current) return;
 
@@ -134,9 +116,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [token, clienteId]);
 
-  /**
-   * Carga más notificaciones (siguiente página)
-   */
   const loadMoreNotifications = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current || !hasMoreNotifications) return;
 
@@ -151,7 +130,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       setNotifications(prev => [...prev, ...result.content]);
       currentPageRef.current = nextPage;
       
-      // Verificar si hay más páginas
       setHasMoreNotifications(nextPage < result.page.totalPages - 1);
       
     } catch (err) {
@@ -164,16 +142,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [token, clienteId, hasMoreNotifications]);
 
-  /**
-   * Marca todas las notificaciones como leídas
-   */
   const markAsRead = useCallback(async () => {
     if (!token || !clienteId) return;
 
     try {
       await markAllNotificationsAsRead(token, clienteId);
       
-      // Actualizar el estado local
       setNotifications(prev => 
         prev.map(notification => ({ ...notification, leido: true }))
       );
@@ -187,16 +161,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [token, clienteId]);
 
-  /**
-   * Limpia el error actual
-   */
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  /**
-   * Inicializa las notificaciones cuando el usuario esté disponible
-   */
   useEffect(() => {
     if (token && clienteId) {
       refreshNotifications();
@@ -204,20 +172,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [token, clienteId, refreshNotifications, refreshUnreadCount]);
 
-  /**
-   * Configura el callback para actualizaciones automáticas cuando llegan notificaciones
-   */
   useEffect(() => {
     if (token && clienteId) {
-      // Configurar callback para actualizaciones en tiempo real
       setUnreadCountUpdateCallback(() => {
         refreshUnreadCount();
         
-        // También actualizar la lista si no hay muchas notificaciones cargadas
         if (notifications.length <= 10) {
           backgroundUpdateTimeoutRef.current = setTimeout(() => {
             refreshNotifications();
-          }, 1000); // Delay para evitar múltiples llamadas
+          }, 1000);
         }
       });
     }
@@ -228,13 +191,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
   }, [token, clienteId, refreshUnreadCount, refreshNotifications, notifications.length, clearIntervals]);
 
-  /**
-   * Configura actualizaciones periódicas del conteo
-   */
   useEffect(() => {
     if (!token || !clienteId) return;
 
-    // Actualizar conteo cada 30 segundos cuando la app está activa
     unreadCountIntervalRef.current = setInterval(() => {
       if (AppState.currentState === 'active') {
         refreshUnreadCount();
@@ -246,16 +205,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
   }, [token, clienteId, refreshUnreadCount, clearIntervals]);
 
-  /**
-   * Maneja cambios de estado de la aplicación
-   */
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active' && token && clienteId) {
-        // Cuando la app vuelve al primer plano, actualizar conteo
         refreshUnreadCount();
       } else if (nextAppState === 'background') {
-        // Limpiar timeouts cuando la app va al fondo
         clearIntervals();
       }
     };
@@ -268,9 +222,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
   }, [token, clienteId, refreshUnreadCount, clearIntervals]);
 
-  /**
-   * Limpieza al desmontar el componente
-   */
   useEffect(() => {
     return () => {
       removeUnreadCountUpdateCallback();
@@ -279,21 +230,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [clearIntervals]);
 
   const value: NotificationContextType = {
-    // Estado
+
     notifications,
     unreadCount,
     loading,
     error,
     hasMoreNotifications,
     
-    // Acciones
     refreshNotifications,
     loadMoreNotifications,
     markAsRead,
     refreshUnreadCount,
     clearError,
-    
-    // Estados de UI
+
     isRefreshing,
     isLoadingMore,
   };
@@ -305,9 +254,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   );
 };
 
-/**
- * Hook para usar el contexto de notificaciones
- */
 export const useNotifications = (): NotificationContextType => {
   const context = useContext(NotificationContext);
   if (context === null) {

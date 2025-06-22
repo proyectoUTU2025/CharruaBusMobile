@@ -32,7 +32,6 @@ export interface UserProfileData {
   fechaActualizacion: string;
 }
 
-// Función para actualizar el perfil del usuario usando PATCH /usuarios/{id}
 export const updateUserProfile = async (
   token: string, 
   userId: string,
@@ -42,11 +41,8 @@ export const updateUserProfile = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    console.log(`Actualizando perfil del usuario ID: ${userId}`);
-    console.log('Datos a enviar:', data);
-
     const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
-      method: 'PATCH', // Usar PATCH según tu API
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -57,12 +53,9 @@ export const updateUserProfile = async (
 
     clearTimeout(timeoutId);
 
-    console.log('Respuesta del servidor (update):', response.status, response.statusText);
-
     let result;
     try {
       result = await response.json();
-      console.log('Resultado de actualización:', result);
     } catch (parseError) {
       result = { message: 'Respuesta inválida del servidor' };
     }
@@ -134,13 +127,10 @@ export const updateUserProfile = async (
   }
 };
 
-// Función para obtener el perfil del usuario usando GET /usuarios/{id}
 export const getCurrentUserProfile = async (token: string, userId: string): Promise<UserProfileData> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    console.log(`Obteniendo perfil del usuario con ID: ${userId}`);
 
     const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
       method: 'GET',
@@ -152,8 +142,6 @@ export const getCurrentUserProfile = async (token: string, userId: string): Prom
     });
 
     clearTimeout(timeoutId);
-
-    console.log('Respuesta del servidor:', response.status, response.statusText);
 
     if (!response.ok) {
       let errorMessage = 'Error al obtener perfil';
@@ -173,9 +161,7 @@ export const getCurrentUserProfile = async (token: string, userId: string): Prom
     }
 
     const result = await response.json();
-    console.log('Datos recibidos:', result);
     
-    // Basado en tu API doc, parece que devuelve { "data": {...} }
     if (result.data) {
       return result.data as UserProfileData;
     } else if (result.id) {
@@ -204,12 +190,10 @@ export const getCurrentUserProfile = async (token: string, userId: string): Prom
   }
 };
 
-// Función helper para obtener el ID del usuario del token
 export const getUserIdFromToken = (token: string): string | null => {
   try {
     if (!token) return null;
     
-    // Decodificar el JWT
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {

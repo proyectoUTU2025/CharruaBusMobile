@@ -42,7 +42,6 @@ export interface PurchaseScreenProps {
   };
 }
 
-// Nuevos tipos para la funcionalidad de PDF
 export interface PdfDownloadResponse {
   success: boolean;
   message: string;

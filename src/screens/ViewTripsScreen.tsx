@@ -354,23 +354,26 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
           onWentToPayment: () => setWentToPayment(true),
         };
         navigation.navigate(params);
+        setWentToPayment(true);
       }
     } else {
-      if (navigation?.navigate) {
-        const params = {
-          tripId: trip.idViaje,
-          origenSeleccionado,
-          destinoSeleccionado,
-          fecha,
-          pasajeros,
-          trip,
-          tipoViaje,
-          onWentToPayment: () => setWentToPayment(true),
-        };
-        navigation.navigate(params);
+        if (navigation?.navigate) {
+          navigation.navigate({
+            name: 'SelectSeat',
+            params: {
+              tripId: trip.idViaje,
+              origenSeleccionado,
+              destinoSeleccionado,
+              fecha,
+              pasajeros,
+              trip,
+              tipoViaje,
+            }
+          });
+          setWentToPayment(true);
+        }
       }
-    }
-  };
+    };
 
   const renderTripCard = (trip: Trip) => {
     const duration = calculateTripDuration(trip.fechaHoraSalida, trip.fechaHoraLlegada);

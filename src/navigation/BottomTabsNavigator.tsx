@@ -1,4 +1,3 @@
-// BottomTabsNavigator.tsx - Actualizado con llamada automática al endpoint
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
@@ -20,6 +19,7 @@ import MainScreen from '../screens/MainScreen';
 import { TripSelectionScreen } from '../screens/TripSelectionScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import PurchasesScreen from '../screens/PurchasesScreen';
+import TicketsScreen from '../screens/TicketsScreen';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from '../hooks/useUser';
 import { useNotifications } from '../context/NotificationContext';
@@ -30,6 +30,7 @@ import { RoundTripScreen } from '../screens/RoundTripScreen';
 import { ViewTripsScreen } from '../screens/ViewTripsScreen';
 import { SelectSeatScreen } from '../screens/SelectSeatScreen';
 import { RoundTripState } from '../types/roundTripType';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import { NavigationState, ViewTripsParams, RootStackParamList } from '../types/navigationType';
 import { 
   formatNotificationDate, 
@@ -42,7 +43,6 @@ interface BottomTabsNavigatorProps {
   route?: any;
 }
 
-// 🔥 Componente optimizado para el menú desplegable
 const MenuDropdown = React.memo<{
   visible: boolean;
   onClose: () => void;
@@ -128,7 +128,6 @@ const MenuDropdown = React.memo<{
   );
 });
 
-// 🔥 Componente optimizado para el panel de notificaciones
 const NotificationsDropdown = React.memo<{
   visible: boolean;
   onClose: () => void;
@@ -226,79 +225,82 @@ const NotificationsDropdown = React.memo<{
               <Text style={styles.emptyNotificationsText}>No tienes notificaciones</Text>
             </View>
           ) : (
-            <ScrollView 
-              style={styles.notificationsList} 
-              showsVerticalScrollIndicator={false}
-              refreshControl={refreshControl}
-              onScrollEndDrag={({ nativeEvent }) => {
-                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-                const paddingToBottom = 50;
-                
-                if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
-                  if (hasMoreNotifications && !contextIsLoadingMore) {
-                    handleLoadMore();
-                  }
+          <ScrollView 
+            style={styles.notificationsList} 
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+            onScrollEndDrag={({ nativeEvent }) => {
+              const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+              const paddingToBottom = 50;
+              
+              if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+                if (hasMoreNotifications && !contextIsLoadingMore) {
+                  handleLoadMore();
                 }
-              }}
-              onMomentumScrollEnd={({ nativeEvent }) => {
-                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-                const paddingToBottom = 50;
-                
-                if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
-                  if (hasMoreNotifications && !contextIsLoadingMore) {
-                    handleLoadMore();
-                  }
+              }
+            }}
+            onMomentumScrollEnd={({ nativeEvent }) => {
+              const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+              const paddingToBottom = 50;
+              
+              if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+                if (hasMoreNotifications && !contextIsLoadingMore) {
+                  handleLoadMore();
                 }
-              }}
-            >
-              {notifications.map((notification, index) => (
-                <TouchableOpacity
-                  key={notification.id}
-                  style={[
-                    styles.notificationItem,
-                    !notification.leido && styles.unreadNotificationItem,
-                    index === notifications.length - 1 && styles.lastNotificationItem
-                  ]}
-                  onPress={() => onNotificationPress(notification.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.notificationIconContainer}>
-                    <Icon 
-                      name={getNotificationIcon(notification.tipo)} 
-                      size={24} 
-                      color={!notification.leido ? "#3B82F6" : "#49454F"} 
-                    />
-                    {!notification.leido && <View style={styles.unreadDot} />}
-                  </View>
-                  <View style={styles.notificationContent}>
-                    <Text style={[
-                      styles.notificationTitle,
-                      !notification.leido && styles.unreadNotificationTitle
-                    ]}>
-                      {notification.titulo}
-                    </Text>
-                    <Text style={styles.notificationMessage}>
-                      {notification.mensaje}
-                    </Text>
-                    <Text style={styles.notificationTime}>
-                      {formatNotificationDate(notification.fecha)}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {contextIsLoadingMore && (
-                <View style={styles.loadingMoreContainer}>
-                  <ActivityIndicator size="large" color="#3B82F6" />
-                  <Text style={styles.loadingMoreText}>Cargando más notificaciones...</Text>
+              }
+            }}
+          >
+            {notifications.filter((notification, index, self) => 
+              index === self.findIndex(n => n.id === notification.id)
+            ).map((notification) => (
+              <TouchableOpacity
+                key={`notification-${notification.id}`}
+                style={[
+                  styles.notificationItem,
+                  !notification.leido && styles.unreadNotificationItem,
+                  notification === notifications[notifications.length - 1] && styles.lastNotificationItem
+                ]}
+                onPress={() => onNotificationPress(notification.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.notificationIconContainer}>
+                  <Icon 
+                    name={getNotificationIcon(notification.tipo)} 
+                    size={24} 
+                    color={!notification.leido ? "#3B82F6" : "#49454F"} 
+                  />
+                  {!notification.leido && <View style={styles.unreadDot} />}
                 </View>
-              )}
+                <View style={styles.notificationContent}>
+                  <Text style={[
+                    styles.notificationTitle,
+                    !notification.leido && styles.unreadNotificationTitle
+                  ]}>
+                    {notification.titulo}
+                  </Text>
+                  <Text style={styles.notificationMessage}>
+                    {notification.mensaje}
+                  </Text>
+                  <Text style={styles.notificationTime}>
+                    {formatNotificationDate(notification.fecha)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            
+            {contextIsLoadingMore && (
+              <View style={styles.loadingMoreContainer} key="loading-more">
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.loadingMoreText}>Cargando más notificaciones...</Text>
+              </View>
+            )}
 
-              {!hasMoreNotifications && notifications.length > 0 && (
-                <View style={styles.noMoreNotificationsContainer}>
-                  <Text style={styles.noMoreNotificationsText}>No hay más notificaciones</Text>
-                </View>
-              )}
-            </ScrollView>
+            {!hasMoreNotifications && notifications.length > 0 && (
+              <View style={styles.noMoreNotificationsContainer} key="no-more">
+                <Text style={styles.noMoreNotificationsText}>No hay más notificaciones</Text>
+              </View>
+            )}
+          </ScrollView>
           )}
         </View>
       </TouchableOpacity>
@@ -320,7 +322,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
-  // Hook de notificaciones desde el contexto
   const {
     notifications,
     unreadCount,
@@ -335,25 +336,31 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     isLoadingMore: contextIsLoadingMore,
   } = useNotifications();
 
-  // 🔥 NUEVO: Llamar al endpoint cuando se monta el componente y cuando vuelve del background
   useEffect(() => {
-    console.log('BottomTabsNavigator montado - Actualizando conteo de notificaciones');
-    refreshUnreadCount();
-  }, []); // Solo al montar
+    if (route?.params?.resetToTripSelection) {
+      setActiveTab('viajes');
+      activeTabRef.current = 'viajes';
+      setNavigationState({ type: 'tab' });
+      
+      if (navigation?.setParams) {
+        navigation.setParams({ resetToTripSelection: undefined });
+      }
+    }
+  }, [route?.params?.resetToTripSelection, navigation]);
 
-  // 🔥 NUEVO: useFocusEffect para cuando la pantalla obtiene el foco
+  useEffect(() => {
+    refreshUnreadCount();
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      console.log('BottomTabsNavigator obtuvo el foco - Actualizando conteo de notificaciones');
       refreshUnreadCount();
     }, [refreshUnreadCount])
   );
 
-  // 🔥 NUEVO: Manejar cambios de AppState para detectar cuando vuelve del background
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
-        console.log('App volvió al primer plano - Actualizando conteo de notificaciones');
         refreshUnreadCount();
       }
     };
@@ -369,7 +376,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
 
-  // 🔥 Funciones memoizadas para evitar re-renderizados
   const navigateToChangePassword = useCallback(() => {
     setNavigationState({ type: 'changePassword' });
     setMenuVisible(false);
@@ -394,16 +400,26 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
   }, []);
 
   const navigateToSelectSeat = useCallback((params: any) => {
-    setNavigationState({ type: 'selectSeat', params });
+    const { onWentToPayment, ...serializableParams } = params;
+    setNavigationState({ type: 'selectSeat', params: serializableParams });
   }, []);
 
   const navigateToPurchaseDetail = useCallback((purchaseId: number) => {
     navigation.navigate('PurchaseDetail', { purchaseId });
   }, [navigation]);
 
+  const navigateToTicketDetail = useCallback((ticketId: number) => {
+    navigation.navigate('TicketDetail', { ticketId });
+  }, [navigation]);
+
   const handleLogout = useCallback(() => {
     logout();
   }, [logout]);
+
+  const navigateToEditProfile = useCallback(() => {
+    setNavigationState({ type: 'editProfile' });
+    setMenuVisible(false);
+  }, []);
 
   const handleTabPress = useCallback((tab: string) => {
     navigateToTab(tab);
@@ -413,10 +429,8 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     setMenuVisible(prev => !prev);
   }, []);
 
-  // Manejar apertura del panel de notificaciones
   const toggleNotifications = useCallback(async () => {
     if (!notificationsVisible) {
-      // Al abrir el panel, marcar todas como leídas automáticamente
       setNotificationsVisible(true);
       try {
         await markAsRead();
@@ -435,15 +449,15 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
       handleLogout();
     } else if (action === 'changePassword') {
       navigateToChangePassword();
+    } else if (action === 'editProfile') {
+      navigateToEditProfile();
     }
-  }, [handleLogout, navigateToChangePassword]);
+  }, [handleLogout, navigateToChangePassword, navigateToEditProfile]);
 
-  // Manejar clic en notificación
   const handleNotificationPress = useCallback((notificationId: number) => {
     const notification = notifications.find(n => n.id === notificationId);
     
     if (notification && notification.compraId) {
-      // Si la notificación tiene compraId, navegar al detalle de compra
       setNotificationsVisible(false);
       navigateToPurchaseDetail(notification.compraId);
     }
@@ -451,7 +465,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
 
   const handleMarkAllAsRead = useCallback(async () => {
     try {
-      // Marcar todas las notificaciones como leídas usando la función del contexto
       await markAsRead();
       setNotificationsVisible(false);
     } catch (error) {
@@ -459,7 +472,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     }
   }, [markAsRead]);
 
-  // 🔥 Función de navegación hacia atrás optimizada
   const goBack = useCallback((roundTripState?: RoundTripState) => {
     if (navigationState.type === 'changePassword') {
       setActiveTab('inicio');
@@ -536,9 +548,19 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
       
     } else if (navigationState.type === 'viewTrips') {
       const params = navigationState.params;
-      
+  
       if (!roundTripState && params.tipoViaje === 'ida-vuelta') {
-        setNavigationState({ type: 'roundTrip' });
+        const initialData = {
+          origenSeleccionado: params.origenSeleccionado,
+          destinoSeleccionado: params.destinoSeleccionado,
+          fechaIda: params.fecha,
+          dateIda: params.date,
+          fechaVuelta: params.fechaVuelta || params.roundTripState?.viajeVuelta?.fecha,
+          dateVuelta: params.dateVuelta || params.roundTripState?.viajeVuelta?.date,
+          pasajeros: params.pasajeros,
+        };
+        
+        setNavigationState({ type: 'roundTrip', initialData });
         return;
       }
       
@@ -605,15 +627,29 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
       setActiveTab('viajes');
       activeTabRef.current = 'viajes';
       setNavigationState({ type: 'tab' });
+    } else if (navigationState.type === 'editProfile') {
+      setActiveTab('inicio');
+      activeTabRef.current = 'inicio';
+      setNavigationState({ type: 'tab' });
     }
   }, [navigationState]);
 
-  // 🔥 Contenido renderizado con memoización
   const renderContent = useMemo(() => {
     switch (navigationState.type) {
       case 'changePassword':
         return (
           <ChangePasswordScreen 
+            onSuccess={() => {
+              setActiveTab('inicio');
+              activeTabRef.current = 'inicio';
+              setNavigationState({ type: 'tab' });
+            }}
+            token={token || ''}
+          />
+        );
+      case 'editProfile':
+        return (
+          <EditProfileScreen 
             onGoBack={goBack}
             onSuccess={() => {
               setActiveTab('inicio');
@@ -646,6 +682,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
           <RoundTripScreen 
             onVolver={goBack}
             onNavigateToViewTrips={navigateToViewTrips}
+            initialData={navigationState.type === 'roundTrip' ? navigationState.initialData : undefined}
           />
         );
       case 'selectSeat':
@@ -653,25 +690,25 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
           <SelectSeatScreen 
             route={{ 
               params: {
-                ...navigationState.params,
-                onWentToPayment: () => {
-                  if (navigationState.type === 'selectSeat') {
-                    const updatedParams = {
-                      ...navigationState.params,
-                      wentToPayment: true
-                    };
-                    
-                    setNavigationState({
-                      ...navigationState,
-                      params: updatedParams
-                    });
-                  }
-                }
+                ...navigationState.params
               }
             }}
             navigation={{ 
               goBack,
               navigate: navigateToViewTrips
+            }}
+            onWentToPayment={() => {
+              if (navigationState.type === 'selectSeat') {
+                const updatedParams = {
+                  ...navigationState.params,
+                  wentToPayment: true
+                };
+                
+                setNavigationState({
+                  ...navigationState,
+                  params: updatedParams
+                });
+              }
             }}
           />
         );
@@ -684,7 +721,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
               <TripSelectionScreen 
                 activeTab={activeTab}
                 onTabPress={handleTabPress}
-                onNavigateToOneWay={navigateToOneWayTrip}
                 onNavigateToRoundTrip={navigateToRoundTrip}
               />
             );
@@ -692,6 +728,12 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
             return (
               <PurchasesScreen 
                 onNavigateToPurchaseDetail={navigateToPurchaseDetail}
+              />
+            );
+          case "pasajes":
+            return (
+              <TicketsScreen 
+                onNavigateToTicketDetail={navigateToTicketDetail}
               />
             );
           default:
@@ -710,13 +752,13 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     handleTabPress, 
     navigateToOneWayTrip, 
     navigateToRoundTrip, 
-    navigateToPurchaseDetail
+    navigateToPurchaseDetail,
+    navigateToTicketDetail
   ]);
 
-  // 🔥 Determinar el tab activo CORREGIDO
   const getCurrentActiveTab = useCallback(() => {
     if (navigationState.type === 'tab') {
-      return activeTab; // Usar directamente activeTab en lugar de activeTabRef.current
+      return activeTab;
     }
     return 'viajes';
   }, [navigationState.type, activeTab]);
@@ -770,7 +812,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
             styles.navigationIndicator, 
             currentActiveTab === "inicio" && styles.activeNavigationIndicator
           ]}>
-            <Icon name="home" size={24} color={currentActiveTab === "inicio" ? "#3B82F6" : "#49454F"} />
+            <Icon name="home" size={20} color={currentActiveTab === "inicio" ? "#3B82F6" : "#49454F"} />
           </View>
           <Text style={[
             styles.navigationLabel, 
@@ -790,7 +832,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
             styles.navigationIndicator, 
             currentActiveTab === "viajes" && styles.activeNavigationIndicator
           ]}>
-            <Icon name="search" size={24} color={currentActiveTab === "viajes" ? "#3B82F6" : "#49454F"} />
+            <Icon name="search" size={20} color={currentActiveTab === "viajes" ? "#3B82F6" : "#49454F"} />
           </View>
           <Text style={[
             styles.navigationLabel, 
@@ -810,13 +852,33 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
             styles.navigationIndicator, 
             currentActiveTab === "compras" && styles.activeNavigationIndicator
           ]}>
-            <Icon name="shopping-cart" size={24} color={currentActiveTab === "compras" ? "#3B82F6" : "#49454F"} />
+            <Icon name="shopping-cart" size={20} color={currentActiveTab === "compras" ? "#3B82F6" : "#49454F"} />
           </View>
           <Text style={[
             styles.navigationLabel, 
             currentActiveTab === "compras" && styles.activeNavigationLabel
           ]}>
             Mis Compras
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          key={`pasajes-${currentActiveTab === "pasajes"}`}
+          style={styles.navigationItem}
+          onPress={() => handleTabPress("pasajes")}
+          activeOpacity={0.7}
+        >
+          <View style={[
+            styles.navigationIndicator, 
+            currentActiveTab === "pasajes" && styles.activeNavigationIndicator
+          ]}>
+            <Icon name="confirmation-number" size={20} color={currentActiveTab === "pasajes" ? "#3B82F6" : "#49454F"} />
+          </View>
+          <Text style={[
+            styles.navigationLabel, 
+            currentActiveTab === "pasajes" && styles.activeNavigationLabel
+          ]}>
+            Mis Pasajes
           </Text>
         </TouchableOpacity>
       </View>
@@ -914,22 +976,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   navigationIndicator: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 16,
-    minHeight: 40,
+    minHeight: 32,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   activeNavigationIndicator: {
     backgroundColor: '#E0F2FE',
-    borderRadius: 16,
+    borderRadius: 12,
   },
   navigationLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#49454F',
-    marginTop: 4,
+    marginTop: 2,
+    textAlign: 'center',
   },
   activeNavigationLabel: {
     color: '#3B82F6',
@@ -1006,6 +1069,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 12,
     maxHeight: 400,
+    overflow: 'hidden',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1038,7 +1102,7 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     maxHeight: 300,
-    paddingBottom: 0, // Asegurar que no hay padding al final
+    paddingBottom: 0,
   },
   notificationItem: {
     flexDirection: 'row',
@@ -1124,45 +1188,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.1,
   },
-  loadMoreContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  loadingMoreContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
     backgroundColor: 'white',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
   },
-  loadMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6', // Azul sólido como en la segunda imagen
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 8, // Bordes menos redondeados
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: '#3B82F6',
-  },
-  loadMoreButtonDisabled: {
-    backgroundColor: '#93C5FD', // Azul más claro cuando está deshabilitado
-    borderColor: '#93C5FD',
-  },
-  loadMoreText: {
-    color: 'white', // Texto blanco sobre fondo azul
+  loadingMoreText: {
     fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-    letterSpacing: 0.1,
-  },
-  loadMoreLoadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  loadMoreLoadingText: {
-    color: 'white', // Texto blanco para el loading también
-    fontSize: 14,
-    fontWeight: '400',
-    marginLeft: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   noMoreNotificationsContainer: {
     paddingVertical: 20,
@@ -1179,21 +1214,6 @@ const styles = StyleSheet.create({
   },
   lastNotificationItem: {
     borderBottomWidth: 0,
-  },
-  loadingMoreContainer: {
-    paddingVertical: 20,
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  loadingMoreText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 8,
-    fontStyle: 'italic',
   },
 });
 
