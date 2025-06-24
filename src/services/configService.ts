@@ -1,15 +1,9 @@
-import { ConfiguracionSistema } from '../types/configType';
-
-const API_BASE_URL = 'http://192.168.1.170:8080';
+import { ConfiguracionSistema, ConfiguracionIndividualResponse } from '../types/configType';
+import { API_BASE_URL } from '@env';
 
 let configCache: Map<string, number> = new Map();
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
-
-interface ConfiguracionIndividualResponse {
-  data: ConfiguracionSistema;
-  message: string;
-}
 
 const getConfiguracionByNombre = async (token: string, nombreConfig: string): Promise<ConfiguracionSistema | null> => {
   try {

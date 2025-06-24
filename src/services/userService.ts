@@ -1,21 +1,6 @@
-const API_BASE_URL = 'http://192.168.1.170:8080';
+import { API_BASE_URL } from '@env';
+import { UserApiResponse } from '../types/userType';
 
-export interface UserApiResponse {
-  id: number;
-  email: string;
-  nombre: string;
-  apellido: string;
-  documento: string;
-  tipoDocumento: string;
-  fechaNacimiento: string;
-  genero: string;
-  situacionLaboral: string;
-  rol: string;
-  activo: boolean;
-  emailVerificado: boolean;
-  fechaCreacion: string;
-  fechaActualizacion: string;
-}
 
 export const getUserById = async (token: string, userId: string): Promise<UserApiResponse> => {
   try {

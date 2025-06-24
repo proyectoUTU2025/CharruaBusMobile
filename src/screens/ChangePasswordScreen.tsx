@@ -16,12 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { usePasswordValidation } from '../hooks/usePasswordValidation';
 import { changePassword } from '../services/passwordService';
 
-import { ChangePasswordData, PasswordRequirement } from '../types/passwordType';
-
-interface PasswordRequirementsProps {
-  password: string;
-  requirements: PasswordRequirement[];
-}
+import { ChangePasswordData, PasswordRequirementsProps } from '../types/passwordType';
 
 const PasswordRequirements: React.FC<PasswordRequirementsProps> = ({ 
   password, 

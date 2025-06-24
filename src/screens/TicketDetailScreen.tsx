@@ -104,6 +104,15 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
     }
   };
 
+  const isTicketConfirmed = () => {
+    if (!ticket?.estadoPasaje) return false;
+    
+    const estado = ticket.estadoPasaje.toLowerCase().trim();
+    const estadosConfirmados = ['confirmado'];
+    
+    return estadosConfirmados.includes(estado);
+  };
+
   const renderError = () => (
     <View style={styles.centerContainer}>
       <View style={styles.errorContainer}>
@@ -328,14 +337,21 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
               <Text style={styles.headerTitle}>Detalle de Pasaje</Text>
               <View style={styles.headerRightButtons}>
                 <TouchableOpacity
-                  style={[styles.downloadButton, downloadingPdf && styles.downloadButtonDisabled]}
-                  onPress={handleDownloadTicketPdf}
-                  disabled={downloadingPdf}
+                  style={[
+                    styles.downloadButton, 
+                    (downloadingPdf || !isTicketConfirmed()) && styles.downloadButtonDisabled
+                  ]}
+                  onPress={isTicketConfirmed() ? handleDownloadTicketPdf : undefined}
+                  disabled={downloadingPdf || !isTicketConfirmed()}
                 >
                   {downloadingPdf ? (
                     <ActivityIndicator size="small" color="#374151" />
                   ) : (
-                    <Icon name="file-download" size={24} color="#374151" />
+                    <Icon 
+                      name="file-download" 
+                      size={24} 
+                      color={isTicketConfirmed() ? "#374151" : "#9E9E9E"} 
+                    />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>

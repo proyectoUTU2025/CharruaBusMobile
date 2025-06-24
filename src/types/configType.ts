@@ -38,3 +38,8 @@ export interface ConfiguracionResponse {
   numberOfElements: number;
   empty: boolean;
 }
+
+export interface ConfiguracionIndividualResponse {
+  data: ConfiguracionSistema;
+  message: string;
+}

@@ -1,35 +1,5 @@
-const API_BASE_URL = 'http://192.168.1.170:8080';
-
-export interface NotificationItem {
-  id: number;
-  compraId: number;
-  titulo: string;
-  mensaje: string;
-  fecha: string;
-  timestamp: number;
-  leido: boolean;
-  tipo: 'COMPRA' | 'GENERAL' | 'PROMOCION';
-}
-
-export interface NotificationsPage {
-  content: NotificationItem[];
-  page: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-}
-
-export interface NotificationsCountResponse {
-  data: number;
-  message: string;
-}
-
-export interface MarkAsReadResponse {
-  data: string;
-  message: string;
-}
+import { API_BASE_URL } from '@env';
+import { NotificationItem, NotificationsPage, NotificationsCountResponse, MarkAsReadResponse } from '../types/notificationType';
 
 export const getNotifications = async (
   token: string, 

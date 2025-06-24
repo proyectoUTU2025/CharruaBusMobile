@@ -1,7 +1,6 @@
 import { getFCMToken } from './notificationService';
 import { RegisterData } from '../types/authType';
-
-const API_BASE_URL = 'http://192.168.1.170:8080';
+import { API_BASE_URL } from '@env';
 
 const getDeviceToken = async (): Promise<string> => {
   try {

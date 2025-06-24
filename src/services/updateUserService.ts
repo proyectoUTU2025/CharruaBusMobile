@@ -1,36 +1,5 @@
-const API_BASE_URL = 'http://192.168.1.170:8080';
-
-export interface UpdateUserProfileData {
-  nombre: string;
-  apellido: string;
-  documento: string;
-  tipoDocumento: string;
-  fechaNacimiento: string;
-  situacionLaboral: string;
-}
-
-export interface UpdateUserProfileResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-}
-
-export interface UserProfileData {
-  id: number;
-  email: string;
-  nombre: string;
-  apellido: string;
-  documento: string;
-  tipoDocumento: string;
-  fechaNacimiento: string;
-  genero: string;
-  situacionLaboral: string;
-  rol: string;
-  activo: boolean;
-  emailVerificado: boolean;
-  fechaCreacion: string;
-  fechaActualizacion: string;
-}
+import { API_BASE_URL } from '@env';
+import { UpdateUserProfileData, UpdateUserProfileResponse, UserProfileData } from '../types/userType';
 
 export const updateUserProfile = async (
   token: string, 

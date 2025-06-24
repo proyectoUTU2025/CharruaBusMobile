@@ -1,40 +1,6 @@
-import { PurchaseDetail, PurchaseDetailResponse } from '../types/purchaseType';
+import { PurchaseDetail, PurchaseDetailResponse, Purchase, PurchasesResponse, GetPurchasesParams } from '../types/purchaseType';
 import { Linking, Alert } from 'react-native';
-
-const API_BASE_URL = 'http://192.168.1.170:8080';
-
-export interface Purchase {
-  id: number;
-  fechaCompra: string;
-  precioActual: number;
-  precioOriginal: number;
-  vendedorId: number;
-  clienteId: number;
-  cantidadPasajes: number;
-  estado: 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA' | 'REEMBOLSADA' | 'PARCIALMENTE_REEMBOLSADA';
-}
-
-export interface PurchasesResponse {
-  content: Purchase[];
-  page: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-}
-
-export interface GetPurchasesParams {
-  clienteId: number;
-  estados?: string[];
-  fechaDesde?: string;
-  fechaHasta?: string;
-  montoMin?: number;
-  montoMax?: number;
-  page?: number;
-  size?: number;
-  sort?: string[];
-}
+import { API_BASE_URL } from '@env';
 
 export const getClientPurchases = async (
   token: string,

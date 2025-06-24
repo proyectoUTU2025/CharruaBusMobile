@@ -18,7 +18,6 @@ import {
   getPurchaseDetail,
   formatPurchaseDateTime,
   formatPurchaseDate,
-  formatPurchaseTime,
   formatPrice,
   downloadPurchasePdf,
   downloadTicketPdf
@@ -219,6 +218,13 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
     }
   };
 
+  const isTicketConfirmed = (estadoPasaje: string) => {
+    if (!estadoPasaje) return false;
+    
+    const estado = estadoPasaje.toLowerCase().trim();
+    return estado === 'confirmado';
+  };
+
   const renderError = () => (
     <View style={styles.centerContainer}>
       <View style={styles.errorContainer}>
@@ -347,6 +353,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
         {pasajesOrdenados.map((pasaje, index) => {
           const estadoColor = getEstadoColor(pasaje.estadoPasaje);
           const isDownloading = downloadingTickets[pasaje.id] || false;
+          const canDownload = isTicketConfirmed(pasaje.estadoPasaje);
           
           return (
             <View key={pasaje.id} style={styles.ticketCard}>
@@ -411,25 +418,34 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                 </View>
               </View>
               
+              {/* Footer modificado */}
               <View style={styles.ticketFooter}>
-                <TouchableOpacity
-                  style={[styles.downloadTicketButton, isDownloading && styles.downloadButtonDisabled]}
-                  onPress={() => handleDownloadTicketPdf(pasaje.id)}
-                  disabled={isDownloading}
-                >
-                  {isDownloading ? (
-                    <ActivityIndicator size="small" color="#3B82F6" />
-                  ) : (
-                    <Icon name="file-download" size={16} color="#3B82F6" />
-                  )}
-                </TouchableOpacity>
-                
                 <View style={styles.ticketDate}>
                   <Icon name="schedule" size={14} color="#9E9E9E" />
                   <Text style={styles.ticketDateText}>
                     {formatPurchaseDateTime(pasaje.fecha)}
                   </Text>
                 </View>
+  
+                {/* Botón de descarga siempre visible pero condicional */}
+                <TouchableOpacity
+                  style={[
+                    styles.downloadTicketButton, 
+                    (isDownloading || !canDownload) && styles.downloadButtonDisabled
+                  ]}
+                  onPress={canDownload ? () => handleDownloadTicketPdf(pasaje.id) : undefined}
+                  disabled={isDownloading || !canDownload}
+                >
+                  {isDownloading ? (
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                  ) : (
+                    <Icon 
+                      name="file-download" 
+                      size={16} 
+                      color={canDownload ? "#3B82F6" : "#9E9E9E"} 
+                    />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
           );
@@ -849,26 +865,26 @@ const styles = StyleSheet.create({
   refundText: {
     color: '#FF9800',
   },
-  ticketFooter: {
+  ticketDateText: {
+    fontSize: 12,
+    color: '#9E9E9E',
+  },
+    ticketFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  downloadTicketButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
   },
   ticketDate: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  ticketDateText: {
-    fontSize: 12,
-    color: '#9E9E9E',
+  downloadTicketButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    marginLeft: 8,
   },
 });
 

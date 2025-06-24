@@ -12,7 +12,6 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
-  Platform,
 } from "react-native"
 import DateTimePicker from '@react-native-community/datetimepicker'
 import Icon from "react-native-vector-icons/MaterialIcons"
@@ -20,14 +19,8 @@ import {
   updateUserProfile, 
   getCurrentUserProfile, 
   getUserIdFromToken,
-  UserProfileData 
 } from '../services/updateUserService'
-
-interface EditProfileScreenProps {
-  onGoBack: () => void;
-  onSuccess: () => void;
-  token: string;
-}
+import { EditProfileScreenProps } from '../types/userType';
 
 export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditProfileScreenProps) {
   

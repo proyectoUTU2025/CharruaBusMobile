@@ -10,7 +10,6 @@ import {
   RefreshControl,
   Alert,
   Modal,
-  TouchableWithoutFeedback,
   useWindowDimensions,
   StatusBar,
   ImageBackground,
@@ -29,18 +28,9 @@ import {
   getEstadoPasajeIcon,
   getEstadoPasajeSurfaceColor
 } from '../services/ticketService';
-
-interface TicketsScreenProps {
-  onNavigateToTicketDetail: (ticketId: number) => void;
-}
-
-interface FilterParams {
-  estados: string[];
-  fechaDesde: string;
-  fechaHasta: string;
-  origenId?: number;
-  destinoId?: number;
-}
+import { getAllLocalidadesSimple } from '../services/locationService';
+import { Localidad } from '../types/locationType';
+import { TicketsScreenProps, FilterParams } from '../types/ticketType';
 
 const TicketsScreen: React.FC<TicketsScreenProps> = ({ 
   onNavigateToTicketDetail,
@@ -67,6 +57,13 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
   const [showDatePickerHasta, setShowDatePickerHasta] = useState(false);
   const [dateDesde, setDateDesde] = useState<Date | undefined>(undefined);
   const [dateHasta, setDateHasta] = useState<Date | undefined>(undefined);
+  
+  const [localidades, setLocalidades] = useState<Localidad[]>([]);
+  const [loadingLocalidades, setLoadingLocalidades] = useState(false);
+  const [showOrigenSelector, setShowOrigenSelector] = useState(false);
+  const [showDestinoSelector, setShowDestinoSelector] = useState(false);
+  const [searchOrigenText, setSearchOrigenText] = useState('');
+  const [searchDestinoText, setSearchDestinoText] = useState('');
   
   const [tempFilters, setTempFilters] = useState<FilterParams>({
     estados: [],
@@ -100,6 +97,68 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+  };
+
+  const loadLocalidades = async () => {
+    if (!token || loadingLocalidades || localidades.length > 0) return;
+    
+    try {
+      setLoadingLocalidades(true);
+      const result = await getAllLocalidadesSimple(token);
+      setLocalidades(result);
+    } catch (error) {
+      console.error('Error cargando localidades:', error);
+      Alert.alert('Error', 'No se pudieron cargar las localidades');
+    } finally {
+      setLoadingLocalidades(false);
+    }
+  };
+
+  const getFilteredOrigenLocalidades = (): Localidad[] => {
+    const filtered = localidades.filter(loc => {
+      const matchesSearch = loc.nombreConDepartamento.toLowerCase().includes(searchOrigenText.toLowerCase());
+      const notSelectedAsDestino = loc.id !== tempFilters.destinoId;
+      return matchesSearch && notSelectedAsDestino;
+    });
+    return filtered.slice(0, 50);
+  };
+
+  const getFilteredDestinoLocalidades = (): Localidad[] => {
+    const filtered = localidades.filter(loc => {
+      const matchesSearch = loc.nombreConDepartamento.toLowerCase().includes(searchDestinoText.toLowerCase());
+      const notSelectedAsOrigen = loc.id !== tempFilters.origenId;
+      return matchesSearch && notSelectedAsOrigen;
+    });
+    return filtered.slice(0, 50);
+  };
+
+  const getLocalidadNombre = (id: number): string => {
+    const localidad = localidades.find(loc => loc.id === id);
+    return localidad ? localidad.nombreConDepartamento : `ID: ${id}`;
+  };
+
+  const handleOrigenSelect = (localidad: Localidad) => {
+    setTempFilters(prev => ({
+      ...prev,
+      origenId: localidad.id,
+      destinoId: prev.destinoId === localidad.id ? undefined : prev.destinoId
+    }));
+    setShowOrigenSelector(false);
+    setSearchOrigenText('');
+  };
+
+  const handleDestinoSelect = (localidad: Localidad) => {
+    setTempFilters(prev => ({ ...prev, destinoId: localidad.id }));
+    setShowDestinoSelector(false);
+    setSearchDestinoText('');
+  };
+
+  const clearOrigenSelection = () => {
+    setTempFilters(prev => ({ ...prev, origenId: undefined }));
+  };
+
+  const clearDestinoSelection = () => {
+    setTempFilters(prev => ({ ...prev, destinoId: undefined }));
   };
 
   const onChangeDateDesde = (event: any, selectedDate?: Date) => {
@@ -184,10 +243,6 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
         if (dateDesde > dateHasta) {
           errors.fecha = 'La fecha "desde" debe ser anterior o igual a la fecha "hasta"';
         }
-        
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        
       }
     } else if (filters.fechaDesde && !isValidDateFormat(filters.fechaDesde)) {
       errors.fecha = 'La fecha "desde" debe tener formato DD/MM/YYYY válido';
@@ -231,6 +286,8 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
       } else {
         setDateHasta(undefined);
       }
+
+      loadLocalidades();
     }
   }, [showFilterModal, appliedFilters]);
 
@@ -457,183 +514,306 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
     );
   };
 
+  const renderLocalidadSelector = (
+    visible: boolean,
+    onClose: () => void,
+    localidades: Localidad[],
+    onSelect: (localidad: Localidad) => void,
+    searchText: string,
+    onSearchChange: (text: string) => void,
+    title: string,
+    loading: boolean
+  ) => (
+    <Modal visible={visible} transparent animationType="fade" presentationStyle="overFullScreen">
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={[styles.selectorModal, { width: isCompact ? width * 0.9 : 400 }]}>
+          <View style={styles.selectorHeader}>
+            <Text style={styles.selectorTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Icon name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar localidad..."
+              value={searchText}
+              onChangeText={onSearchChange}
+              placeholderTextColor="#9CA3AF"
+            />
+            <Icon name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+          </View>
+
+          <View style={styles.scrollContainer}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#3B82F6" />
+                <Text style={styles.loadingText}>Cargando localidades...</Text>
+              </View>
+            ) : (
+              <ScrollView 
+                style={styles.localidadesList} 
+                contentContainerStyle={styles.localidadesListContent}
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                keyboardShouldPersistTaps="handled"
+              >
+                {localidades.length === 0 ? (
+                  <Text style={styles.noResultsText}>
+                    {searchText ? 'No se encontraron localidades' : 'No hay localidades disponibles'}
+                  </Text>
+                ) : (
+                  localidades.map((localidad) => (
+                    <TouchableOpacity
+                      key={localidad.id}
+                      style={styles.localidadItem}
+                      onPress={() => onSelect(localidad)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.localidadText} numberOfLines={2}>
+                        {localidad.nombreConDepartamento}
+                      </Text>
+                      <Icon name="chevron-right" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderFilterModal = () => (
     <Modal
       visible={showFilterModal}
       transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       onRequestClose={() => setShowFilterModal(false)}
     >
-      <TouchableWithoutFeedback onPress={() => setShowFilterModal(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={[
-              styles.filterModal,
-              {
-                width: isCompact ? width * 0.95 : Math.min(600, width * 0.85),
-                maxHeight: height * 0.85,
-              }
-            ]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Filtrar pasajes</Text>
-                <TouchableOpacity 
-                  onPress={() => setShowFilterModal(false)}
-                  style={styles.closeButton}
-                >
-                  <Icon name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowFilterModal(false)}
+        />
+        <View style={[
+          styles.filterModal,
+          {
+            width: isCompact ? width * 0.95 : Math.min(600, width * 0.85),
+            maxHeight: height * 0.85,
+          }
+        ]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filtrar pasajes</Text>
+            <TouchableOpacity 
+              onPress={() => setShowFilterModal(false)}
+              style={styles.closeButton}
+            >
+              <Icon name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
 
-              <ScrollView style={styles.filterOptions} showsVerticalScrollIndicator={false}>
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Estado del pasaje</Text>
-                  
-                  {estadosDisponibles.map((estado) => (
-                    <TouchableOpacity
-                      key={estado.value}
-                      style={styles.filterOption}
-                      onPress={() => toggleEstadoFilter(estado.value)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.filterOptionContent}>
-                        <View style={[
-                          styles.checkbox,
-                          tempFilters.estados.includes(estado.value) && styles.checkboxSelected,
-                        ]}>
-                          {tempFilters.estados.includes(estado.value) && (
-                            <Icon name="check" size={16} color="white" />
-                          )}
-                        </View>
-                        <Text style={styles.filterOptionText}>
-                          {estado.label}
-                        </Text>
-                      </View>
-                      <View style={[
-                        styles.estadoIndicator,
-                        { backgroundColor: getEstadoPasajeColor(estado.value) }
-                      ]} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Rango de fechas de viaje</Text>
-                  
-                  <View style={styles.rangeInputContainer}>
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputLabel}>Desde</Text>
-                      <TouchableOpacity onPress={() => setShowDatePickerDesde(true)}>
-                        <View style={[
-                          styles.dateInput,
-                          validationErrors.fecha && styles.textInputError
-                        ]}>
-                          <Text style={[
-                            styles.dateInputText,
-                            !tempFilters.fechaDesde && styles.placeholderText
-                          ]}>
-                            {tempFilters.fechaDesde || 'DD/MM/AAAA'}
-                          </Text>
-                          <Icon name="event" size={20} color="#9CA3AF" />
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <Text style={styles.rangeConnector}>-</Text>
-                    
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputLabel}>Hasta</Text>
-                      <TouchableOpacity onPress={() => setShowDatePickerHasta(true)}>
-                        <View style={[
-                          styles.dateInput,
-                          validationErrors.fecha && styles.textInputError
-                        ]}>
-                          <Text style={[
-                            styles.dateInputText,
-                            !tempFilters.fechaHasta && styles.placeholderText
-                          ]}>
-                            {tempFilters.fechaHasta || 'DD/MM/AAAA'}
-                          </Text>
-                          <Icon name="event" size={20} color="#9CA3AF" />
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  
-                  {validationErrors.fecha && (
-                    <Text style={styles.errorText}>{validationErrors.fecha}</Text>
-                  )}
-                  
-                  <Text style={styles.helperText}>
-                    Formato: DD/MM/AAAA (ej: 25/12/2024)
-                  </Text>
-                </View>
-
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Filtrar por paradas</Text>
-                  
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputLabel}>ID Parada de Origen (opcional)</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Ej: 1, 2, 3..."
-                      value={tempFilters.origenId?.toString() || ''}
-                      onChangeText={(text: string) => {
-                        const numericText = text.replace(/[^0-9]/g, '');
-                        setTempFilters(prev => ({ 
-                          ...prev, 
-                          origenId: numericText ? parseInt(numericText) : undefined 
-                        }));
-                      }}
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                  
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputLabel}>ID Parada de Destino (opcional)</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Ej: 1, 2, 3..."
-                      value={tempFilters.destinoId?.toString() || ''}
-                      onChangeText={(text: string) => {
-                        const numericText = text.replace(/[^0-9]/g, '');
-                        setTempFilters(prev => ({ 
-                          ...prev, 
-                          destinoId: numericText ? parseInt(numericText) : undefined 
-                        }));
-                      }}
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                  
-                  <Text style={styles.helperText}>
-                    Opcional: Solo ingresa si conoces el ID específico de la parada
-                  </Text>
-                </View>
-              </ScrollView>
-
-              <View style={styles.filterActions}>
+          <ScrollView 
+            style={styles.filterOptions} 
+            contentContainerStyle={styles.filterOptionsContent}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Estado del pasaje</Text>
+              
+              {estadosDisponibles.map((estado) => (
                 <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={clearFilters}
+                  key={estado.value}
+                  style={styles.filterOption}
+                  onPress={() => toggleEstadoFilter(estado.value)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.secondaryButtonText}>Limpiar filtros</Text>
+                  <View style={styles.filterOptionContent}>
+                    <View style={[
+                      styles.checkbox,
+                      tempFilters.estados.includes(estado.value) && styles.checkboxSelected,
+                    ]}>
+                      {tempFilters.estados.includes(estado.value) && (
+                        <Icon name="check" size={16} color="white" />
+                      )}
+                    </View>
+                    <Text style={styles.filterOptionText}>
+                      {estado.label}
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.estadoIndicator,
+                    { backgroundColor: getEstadoPasajeColor(estado.value) }
+                  ]} />
                 </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={applyFilters}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.primaryButtonText}>Aplicar</Text>
-                </TouchableOpacity>
-              </View>
+              ))}
             </View>
-          </TouchableWithoutFeedback>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Rango de fechas de viaje</Text>
+              
+              <View style={styles.rangeInputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Desde</Text>
+                  <TouchableOpacity onPress={() => setShowDatePickerDesde(true)}>
+                    <View style={[
+                      styles.dateInput,
+                      validationErrors.fecha && styles.textInputError
+                    ]}>
+                      <Text style={[
+                        styles.dateInputText,
+                        !tempFilters.fechaDesde && styles.placeholderText
+                      ]}>
+                        {tempFilters.fechaDesde || 'DD/MM/AAAA'}
+                      </Text>
+                      <Icon name="event" size={20} color="#9CA3AF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.rangeConnector}>-</Text>
+                
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Hasta</Text>
+                  <TouchableOpacity onPress={() => setShowDatePickerHasta(true)}>
+                    <View style={[
+                      styles.dateInput,
+                      validationErrors.fecha && styles.textInputError
+                    ]}>
+                      <Text style={[
+                        styles.dateInputText,
+                        !tempFilters.fechaHasta && styles.placeholderText
+                      ]}>
+                        {tempFilters.fechaHasta || 'DD/MM/AAAA'}
+                      </Text>
+                      <Icon name="event" size={20} color="#9CA3AF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {validationErrors.fecha && (
+                <Text style={styles.errorText}>{validationErrors.fecha}</Text>
+              )}
+              
+              <Text style={styles.helperText}>
+                Formato: DD/MM/AAAA (ej: 25/12/2024)
+              </Text>
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Filtrar por localidades</Text>
+              
+              {/* Selector de Origen */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Localidad de Origen</Text>
+                <TouchableOpacity 
+                  style={styles.localidadSelector}
+                  onPress={() => setShowOrigenSelector(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.localidadSelectorText,
+                    !tempFilters.origenId && styles.placeholderText
+                  ]}>
+                    {tempFilters.origenId 
+                      ? getLocalidadNombre(tempFilters.origenId)
+                      : 'Seleccionar origen...'
+                    }
+                  </Text>
+                  <View style={styles.selectorActions}>
+                    {tempFilters.origenId && (
+                      <TouchableOpacity 
+                        onPress={clearOrigenSelection}
+                        style={styles.clearButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Icon name="close" size={18} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    )}
+                    <Icon name="keyboard-arrow-down" size={24} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              
+              {/* Selector de Destino */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Localidad de Destino</Text>
+                <TouchableOpacity 
+                  style={[
+                    styles.localidadSelector,
+                    !tempFilters.origenId && styles.disabledSelector
+                  ]}
+                  onPress={() => tempFilters.origenId && setShowDestinoSelector(true)}
+                  activeOpacity={tempFilters.origenId ? 0.8 : 1}
+                >
+                  <Text style={[
+                    styles.localidadSelectorText,
+                    !tempFilters.destinoId && styles.placeholderText,
+                    !tempFilters.origenId && styles.disabledText
+                  ]}>
+                    {!tempFilters.origenId 
+                      ? 'Primero selecciona origen'
+                      : tempFilters.destinoId 
+                        ? getLocalidadNombre(tempFilters.destinoId)
+                        : 'Seleccionar destino...'
+                    }
+                  </Text>
+                  <View style={styles.selectorActions}>
+                    {tempFilters.destinoId && (
+                      <TouchableOpacity 
+                        onPress={clearDestinoSelection}
+                        style={styles.clearButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Icon name="close" size={18} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    )}
+                    <Icon 
+                      name="keyboard-arrow-down" 
+                      size={24} 
+                      color={tempFilters.origenId ? "#9CA3AF" : "#D1D5DB"} 
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.helperText}>
+                Selecciona primero el origen para habilitar la selección de destino
+              </Text>
+            </View>
+          </ScrollView>
+
+          <View style={styles.filterActions}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={clearFilters}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>Limpiar filtros</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={applyFilters}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>Aplicar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 
@@ -756,6 +936,26 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
+          {renderLocalidadSelector(
+            showOrigenSelector,
+            () => setShowOrigenSelector(false),
+            getFilteredOrigenLocalidades(),
+            handleOrigenSelect,
+            searchOrigenText,
+            setSearchOrigenText,
+            'Seleccionar Origen',
+            loadingLocalidades
+          )}
+          {renderLocalidadSelector(
+            showDestinoSelector,
+            () => setShowDestinoSelector(false),
+            getFilteredDestinoLocalidades(),
+            handleDestinoSelect,
+            searchDestinoText,
+            setSearchDestinoText,
+            'Seleccionar Destino',
+            loadingLocalidades
+          )}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -801,6 +1001,26 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
+          {renderLocalidadSelector(
+            showOrigenSelector,
+            () => setShowOrigenSelector(false),
+            getFilteredOrigenLocalidades(),
+            handleOrigenSelect,
+            searchOrigenText,
+            setSearchOrigenText,
+            'Seleccionar Origen',
+            loadingLocalidades
+          )}
+          {renderLocalidadSelector(
+            showDestinoSelector,
+            () => setShowDestinoSelector(false),
+            getFilteredDestinoLocalidades(),
+            handleDestinoSelect,
+            searchDestinoText,
+            setSearchDestinoText,
+            'Seleccionar Destino',
+            loadingLocalidades
+          )}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -849,6 +1069,26 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
+          {renderLocalidadSelector(
+            showOrigenSelector,
+            () => setShowOrigenSelector(false),
+            getFilteredOrigenLocalidades(),
+            handleOrigenSelect,
+            searchOrigenText,
+            setSearchOrigenText,
+            'Seleccionar Origen',
+            loadingLocalidades
+          )}
+          {renderLocalidadSelector(
+            showDestinoSelector,
+            () => setShowDestinoSelector(false),
+            getFilteredDestinoLocalidades(),
+            handleDestinoSelect,
+            searchDestinoText,
+            setSearchDestinoText,
+            'Seleccionar Destino',
+            loadingLocalidades
+          )}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -918,6 +1158,28 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
 
         {renderFilterModal()}
         
+        {renderLocalidadSelector(
+          showOrigenSelector,
+          () => setShowOrigenSelector(false),
+          getFilteredOrigenLocalidades(),
+          handleOrigenSelect,
+          searchOrigenText,
+          setSearchOrigenText,
+          'Seleccionar Origen',
+          loadingLocalidades
+        )}
+        
+        {renderLocalidadSelector(
+          showDestinoSelector,
+          () => setShowDestinoSelector(false),
+          getFilteredDestinoLocalidades(),
+          handleDestinoSelect,
+          searchDestinoText,
+          setSearchDestinoText,
+          'Seleccionar Destino',
+          loadingLocalidades
+        )}
+        
         {showDatePickerDesde && (
           <View style={styles.datePickerContainer}>
             <DateTimePicker
@@ -963,8 +1225,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 62,
   },
+  /*zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz*/
   cardContainer: {
     width: "100%",
     maxWidth: 400,
@@ -985,13 +1248,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+    flexWrap: 'wrap',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#374151',
     flex: 1,
+    minWidth: 120,
   },
   headerActions: {
     flexDirection: 'row',
@@ -1004,6 +1269,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0F2FE',
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 44,
+    minHeight: 44,
   },
   filterBadge: {
     position: 'absolute',
@@ -1046,6 +1313,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    marginHorizontal: 2,
   },
   statusIndicator: {
     height: 4,
@@ -1057,9 +1325,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingBottom: 12,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   ticketIdContainer: {
     flex: 1,
+    minWidth: 80,
   },
   ticketIdLabel: {
     fontSize: 12,
@@ -1078,6 +1349,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     gap: 6,
+    flexShrink: 0,
   },
   statusText: {
     fontSize: 12,
@@ -1095,6 +1367,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
+    flexWrap: 'wrap',
   },
   infoText: {
     fontSize: 14,
@@ -1103,6 +1376,7 @@ const styles = StyleSheet.create({
   },
   priceSection: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   currentPrice: {
     fontSize: 18,
@@ -1144,11 +1418,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    marginHorizontal: 2,
   },
   loadMoreContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   loadMoreText: {
     fontSize: 14,
@@ -1158,17 +1433,17 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
@@ -1241,6 +1516,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     zIndex: 1001,
+    position: 'absolute',
+    top: '7.5%',
+    alignSelf: 'center',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1259,8 +1537,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   filterOptions: {
-    maxHeight: 400,
+    flex: 1,
     paddingHorizontal: 24,
+  },
+  filterOptionsContent: {
+    paddingBottom: 20,
   },
   filterSection: {
     marginBottom: 24,
@@ -1428,6 +1709,128 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+  },
+  localidadSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'white',
+    minHeight: 42,
+    marginBottom: 12,
+  },
+  disabledSelector: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#D1D5DB',
+  },
+  localidadSelectorText: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+  },
+  disabledText: {
+    color: '#9CA3AF',
+  },
+  selectorActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  clearButton: {
+    padding: 4,
+    borderRadius: 12,
+  },
+  selectorModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    maxHeight: '80%',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    position: 'absolute',
+    top: '10%',
+    alignSelf: 'center',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  selectorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  selectorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  searchContainer: {
+    position: 'relative',
+    margin: 16,
+    marginBottom: 8,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#374151',
+    backgroundColor: 'white',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+  },
+  scrollContainer: {
+    flex: 1,
+    minHeight: 200,
+    maxHeight: 400,
+  },
+  localidadesList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  localidadesListContent: {
+    paddingBottom: 16,
+  },
+  localidadItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  localidadText: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+    lineHeight: 20,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingVertical: 32,
+    fontStyle: 'italic',
   },
 });
 

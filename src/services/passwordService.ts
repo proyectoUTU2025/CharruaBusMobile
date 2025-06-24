@@ -1,6 +1,5 @@
 import { ChangePasswordData, ChangePasswordResponse, PasswordErrorType } from '../types/passwordType';
-
-const API_BASE_URL = 'http://192.168.1.170:8080';
+import { API_BASE_URL } from '@env';
 
 export const changePassword = async (
   token: string, 

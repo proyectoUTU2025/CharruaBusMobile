@@ -24,11 +24,11 @@ import {
   formatDateTime,
   calcularPrecioPorTramos
 } from '../services/tripService';
-import { getUserById, UserApiResponse } from '../services/userService';
+import { getUserById } from '../services/userService';
 import { RoundTripState } from '../types/roundTripType';
-import { EstadoAsiento, AsientoLocal } from '../types/tripType';
+import { EstadoAsiento, AsientoLocal, TripDetails } from '../types/tripType';
 import { SelectSeatScreenProps } from '../types/screenPropsType';
-import { TripDetails } from '../types/tripType';
+import { UserApiResponse } from '../types/userType';
 
 export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectSeatScreenProps & { onWentToPayment?: () => void }) {
   const { token } = useAuth();

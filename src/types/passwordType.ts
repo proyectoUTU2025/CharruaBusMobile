@@ -34,6 +34,11 @@ export interface ChangePasswordResponse {
   message: string;
 }
 
+export interface PasswordRequirementsProps {
+  password: string;
+  requirements: PasswordRequirement[];
+}
+
 export type PasswordErrorType = 
   | 'CURRENT_PASSWORD_INCORRECT'
   | 'SAME_PASSWORD'

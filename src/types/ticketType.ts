@@ -41,3 +41,15 @@ export interface PdfDownloadResponse {
 export interface DownloadTicketPdfParams {
   ticketId: number;
 }
+
+export interface TicketsScreenProps {
+  onNavigateToTicketDetail: (ticketId: number) => void;
+}
+
+export interface FilterParams {
+  estados: string[];
+  fechaDesde: string;
+  fechaHasta: string;
+  origenId?: number;
+  destinoId?: number;
+}

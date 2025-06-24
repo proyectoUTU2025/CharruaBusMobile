@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
   Alert,
   Modal,
   TouchableWithoutFeedback,
@@ -24,22 +23,9 @@ import { useUser } from '../hooks/useUser';
 import { 
   getClientPurchases,
   formatPurchaseDateTime,
-  formatPrice,
-  Purchase
+  formatPrice
 } from '../services/purchaseService';
-
-interface PurchasesScreenProps {
-  onNavigateToPurchaseDetail: (purchaseId: number) => void;
-  onGoBack?: () => void;
-}
-
-interface FilterParams {
-  estados: string[];
-  montoMin: string;
-  montoMax: string;
-  fechaDesde: string;
-  fechaHasta: string;
-}
+import { FilterParams, PurchasesScreenProps, Purchase } from '../types/purchaseType';
 
 const PurchasesScreen: React.FC<PurchasesScreenProps> = ({ 
   onNavigateToPurchaseDetail,
@@ -549,191 +535,199 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
       visible={showFilterModal}
       transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       onRequestClose={() => setShowFilterModal(false)}
     >
-      <TouchableWithoutFeedback onPress={() => setShowFilterModal(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={[
-              styles.filterModal,
-              {
-                width: isCompact ? width * 0.95 : Math.min(600, width * 0.85),
-                maxHeight: height * 0.85,
-              }
-            ]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Filtrar compras</Text>
-                <TouchableOpacity 
-                  onPress={() => setShowFilterModal(false)}
-                  style={styles.closeButton}
-                >
-                  <Icon name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
+      <View style={styles.modalOverlay}>
+        {/* Área clickeable para cerrar - solo en los bordes */}
+        <TouchableWithoutFeedback onPress={() => setShowFilterModal(false)}>
+          <View style={styles.modalBackdrop} />
+        </TouchableWithoutFeedback>
+        
+        {/* Modal content - sin TouchableWithoutFeedback que interfiera */}
+        <View style={[
+          styles.filterModal,
+          {
+            width: isCompact ? width * 0.95 : Math.min(600, width * 0.85),
+            maxHeight: height * 0.85,
+          }
+        ]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filtrar compras</Text>
+            <TouchableOpacity 
+              onPress={() => setShowFilterModal(false)}
+              style={styles.closeButton}
+            >
+              <Icon name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
 
-              <ScrollView style={styles.filterOptions} showsVerticalScrollIndicator={false}>
-                {/* Filtro por Estado */}
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Estado de la compra</Text>
-                  
-                  {estadosDisponibles.map((estado) => (
-                    <TouchableOpacity
-                      key={estado.value}
-                      style={styles.filterOption}
-                      onPress={() => toggleEstadoFilter(estado.value)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.filterOptionContent}>
-                        <View style={[
-                          styles.checkbox,
-                          tempFilters.estados.includes(estado.value) && styles.checkboxSelected,
-                        ]}>
-                          {tempFilters.estados.includes(estado.value) && (
-                            <Icon name="check" size={16} color="white" />
-                          )}
-                        </View>
-                        <Text style={styles.filterOptionText}>
-                          {estado.label}
-                        </Text>
-                      </View>
-                      <View style={[
-                        styles.estadoIndicator,
-                        { backgroundColor: getEstadoColor(estado.value) }
-                      ]} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Filtro por Monto */}
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Rango de monto</Text>
-                  
-                  <View style={styles.rangeInputContainer}>
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputLabel}>Monto mínimo</Text>
-                      <TextInput
-                        style={[
-                          styles.textInput,
-                          validationErrors.monto && styles.textInputError
-                        ]}
-                        placeholder="0"
-                        value={tempFilters.montoMin}
-                        onChangeText={(text) => {
-                          const numericText = text.replace(/[^0-9.]/g, '');
-                          setTempFilters(prev => ({ ...prev, montoMin: numericText }));
-                          if (validationErrors.monto) {
-                            setValidationErrors(prev => ({ ...prev, monto: undefined }));
-                          }
-                        }}
-                        keyboardType="decimal-pad"
-                        placeholderTextColor="#9CA3AF"
-                      />
-                    </View>
-                    
-                    <Text style={styles.rangeConnector}>-</Text>
-                    
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputLabel}>Monto máximo</Text>
-                      <TextInput
-                        style={[
-                          styles.textInput,
-                          validationErrors.monto && styles.textInputError
-                        ]}
-                        placeholder="∞"
-                        value={tempFilters.montoMax}
-                        onChangeText={(text) => {
-                          const numericText = text.replace(/[^0-9.]/g, '');
-                          setTempFilters(prev => ({ ...prev, montoMax: numericText }));
-                          if (validationErrors.monto) {
-                            setValidationErrors(prev => ({ ...prev, monto: undefined }));
-                          }
-                        }}
-                        keyboardType="decimal-pad"
-                        placeholderTextColor="#9CA3AF"
-                      />
-                    </View>
-                  </View>
-                  
-                  {validationErrors.monto && (
-                    <Text style={styles.errorText}>{validationErrors.monto}</Text>
-                  )}
-                </View>
-
-                {/* Filtro por Fecha */}
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Rango de fechas</Text>
-                  
-                  <View style={styles.rangeInputContainer}>
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputLabel}>Desde</Text>
-                      <TouchableOpacity onPress={() => setShowDatePickerDesde(true)}>
-                        <View style={[
-                          styles.dateInput,
-                          validationErrors.fecha && styles.textInputError
-                        ]}>
-                          <Text style={[
-                            styles.dateInputText,
-                            !tempFilters.fechaDesde && styles.placeholderText
-                          ]}>
-                            {tempFilters.fechaDesde || 'DD/MM/AAAA'}
-                          </Text>
-                          <Icon name="event" size={20} color="#9CA3AF" />
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <Text style={styles.rangeConnector}>-</Text>
-                    
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputLabel}>Hasta</Text>
-                      <TouchableOpacity onPress={() => setShowDatePickerHasta(true)}>
-                        <View style={[
-                          styles.dateInput,
-                          validationErrors.fecha && styles.textInputError
-                        ]}>
-                          <Text style={[
-                            styles.dateInputText,
-                            !tempFilters.fechaHasta && styles.placeholderText
-                          ]}>
-                            {tempFilters.fechaHasta || 'DD/MM/AAAA'}
-                          </Text>
-                          <Icon name="event" size={20} color="#9CA3AF" />
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  
-                  {validationErrors.fecha && (
-                    <Text style={styles.errorText}>{validationErrors.fecha}</Text>
-                  )}
-                  
-                  <Text style={styles.helperText}>
-                    Formato: DD/MM/AAAA (ej: 25/12/2024)
-                  </Text>
-                </View>
-              </ScrollView>
-
-              <View style={styles.filterActions}>
+          <ScrollView 
+            style={styles.filterOptions} 
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            contentContainerStyle={styles.filterOptionsContent}
+          >
+            {/* Filtro por Estado */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Estado de la compra</Text>
+              
+              {estadosDisponibles.map((estado) => (
                 <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={clearFilters}
+                  key={estado.value}
+                  style={styles.filterOption}
+                  onPress={() => toggleEstadoFilter(estado.value)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.secondaryButtonText}>Limpiar filtros</Text>
+                  <View style={styles.filterOptionContent}>
+                    <View style={[
+                      styles.checkbox,
+                      tempFilters.estados.includes(estado.value) && styles.checkboxSelected,
+                    ]}>
+                      {tempFilters.estados.includes(estado.value) && (
+                        <Icon name="check" size={16} color="white" />
+                      )}
+                    </View>
+                    <Text style={styles.filterOptionText}>
+                      {estado.label}
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.estadoIndicator,
+                    { backgroundColor: getEstadoColor(estado.value) }
+                  ]} />
                 </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={applyFilters}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.primaryButtonText}>Aplicar</Text>
-                </TouchableOpacity>
-              </View>
+              ))}
             </View>
-          </TouchableWithoutFeedback>
+
+            {/* Filtro por Monto */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Rango de monto</Text>
+              
+              <View style={styles.rangeInputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Monto mínimo</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      validationErrors.monto && styles.textInputError
+                    ]}
+                    placeholder="0"
+                    value={tempFilters.montoMin}
+                    onChangeText={(text) => {
+                      const numericText = text.replace(/[^0-9.]/g, '');
+                      setTempFilters(prev => ({ ...prev, montoMin: numericText }));
+                      if (validationErrors.monto) {
+                        setValidationErrors(prev => ({ ...prev, monto: undefined }));
+                      }
+                    }}
+                    keyboardType="decimal-pad"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+                
+                <Text style={styles.rangeConnector}>-</Text>
+                
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Monto máximo</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      validationErrors.monto && styles.textInputError
+                    ]}
+                    placeholder="∞"
+                    value={tempFilters.montoMax}
+                    onChangeText={(text) => {
+                      const numericText = text.replace(/[^0-9.]/g, '');
+                      setTempFilters(prev => ({ ...prev, montoMax: numericText }));
+                      if (validationErrors.monto) {
+                        setValidationErrors(prev => ({ ...prev, monto: undefined }));
+                      }
+                    }}
+                    keyboardType="decimal-pad"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+              </View>
+              
+              {validationErrors.monto && (
+                <Text style={styles.errorText}>{validationErrors.monto}</Text>
+              )}
+            </View>
+
+            {/* Filtro por Fecha */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Rango de fechas</Text>
+              
+              <View style={styles.rangeInputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Desde</Text>
+                  <TouchableOpacity onPress={() => setShowDatePickerDesde(true)}>
+                    <View style={[
+                      styles.dateInput,
+                      validationErrors.fecha && styles.textInputError
+                    ]}>
+                      <Text style={[
+                        styles.dateInputText,
+                        !tempFilters.fechaDesde && styles.placeholderText
+                      ]}>
+                        {tempFilters.fechaDesde || 'DD/MM/AAAA'}
+                      </Text>
+                      <Icon name="event" size={20} color="#9CA3AF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.rangeConnector}>-</Text>
+                
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Hasta</Text>
+                  <TouchableOpacity onPress={() => setShowDatePickerHasta(true)}>
+                    <View style={[
+                      styles.dateInput,
+                      validationErrors.fecha && styles.textInputError
+                    ]}>
+                      <Text style={[
+                        styles.dateInputText,
+                        !tempFilters.fechaHasta && styles.placeholderText
+                      ]}>
+                        {tempFilters.fechaHasta || 'DD/MM/AAAA'}
+                      </Text>
+                      <Icon name="event" size={20} color="#9CA3AF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {validationErrors.fecha && (
+                <Text style={styles.errorText}>{validationErrors.fecha}</Text>
+              )}
+              
+              <Text style={styles.helperText}>
+                Formato: DD/MM/AAAA (ej: 25/12/2024)
+              </Text>
+            </View>
+          </ScrollView>
+
+          <View style={styles.filterActions}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={clearFilters}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>Limpiar filtros</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={applyFilters}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>Aplicar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 
@@ -1381,24 +1375,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.32)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  filterModal: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    zIndex: 1001,
-  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1414,10 +1390,6 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 8,
     borderRadius: 20,
-  },
-  filterOptions: {
-    maxHeight: 400,
-    paddingHorizontal: 24,
   },
   filterSection: {
     marginBottom: 24,
@@ -1584,6 +1556,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.32)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1001,
+  },
+  filterModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    zIndex: 1002,
+  },
+  filterOptions: {
+    maxHeight: 400,
+  },
+  filterOptionsContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 8, // Un poco de padding al final
   },
 });
 

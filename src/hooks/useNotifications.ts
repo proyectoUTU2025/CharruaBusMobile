@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from './useUser';
 import {
-  NotificationItem,
   getNotifications,
   getUnreadNotificationsCount,
   markAllNotificationsAsRead,
 } from '../services/notificationApiService';
+import { NotificationItem } from '../types/notificationType';
 
 interface UseNotificationsReturn {
   notifications: NotificationItem[];

@@ -1,3 +1,16 @@
+export interface PurchasesScreenProps {
+  onNavigateToPurchaseDetail: (purchaseId: number) => void;
+  onGoBack?: () => void;
+}
+
+export interface FilterParams {
+  estados: string[];
+  montoMin: string;
+  montoMax: string;
+  fechaDesde: string;
+  fechaHasta: string;
+}
+
 export interface PurchaseDetail {
   id: number;
   fechaCompra: string;
@@ -54,4 +67,37 @@ export interface DownloadPurchasePdfParams {
 
 export interface DownloadTicketPdfParams {
   ticketId: number;
+}
+
+export interface Purchase {
+  id: number;
+  fechaCompra: string;
+  precioActual: number;
+  precioOriginal: number;
+  vendedorId: number;
+  clienteId: number;
+  cantidadPasajes: number;
+  estado: 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA' | 'REEMBOLSADA' | 'PARCIALMENTE_REEMBOLSADA';
+}
+
+export interface PurchasesResponse {
+  content: Purchase[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
+export interface GetPurchasesParams {
+  clienteId: number;
+  estados?: string[];
+  fechaDesde?: string;
+  fechaHasta?: string;
+  montoMin?: number;
+  montoMax?: number;
+  page?: number;
+  size?: number;
+  sort?: string[];
 }

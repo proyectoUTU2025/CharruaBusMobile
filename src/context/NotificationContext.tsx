@@ -11,7 +11,6 @@ import { AppState, AppStateStatus } from 'react-native';
 import { useAuth } from './AuthContext';
 import { useUser } from '../hooks/useUser';
 import {
-  NotificationItem,
   getNotifications,
   getUnreadNotificationsCount,
   markAllNotificationsAsRead,
@@ -20,6 +19,7 @@ import {
   setUnreadCountUpdateCallback, 
   removeUnreadCountUpdateCallback 
 } from '../services/notificationService';
+import { NotificationItem } from '../types/notificationType';
 
 interface NotificationContextType {
   notifications: NotificationItem[];

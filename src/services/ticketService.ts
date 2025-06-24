@@ -1,6 +1,5 @@
 import { Linking, Alert } from 'react-native';
-
-const API_BASE_URL = 'http://192.168.1.170:8080';
+import { API_BASE_URL } from '@env';
 
 export interface Ticket {
   id: number;
@@ -229,14 +228,7 @@ export const downloadTicketPdf = async (
     const canOpen = await Linking.canOpenURL(pdfUrl);
     
     if (canOpen) {
-      await Linking.openURL(pdfUrl);
-      
-      Alert.alert(
-        'PDF Abierto',
-        'El PDF del pasaje se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
-        [{ text: 'Entendido', style: 'default' }]
-      );
-      
+      await Linking.openURL(pdfUrl);      
       return true;
     } else {
       throw new Error('No se puede abrir el navegador en este dispositivo');

@@ -4,8 +4,7 @@ import {
   ValidationResult,
   PasswordRequirement
 } from '../types/resetPasswordType';
-
-const API_BASE_URL = 'http://192.168.1.170:8080';
+import { API_BASE_URL } from '@env';
 
 export const validateEmailFormat = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
