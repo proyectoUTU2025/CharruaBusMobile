@@ -472,10 +472,8 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
         onPress={() => handlePurchasePress(purchase)}
         activeOpacity={0.8}
       >
-        {/* Status indicator */}
         <View style={[styles.statusIndicator, { backgroundColor: estadoColor }]} />
         
-        {/* Card Header */}
         <View style={styles.cardHeader}>
           <View style={styles.purchaseIdContainer}>
             <Text style={styles.purchaseIdLabel}>Compra</Text>
@@ -489,7 +487,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
           </View>
         </View>
 
-        {/* Card Content - INFORMACIÓN SIMPLIFICADA */}
         <View style={styles.cardContent}>
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
@@ -519,7 +516,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
           </View>
         </View>
 
-        {/* Card Actions */}
         <View style={styles.cardActions}>
           <View style={styles.actionContent}>
             <Text style={styles.actionText}>Ver detalles</Text>
@@ -539,12 +535,10 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
       onRequestClose={() => setShowFilterModal(false)}
     >
       <View style={styles.modalOverlay}>
-        {/* Área clickeable para cerrar - solo en los bordes */}
         <TouchableWithoutFeedback onPress={() => setShowFilterModal(false)}>
           <View style={styles.modalBackdrop} />
         </TouchableWithoutFeedback>
         
-        {/* Modal content - sin TouchableWithoutFeedback que interfiera */}
         <View style={[
           styles.filterModal,
           {
@@ -568,7 +562,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
             nestedScrollEnabled={true}
             contentContainerStyle={styles.filterOptionsContent}
           >
-            {/* Filtro por Estado */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Estado de la compra</Text>
               
@@ -600,7 +593,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
               ))}
             </View>
 
-            {/* Filtro por Monto */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Rango de monto</Text>
               
@@ -655,7 +647,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
               )}
             </View>
 
-            {/* Filtro por Fecha */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Rango de fechas</Text>
               
@@ -848,7 +839,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
-          {/* DateTimePickers con zIndex alto */}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -904,7 +894,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
-          {/* DateTimePickers con zIndex alto */}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -950,7 +939,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
-          {/* DateTimePickers con zIndex alto */}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -1001,7 +989,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
             </View>
           </View>
           {renderFilterModal()}
-          {/* DateTimePickers con zIndex alto */}
           {showDatePickerDesde && (
             <View style={styles.datePickerContainer}>
               <DateTimePicker
@@ -1065,7 +1052,6 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
 
         {renderFilterModal()}
         
-        {/* DateTimePickers con zIndex alto para aparecer por encima del modal */}
         {showDatePickerDesde && (
           <View style={styles.datePickerContainer}>
             <DateTimePicker
@@ -1113,11 +1099,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -1514,7 +1499,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -1534,7 +1519,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1588,7 +1573,7 @@ const styles = StyleSheet.create({
   },
   filterOptionsContent: {
     paddingHorizontal: 24,
-    paddingBottom: 8, // Un poco de padding al final
+    paddingBottom: 8,
   },
 });
 

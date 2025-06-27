@@ -64,8 +64,6 @@ export default function RegisterScreen() {
   const [emailError, setEmailError] = useState("")
   const [fechaNacimiento, setFechaNacimiento] = useState("")
   const [fechaError, setFechaError] = useState("")
-  const [genero, setGenero] = useState("")
-  const [generoError, setGeneroError] = useState("")
   const [situacionLaboral, setSituacionLaboral] = useState("")
   const [situacionLaboralError, setSituacionLaboralError] = useState("")
   const [showTipoDocumentoModal, setShowTipoDocumentoModal] = useState(false)
@@ -428,13 +426,6 @@ export default function RegisterScreen() {
       setFechaError("");
     }
 
-    if (!genero) {
-      setGeneroError("Debe seleccionar un género");
-      hasErrors = true;
-    } else {
-      setGeneroError("");
-    }
-
     if (!situacionLaboral) {
       setSituacionLaboralError("Debe seleccionar una situación laboral");
       hasErrors = true;
@@ -461,7 +452,6 @@ export default function RegisterScreen() {
         documento: documento,
         tipoDocumento: tipoDocumento,
         situacionLaboral: situacionLaboral.toUpperCase(),
-        genero: genero.toUpperCase(),
       };
 
       try {
@@ -661,28 +651,6 @@ export default function RegisterScreen() {
                  )}
 
                  <View style={styles.inputContainer}>
-                   <Text style={styles.inputLabel}>Género</Text>
-                   <View style={styles.column}>
-                     {['masculino', 'femenino', 'otro'].map((item) => (
-                       <TouchableOpacity 
-                         key={item} 
-                         style={[styles.checkboxRow, styles.checkboxSpacing]} 
-                         onPress={() => {
-                           setGenero(item);
-                           setGeneroError("");
-                         }}
-                       >
-                         <View style={[styles.checkbox, genero === item && styles.checkboxSelected]}>
-                           {genero === item && <Icon name="check" size={16} color="white" />}
-                         </View>
-                         <Text style={styles.checkboxLabel}>{item.charAt(0).toUpperCase() + item.slice(1)}</Text>
-                       </TouchableOpacity>
-                     ))}
-                   </View>
-                   {generoError ? <Text style={styles.errorText}>{generoError}</Text> : null}
-                 </View>
-
-                 <View style={styles.inputContainer}>
                    <Text style={styles.inputLabel}>Situación laboral</Text>
                    <TouchableOpacity style={styles.selectButton} onPress={() => setShowSituacionModal(true)}>
                      <Text style={[styles.selectText, !situacionLaboral && styles.selectPlaceholder]}>
@@ -766,11 +734,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
  cardContainer: {
    width: "100%",
-   maxWidth: 400,
+   maxWidth: 600,
    backgroundColor: "rgba(255, 255, 255, 0.95)",
    borderRadius: 16,
    padding: 24,
@@ -926,7 +893,7 @@ const styles = StyleSheet.create({
  registerButton: {
    backgroundColor: "#3B82F6",
    height: 50,
-   borderRadius: 8,
+   borderRadius: 12,
    justifyContent: "center",
    alignItems: "center",
    marginTop: 8,

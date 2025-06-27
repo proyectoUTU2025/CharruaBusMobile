@@ -450,15 +450,12 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.cardContainer}>
-            {/* Header */}
             <View style={styles.headerContainer}>
               <Text style={styles.headerTitle}>Editar Perfil</Text>
               <View style={styles.placeholder} />
             </View>
 
-            {/* Form */}
             <View style={styles.formContainer}>
-              {/* Nombre */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Nombre</Text>
                 <TextInput 
@@ -474,7 +471,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
                 {nombreError ? <Text style={styles.errorText}>{nombreError}</Text> : null}
               </View>
 
-              {/* Apellido */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Apellido</Text>
                 <TextInput 
@@ -490,7 +486,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
                 {apellidoError ? <Text style={styles.errorText}>{apellidoError}</Text> : null}
               </View>
 
-              {/* Tipo de Documento */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Tipo de documento</Text>
                 <TouchableOpacity 
@@ -506,7 +501,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
                 {tipoDocumentoError ? <Text style={styles.errorText}>{tipoDocumentoError}</Text> : null}
               </View>
 
-              {/* Documento */}
               {tipoDocumento && (
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>
@@ -518,7 +512,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
                 </View>
               )}
 
-              {/* Fecha de Nacimiento */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Fecha de nacimiento</Text>
                 <TouchableOpacity 
@@ -535,7 +528,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
                 {fechaError ? <Text style={styles.errorText}>{fechaError}</Text> : null}
               </View>
 
-              {/* Situación Laboral */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Situación laboral</Text>
                 <TouchableOpacity 
@@ -551,7 +543,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
                 {situacionLaboralError ? <Text style={styles.errorText}>{situacionLaboralError}</Text> : null}
               </View>
 
-              {/* Botón Guardar */}
               <TouchableOpacity 
                 style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} 
                 activeOpacity={0.8} 
@@ -571,7 +562,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           </View>
         </ScrollView>
 
-        {/* Date Picker */}
         {showDatePicker && (
           <DateTimePicker
             value={date || new Date(2000, 0, 1)}
@@ -582,7 +572,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           />
         )}
 
-        {/* Modal Tipo de Documento */}
         <Modal visible={showTipoDocumentoModal} transparent animationType="fade">
           <TouchableOpacity 
             style={styles.modalOverlay}
@@ -607,7 +596,6 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
           </TouchableOpacity>
         </Modal>
 
-        {/* Modal Situación Laboral */}
         <Modal visible={showSituacionModal} transparent animationType="fade">
           <TouchableOpacity 
             style={styles.modalOverlay}
@@ -653,7 +641,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
   loadingContainer: {
     flex: 1,
@@ -668,7 +655,7 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -777,7 +764,7 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: "#3B82F6",
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,

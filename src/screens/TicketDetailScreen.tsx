@@ -197,7 +197,6 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
         <Text style={styles.sectionTitle}>Información del Pasaje</Text>
         
         <View style={styles.infoCard}>
-          {/* Ruta del viaje */}
           <View style={styles.routeContainer}>
             <View style={styles.routeHeader}>
               <Icon name="route" size={20} color="#3B82F6" />
@@ -218,7 +217,6 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
             </View>
           </View>
 
-          {/* Información del asiento */}
           <View style={styles.seatContainer}>
             <View style={styles.seatHeader}>
               <Icon name="airline-seat-recline-normal" size={20} color="#3B82F6" />
@@ -229,7 +227,6 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
             </View>
           </View>
 
-          {/* Información adicional */}
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>ID Compra</Text>
@@ -329,7 +326,6 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
           bounces={true}
         >
           <View style={styles.cardContainer}>
-            {/* Header */}
             <View style={styles.header}>
               <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
                 <Icon name="arrow-back" size={24} color="#374151" />
@@ -360,7 +356,6 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
               </View>
             </View>
 
-            {/* Content */}
             {renderTicketHeader()}
             {renderTicketInfo()}
             {renderPricingDetails()}
@@ -389,11 +384,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,

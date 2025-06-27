@@ -18,5 +18,4 @@ export type RegisterData = {
   documento: string;
   tipoDocumento: string;
   situacionLaboral: string;
-  genero: string;
 };

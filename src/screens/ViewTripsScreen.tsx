@@ -568,7 +568,6 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
             <Icon name="arrow-back" size={24} color="#374151" />
@@ -579,10 +578,8 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
           <View style={styles.placeholder} />
         </View>
 
-        {/* Progress indicator for round trip */}
         {renderRoundTripProgress()}
 
-        {/* Search Summary */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Ruta:</Text>
@@ -600,7 +597,6 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
           </View>
         </View>
 
-        {/* Content */}
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
@@ -648,6 +644,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
     minHeight: 56,
+    maxWidth: 600,
+    alignSelf: "center",
+    width: "100%",
   },
   backButton: {
     padding: 8,
@@ -677,6 +676,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    maxWidth: 600,
+    alignSelf: "center",
+    width: "100%",
   },
   progressSteps: {
     flexDirection: 'row',
@@ -724,6 +726,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    maxWidth: 600,
+    alignSelf: "center",
+    width: "100%",
   },
   summaryRow: {
     flexDirection: 'row',
@@ -766,6 +771,9 @@ const styles = StyleSheet.create({
   },
   tripsContainer: {
     paddingVertical: 8,
+    maxWidth: 600,
+    alignSelf: "center",
+    width: "100%",
   },
   resultsTitle: {
     fontSize: 18,
@@ -872,7 +880,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 12,
     marginLeft: 8,
   },
   selectButtonText: {

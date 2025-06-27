@@ -216,7 +216,6 @@ const AppNavigator = () => {
             <Stack.Screen name="ViewTrips" component={ViewTripsScreen} />
             <Stack.Screen name="SelectSeat" component={SelectSeatScreen} />
             
-            {/* Pantalla de detalle de compra */}
             <Stack.Screen 
               name="PurchaseDetail" 
               component={PurchaseDetailScreen}
@@ -225,7 +224,6 @@ const AppNavigator = () => {
               }}
             />
             
-            {/* Pantalla de detalle de pasaje */}
             <Stack.Screen 
               name="TicketDetail" 
               component={TicketDetailScreen}
@@ -234,7 +232,6 @@ const AppNavigator = () => {
               }}
             />
             
-            {/* Pantallas de resultado de pago */}
             <Stack.Screen 
               name="PaymentSuccess" 
               component={PaymentSuccessScreen}

@@ -418,7 +418,6 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                 </View>
               </View>
               
-              {/* Footer modificado */}
               <View style={styles.ticketFooter}>
                 <View style={styles.ticketDate}>
                   <Icon name="schedule" size={14} color="#9E9E9E" />
@@ -427,7 +426,6 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                   </Text>
                 </View>
   
-                {/* Botón de descarga siempre visible pero condicional */}
                 <TouchableOpacity
                   style={[
                     styles.downloadTicketButton, 
@@ -473,7 +471,6 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
           bounces={true}
         >
           <View style={styles.cardContainer}>
-            {/* Header */}
             <View style={styles.header}>
               <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
                 <Icon name="arrow-back" size={24} color="#374151" />
@@ -481,14 +478,22 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
               <Text style={styles.headerTitle}>Detalle de Compra</Text>
               <View style={styles.headerRightButtons}>
                 <TouchableOpacity
-                  style={[styles.downloadButton, downloadingPurchase && styles.downloadButtonDisabled]}
-                  onPress={handleDownloadPurchasePdf}
-                  disabled={downloadingPurchase}
+                  style={[
+                    styles.downloadButton, 
+                    (downloadingPurchase || purchase?.estado.toUpperCase() === 'CANCELADA') && styles.downloadButtonDisabled,
+                    purchase?.estado.toUpperCase() === 'CANCELADA' && styles.downloadButtonCanceled
+                  ]}
+                  onPress={purchase?.estado.toUpperCase() === 'CANCELADA' ? undefined : handleDownloadPurchasePdf}
+                  disabled={downloadingPurchase || purchase?.estado.toUpperCase() === 'CANCELADA'}
                 >
                   {downloadingPurchase ? (
                     <ActivityIndicator size="small" color="#374151" />
                   ) : (
-                    <Icon name="file-download" size={24} color="#374151" />
+                    <Icon 
+                      name="file-download" 
+                      size={24} 
+                      color={purchase?.estado.toUpperCase() === 'CANCELADA' ? "#9E9E9E" : "#374151"} 
+                    />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
@@ -497,7 +502,6 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
               </View>
             </View>
 
-            {/* Content */}
             {renderPurchaseHeader()}
             {renderPurchaseInfo()}
             {renderTicketsSection()}
@@ -526,11 +530,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -885,6 +888,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
     marginLeft: 8,
+  },
+  downloadButtonCanceled: {
+    opacity: 0.3,
   },
 });
 

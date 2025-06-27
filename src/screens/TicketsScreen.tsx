@@ -14,6 +14,7 @@ import {
   StatusBar,
   ImageBackground,
   TextInput,
+  FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -52,18 +53,17 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
   const [hasMore, setHasMore] = useState(false);
 
   const [showFilterModal, setShowFilterModal] = useState(false);
-  
   const [showDatePickerDesde, setShowDatePickerDesde] = useState(false);
   const [showDatePickerHasta, setShowDatePickerHasta] = useState(false);
+  
+  const [showOrigenDropdown, setShowOrigenDropdown] = useState(false);
+  const [showDestinoDropdown, setShowDestinoDropdown] = useState(false);
+  
   const [dateDesde, setDateDesde] = useState<Date | undefined>(undefined);
   const [dateHasta, setDateHasta] = useState<Date | undefined>(undefined);
   
   const [localidades, setLocalidades] = useState<Localidad[]>([]);
   const [loadingLocalidades, setLoadingLocalidades] = useState(false);
-  const [showOrigenSelector, setShowOrigenSelector] = useState(false);
-  const [showDestinoSelector, setShowDestinoSelector] = useState(false);
-  const [searchOrigenText, setSearchOrigenText] = useState('');
-  const [searchDestinoText, setSearchDestinoText] = useState('');
   
   const [tempFilters, setTempFilters] = useState<FilterParams>({
     estados: [],
@@ -92,6 +92,26 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
     { value: 'CANCELADO', label: 'Cancelados' },
   ];
 
+  const openFilterModal = () => {
+    setShowFilterModal(true);
+  };
+
+  const closeFilterModal = () => {
+    setShowFilterModal(false);
+    setShowOrigenDropdown(false);
+    setShowDestinoDropdown(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      setShowFilterModal(false);
+      setShowDatePickerDesde(false);
+      setShowDatePickerHasta(false);
+      setShowOrigenDropdown(false);
+      setShowDestinoDropdown(false);
+    };
+  }, []);
+
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -114,51 +134,33 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
     }
   };
 
-  const getFilteredOrigenLocalidades = (): Localidad[] => {
-    const filtered = localidades.filter(loc => {
-      const matchesSearch = loc.nombreConDepartamento.toLowerCase().includes(searchOrigenText.toLowerCase());
-      const notSelectedAsDestino = loc.id !== tempFilters.destinoId;
-      return matchesSearch && notSelectedAsDestino;
-    });
-    return filtered.slice(0, 50);
-  };
-
-  const getFilteredDestinoLocalidades = (): Localidad[] => {
-    const filtered = localidades.filter(loc => {
-      const matchesSearch = loc.nombreConDepartamento.toLowerCase().includes(searchDestinoText.toLowerCase());
-      const notSelectedAsOrigen = loc.id !== tempFilters.origenId;
-      return matchesSearch && notSelectedAsOrigen;
-    });
-    return filtered.slice(0, 50);
-  };
-
   const getLocalidadNombre = (id: number): string => {
     const localidad = localidades.find(loc => loc.id === id);
     return localidad ? localidad.nombreConDepartamento : `ID: ${id}`;
   };
 
-  const handleOrigenSelect = (localidad: Localidad) => {
+  const getAvailableOrigenLocalidades = (): Localidad[] => {
+    return localidades.filter(loc => loc.id !== tempFilters.destinoId);
+  };
+
+  const getAvailableDestinoLocalidades = (): Localidad[] => {
+    return localidades.filter(loc => loc.id !== tempFilters.origenId);
+  };
+
+  const handleOrigenSelect = (localidad: Localidad | null) => {
+    const newOrigenId = localidad?.id;
     setTempFilters(prev => ({
       ...prev,
-      origenId: localidad.id,
-      destinoId: prev.destinoId === localidad.id ? undefined : prev.destinoId
+      origenId: newOrigenId,
+      destinoId: prev.destinoId === newOrigenId ? undefined : prev.destinoId
     }));
-    setShowOrigenSelector(false);
-    setSearchOrigenText('');
+    setShowOrigenDropdown(false);
   };
 
-  const handleDestinoSelect = (localidad: Localidad) => {
-    setTempFilters(prev => ({ ...prev, destinoId: localidad.id }));
-    setShowDestinoSelector(false);
-    setSearchDestinoText('');
-  };
-
-  const clearOrigenSelection = () => {
-    setTempFilters(prev => ({ ...prev, origenId: undefined }));
-  };
-
-  const clearDestinoSelection = () => {
-    setTempFilters(prev => ({ ...prev, destinoId: undefined }));
+  const handleDestinoSelect = (localidad: Localidad | null) => {
+    const newDestinoId = localidad?.id;
+    setTempFilters(prev => ({ ...prev, destinoId: newDestinoId }));
+    setShowDestinoDropdown(false);
   };
 
   const onChangeDateDesde = (event: any, selectedDate?: Date) => {
@@ -289,7 +291,7 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
 
       loadLocalidades();
     }
-  }, [showFilterModal, appliedFilters]);
+  }, [showFilterModal]);
 
   const loadTickets = async (page = 0, isRefresh = false, isLoadMore = false) => {
     if (isAuthLoading) {
@@ -418,7 +420,7 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
     setValidationErrors({});
     setDateDesde(undefined);
     setDateHasta(undefined);
-    setShowFilterModal(false);
+    closeFilterModal();
   };
 
   const applyFilters = () => {
@@ -431,7 +433,72 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
 
     setAppliedFilters({...tempFilters});
     setValidationErrors({});
-    setShowFilterModal(false);
+    closeFilterModal();
+  };
+
+  const renderCustomDropdown = (
+    isVisible: boolean,
+    localidadesList: Localidad[],
+    onSelect: (localidad: Localidad | null) => void,
+    onClose: () => void,
+    placeholder: string,
+    isDisabled: boolean = false
+  ) => {
+    if (!isVisible) return null;
+
+    return (
+      <Modal visible={isVisible} transparent animationType="fade">
+        <TouchableOpacity 
+          style={styles.dropdownOverlay} 
+          onPress={onClose} 
+          activeOpacity={1} 
+        >
+          <TouchableOpacity 
+            style={styles.dropdownContainer}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Seleccionar localidad</Text>
+              <TouchableOpacity onPress={onClose} style={styles.dropdownCloseButton}>
+                <Icon name="close" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={[{ id: -1, nombreConDepartamento: placeholder }, ...localidadesList]}
+              keyExtractor={(item) => item.id.toString()}
+              style={styles.dropdownList}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+              removeClippedSubviews={false}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownItem,
+                    index === 0 && styles.dropdownItemPlaceholder
+                  ]}
+                  onPress={() => onSelect(item.id === -1 ? null : item)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    index === 0 && styles.dropdownItemTextPlaceholder
+                  ]}>
+                    {item.nombreConDepartamento}
+                  </Text>
+                  {index === 0 && (
+                    <Icon name="clear" size={16} color="#9CA3AF" />
+                  )}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.dropdownSeparator} />}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    );
   };
 
   const renderTicketCard = (ticket: Ticket, index: number) => {
@@ -514,96 +581,19 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
     );
   };
 
-  const renderLocalidadSelector = (
-    visible: boolean,
-    onClose: () => void,
-    localidades: Localidad[],
-    onSelect: (localidad: Localidad) => void,
-    searchText: string,
-    onSearchChange: (text: string) => void,
-    title: string,
-    loading: boolean
-  ) => (
-    <Modal visible={visible} transparent animationType="fade" presentationStyle="overFullScreen">
-      <View style={styles.modalOverlay}>
-        <TouchableOpacity 
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={[styles.selectorModal, { width: isCompact ? width * 0.9 : 400 }]}>
-          <View style={styles.selectorHeader}>
-            <Text style={styles.selectorTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Icon name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar localidad..."
-              value={searchText}
-              onChangeText={onSearchChange}
-              placeholderTextColor="#9CA3AF"
-            />
-            <Icon name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
-          </View>
-
-          <View style={styles.scrollContainer}>
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#3B82F6" />
-                <Text style={styles.loadingText}>Cargando localidades...</Text>
-              </View>
-            ) : (
-              <ScrollView 
-                style={styles.localidadesList} 
-                contentContainerStyle={styles.localidadesListContent}
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-                keyboardShouldPersistTaps="handled"
-              >
-                {localidades.length === 0 ? (
-                  <Text style={styles.noResultsText}>
-                    {searchText ? 'No se encontraron localidades' : 'No hay localidades disponibles'}
-                  </Text>
-                ) : (
-                  localidades.map((localidad) => (
-                    <TouchableOpacity
-                      key={localidad.id}
-                      style={styles.localidadItem}
-                      onPress={() => onSelect(localidad)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.localidadText} numberOfLines={2}>
-                        {localidad.nombreConDepartamento}
-                      </Text>
-                      <Icon name="chevron-right" size={20} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
   const renderFilterModal = () => (
     <Modal
       visible={showFilterModal}
       transparent
       animationType="fade"
       presentationStyle="overFullScreen"
-      onRequestClose={() => setShowFilterModal(false)}
+      onRequestClose={closeFilterModal}
     >
       <View style={styles.modalOverlay}>
         <TouchableOpacity 
           style={styles.modalBackdrop}
           activeOpacity={1}
-          onPress={() => setShowFilterModal(false)}
+          onPress={closeFilterModal}
         />
         <View style={[
           styles.filterModal,
@@ -615,7 +605,7 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Filtrar pasajes</Text>
             <TouchableOpacity 
-              onPress={() => setShowFilterModal(false)}
+              onPress={closeFilterModal}
               style={styles.closeButton}
             >
               <Icon name="close" size={24} color="#6B7280" />
@@ -715,78 +705,99 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Filtrar por localidades</Text>
               
-              {/* Selector de Origen */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Localidad de Origen</Text>
-                <TouchableOpacity 
-                  style={styles.localidadSelector}
-                  onPress={() => setShowOrigenSelector(true)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[
-                    styles.localidadSelectorText,
-                    !tempFilters.origenId && styles.placeholderText
-                  ]}>
-                    {tempFilters.origenId 
-                      ? getLocalidadNombre(tempFilters.origenId)
-                      : 'Seleccionar origen...'
-                    }
-                  </Text>
-                  <View style={styles.selectorActions}>
-                    {tempFilters.origenId && (
-                      <TouchableOpacity 
-                        onPress={clearOrigenSelection}
-                        style={styles.clearButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Icon name="close" size={18} color="#9CA3AF" />
-                      </TouchableOpacity>
-                    )}
-                    <Icon name="keyboard-arrow-down" size={24} color="#9CA3AF" />
+                {loadingLocalidades ? (
+                  <View style={styles.loadingPickerContainer}>
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                    <Text style={styles.loadingPickerText}>Cargando localidades...</Text>
                   </View>
-                </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.customDropdownTrigger}
+                    onPress={() => {
+                      setShowDestinoDropdown(false);
+                      setShowOrigenDropdown(!showOrigenDropdown);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[
+                      styles.customDropdownText,
+                      !tempFilters.origenId && styles.customDropdownPlaceholder
+                    ]}>
+                      {tempFilters.origenId 
+                        ? getLocalidadNombre(tempFilters.origenId)
+                        : 'Seleccionar origen'
+                      }
+                    </Text>
+                    <Icon 
+                      name={showOrigenDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                      size={24} 
+                      color="#6B7280" 
+                    />
+                  </TouchableOpacity>
+                )}
+                
+                {renderCustomDropdown(
+                  showOrigenDropdown,
+                  getAvailableOrigenLocalidades(),
+                  handleOrigenSelect,
+                  () => setShowOrigenDropdown(false),
+                  "Sin selección",
+                  false
+                )}
               </View>
               
-              {/* Selector de Destino */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Localidad de Destino</Text>
-                <TouchableOpacity 
-                  style={[
-                    styles.localidadSelector,
-                    !tempFilters.origenId && styles.disabledSelector
-                  ]}
-                  onPress={() => tempFilters.origenId && setShowDestinoSelector(true)}
-                  activeOpacity={tempFilters.origenId ? 0.8 : 1}
-                >
-                  <Text style={[
-                    styles.localidadSelectorText,
-                    !tempFilters.destinoId && styles.placeholderText,
-                    !tempFilters.origenId && styles.disabledText
-                  ]}>
-                    {!tempFilters.origenId 
-                      ? 'Primero selecciona origen'
-                      : tempFilters.destinoId 
-                        ? getLocalidadNombre(tempFilters.destinoId)
-                        : 'Seleccionar destino...'
-                    }
-                  </Text>
-                  <View style={styles.selectorActions}>
-                    {tempFilters.destinoId && (
-                      <TouchableOpacity 
-                        onPress={clearDestinoSelection}
-                        style={styles.clearButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Icon name="close" size={18} color="#9CA3AF" />
-                      </TouchableOpacity>
-                    )}
-                    <Icon 
-                      name="keyboard-arrow-down" 
-                      size={24} 
-                      color={tempFilters.origenId ? "#9CA3AF" : "#D1D5DB"} 
-                    />
+                {loadingLocalidades ? (
+                  <View style={styles.loadingPickerContainer}>
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                    <Text style={styles.loadingPickerText}>Cargando localidades...</Text>
                   </View>
-                </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.customDropdownTrigger,
+                      !tempFilters.origenId && styles.customDropdownTriggerDisabled
+                    ]}
+                    onPress={() => {
+                      if (tempFilters.origenId) {
+                        setShowOrigenDropdown(false);
+                        setShowDestinoDropdown(!showDestinoDropdown);
+                      }
+                    }}
+                    activeOpacity={tempFilters.origenId ? 0.8 : 1}
+                    disabled={!tempFilters.origenId}
+                  >
+                    <Text style={[
+                      styles.customDropdownText,
+                      (!tempFilters.destinoId || !tempFilters.origenId) && styles.customDropdownPlaceholder,
+                      !tempFilters.origenId && styles.customDropdownDisabled
+                    ]}>
+                      {!tempFilters.origenId 
+                        ? "Primero selecciona origen"
+                        : tempFilters.destinoId 
+                          ? getLocalidadNombre(tempFilters.destinoId)
+                          : 'Seleccionar destino'
+                      }
+                    </Text>
+                    <Icon 
+                      name={showDestinoDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                      size={24} 
+                      color={tempFilters.origenId ? "#6B7280" : "#D1D5DB"} 
+                    />
+                  </TouchableOpacity>
+                )}
+                
+                {renderCustomDropdown(
+                  showDestinoDropdown && !!tempFilters.origenId,
+                  getAvailableDestinoLocalidades(),
+                  handleDestinoSelect,
+                  () => setShowDestinoDropdown(false),
+                  "Sin selección",
+                  !tempFilters.origenId
+                )}
               </View>
               
               <Text style={styles.helperText}>
@@ -823,7 +834,7 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
       <View style={styles.headerActions}>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
+          onPress={openFilterModal}
           activeOpacity={0.8}
         >
           <Icon name="tune" size={20} color="#3B82F6" />
@@ -935,49 +946,29 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
               </Text>
             </View>
           </View>
-          {renderFilterModal()}
-          {renderLocalidadSelector(
-            showOrigenSelector,
-            () => setShowOrigenSelector(false),
-            getFilteredOrigenLocalidades(),
-            handleOrigenSelect,
-            searchOrigenText,
-            setSearchOrigenText,
-            'Seleccionar Origen',
-            loadingLocalidades
-          )}
-          {renderLocalidadSelector(
-            showDestinoSelector,
-            () => setShowDestinoSelector(false),
-            getFilteredDestinoLocalidades(),
-            handleDestinoSelect,
-            searchDestinoText,
-            setSearchDestinoText,
-            'Seleccionar Destino',
-            loadingLocalidades
-          )}
-          {showDatePickerDesde && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={dateDesde || new Date()}
-                mode="date"
-                display="default"
-                onChange={onChangeDateDesde}
-              />
-            </View>
-          )}
-          {showDatePickerHasta && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
-                mode="date"
-                display="default"
-                onChange={onChangeDateHasta}
-                minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
-              />
-            </View>
-          )}
         </ImageBackground>
+        {renderFilterModal()}
+        {showDatePickerDesde && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={dateDesde || new Date()}
+              mode="date"
+              display="default"
+              onChange={onChangeDateDesde}
+            />
+          </View>
+        )}
+        {showDatePickerHasta && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
+              mode="date"
+              display="default"
+              onChange={onChangeDateHasta}
+              minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
+            />
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -1000,49 +991,29 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
               </Text>
             </View>
           </View>
-          {renderFilterModal()}
-          {renderLocalidadSelector(
-            showOrigenSelector,
-            () => setShowOrigenSelector(false),
-            getFilteredOrigenLocalidades(),
-            handleOrigenSelect,
-            searchOrigenText,
-            setSearchOrigenText,
-            'Seleccionar Origen',
-            loadingLocalidades
-          )}
-          {renderLocalidadSelector(
-            showDestinoSelector,
-            () => setShowDestinoSelector(false),
-            getFilteredDestinoLocalidades(),
-            handleDestinoSelect,
-            searchDestinoText,
-            setSearchDestinoText,
-            'Seleccionar Destino',
-            loadingLocalidades
-          )}
-          {showDatePickerDesde && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={dateDesde || new Date()}
-                mode="date"
-                display="default"
-                onChange={onChangeDateDesde}
-              />
-            </View>
-          )}
-          {showDatePickerHasta && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
-                mode="date"
-                display="default"
-                onChange={onChangeDateHasta}
-                minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
-              />
-            </View>
-          )}
         </ImageBackground>
+        {renderFilterModal()}
+        {showDatePickerDesde && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={dateDesde || new Date()}
+              mode="date"
+              display="default"
+              onChange={onChangeDateDesde}
+            />
+          </View>
+        )}
+        {showDatePickerHasta && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
+              mode="date"
+              display="default"
+              onChange={onChangeDateHasta}
+              minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
+            />
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -1068,49 +1039,29 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
               </Text>
             </View>
           </View>
-          {renderFilterModal()}
-          {renderLocalidadSelector(
-            showOrigenSelector,
-            () => setShowOrigenSelector(false),
-            getFilteredOrigenLocalidades(),
-            handleOrigenSelect,
-            searchOrigenText,
-            setSearchOrigenText,
-            'Seleccionar Origen',
-            loadingLocalidades
-          )}
-          {renderLocalidadSelector(
-            showDestinoSelector,
-            () => setShowDestinoSelector(false),
-            getFilteredDestinoLocalidades(),
-            handleDestinoSelect,
-            searchDestinoText,
-            setSearchDestinoText,
-            'Seleccionar Destino',
-            loadingLocalidades
-          )}
-          {showDatePickerDesde && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={dateDesde || new Date()}
-                mode="date"
-                display="default"
-                onChange={onChangeDateDesde}
-              />
-            </View>
-          )}
-          {showDatePickerHasta && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
-                mode="date"
-                display="default"
-                onChange={onChangeDateHasta}
-                minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
-              />
-            </View>
-          )}
         </ImageBackground>
+        {renderFilterModal()}
+        {showDatePickerDesde && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={dateDesde || new Date()}
+              mode="date"
+              display="default"
+              onChange={onChangeDateDesde}
+            />
+          </View>
+        )}
+        {showDatePickerHasta && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
+              mode="date"
+              display="default"
+              onChange={onChangeDateHasta}
+              minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
+            />
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -1155,54 +1106,32 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
             )}
           </View>
         </ScrollView>
-
-        {renderFilterModal()}
-        
-        {renderLocalidadSelector(
-          showOrigenSelector,
-          () => setShowOrigenSelector(false),
-          getFilteredOrigenLocalidades(),
-          handleOrigenSelect,
-          searchOrigenText,
-          setSearchOrigenText,
-          'Seleccionar Origen',
-          loadingLocalidades
-        )}
-        
-        {renderLocalidadSelector(
-          showDestinoSelector,
-          () => setShowDestinoSelector(false),
-          getFilteredDestinoLocalidades(),
-          handleDestinoSelect,
-          searchDestinoText,
-          setSearchDestinoText,
-          'Seleccionar Destino',
-          loadingLocalidades
-        )}
-        
-        {showDatePickerDesde && (
-          <View style={styles.datePickerContainer}>
-            <DateTimePicker
-              value={dateDesde || new Date()}
-              mode="date"
-              display="default"
-              onChange={onChangeDateDesde}
-            />
-          </View>
-        )}
-        
-        {showDatePickerHasta && (
-          <View style={styles.datePickerContainer}>
-            <DateTimePicker
-              value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
-              mode="date"
-              display="default"
-              onChange={onChangeDateHasta}
-              minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
-            />
-          </View>
-        )}
       </ImageBackground>
+
+      {renderFilterModal()}
+      
+      {showDatePickerDesde && (
+        <View style={styles.datePickerContainer}>
+          <DateTimePicker
+            value={dateDesde || new Date()}
+            mode="date"
+            display="default"
+            onChange={onChangeDateDesde}
+          />
+        </View>
+      )}
+      
+      {showDatePickerHasta && (
+        <View style={styles.datePickerContainer}>
+          <DateTimePicker
+            value={dateHasta || (dateDesde ? new Date(dateDesde.getTime()) : new Date())}
+            mode="date"
+            display="default"
+            onChange={onChangeDateHasta}
+            minimumDate={dateDesde ? new Date(dateDesde.getTime()) : undefined}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -1225,12 +1154,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 62,
   },
-  /*zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz*/
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -1412,7 +1339,7 @@ const styles = StyleSheet.create({
   },
   loadMoreButton: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
     marginTop: 16,
     alignItems: 'center',
@@ -1607,28 +1534,17 @@ const styles = StyleSheet.create({
   textInputError: {
     borderColor: '#F44336',
   },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#374151',
-    backgroundColor: 'white',
-    marginBottom: 12,
-  },
   dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#D1D5DB',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: 'white',
-    minHeight: 42,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#F9FAFB',
+    minHeight: 48,
   },
   dateInputText: {
     fontSize: 14,
@@ -1667,7 +1583,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -1687,7 +1603,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1710,52 +1626,126 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  localidadSelector: {
+  customDropdownTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: 'white',
-    minHeight: 42,
-    marginBottom: 12,
-  },
-  disabledSelector: {
-    backgroundColor: '#F9FAFB',
     borderColor: '#D1D5DB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 48,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  localidadSelectorText: {
+  customDropdownTriggerDisabled: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
+  },
+  customDropdownText: {
     fontSize: 14,
     color: '#374151',
     flex: 1,
   },
-  disabledText: {
+  customDropdownPlaceholder: {
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  customDropdownDisabled: {
     color: '#9CA3AF',
   },
-  selectorActions: {
-    flexDirection: 'row',
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
-  clearButton: {
-    padding: 4,
-    borderRadius: 12,
-  },
-  selectorModal: {
+  dropdownContainer: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    maxHeight: '80%',
+    borderRadius: 12,
+    maxHeight: 300,
+    width: '85%',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    position: 'absolute',
-    top: '10%',
-    alignSelf: 'center',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    overflow: 'hidden',
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'white',
+  },
+  dropdownTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  dropdownCloseButton: {
+    padding: 4,
+    borderRadius: 4,
+  },
+  dropdownList: {
+    maxHeight: 240,
+    backgroundColor: 'white',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    minHeight: 50,
+    backgroundColor: 'white',
+  },
+  dropdownItemPlaceholder: {
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+    lineHeight: 18,
+  },
+  dropdownItemTextPlaceholder: {
+    color: '#374151',
+    fontWeight: '500',
+  },
+  dropdownSeparator: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: 16,
+  },
+  loadingPickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    marginBottom: 16,
+    minHeight: 48,
+  },
+  loadingPickerText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   modalBackdrop: {
     position: 'absolute',
@@ -1763,74 +1753,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  selectorHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  selectorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  searchContainer: {
-    position: 'relative',
-    margin: 16,
-    marginBottom: 8,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#374151',
-    backgroundColor: 'white',
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: 12,
-    top: 12,
-  },
-  scrollContainer: {
-    flex: 1,
-    minHeight: 200,
-    maxHeight: 400,
-  },
-  localidadesList: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  localidadesListContent: {
-    paddingBottom: 16,
-  },
-  localidadItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  localidadText: {
-    fontSize: 14,
-    color: '#374151',
-    flex: 1,
-    lineHeight: 20,
-  },
-  noResultsText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    paddingVertical: 32,
-    fontStyle: 'italic',
   },
 });
 

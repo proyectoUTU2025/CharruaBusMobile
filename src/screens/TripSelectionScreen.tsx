@@ -41,12 +41,10 @@ const handleContinuar = () => {
     >
       <StatusBar backgroundColor="#4285F4" barStyle="light-content" />
 
-      {/* Content */}
       <View style={styles.content}>
         <View style={styles.card}>
           <Text style={styles.title}>Seleccionar tipo de viaje</Text>
 
-          {/* Opción Ida */}
           <TouchableOpacity
             style={[styles.optionButton, tipoViaje === "ida" ? styles.optionSelected : styles.optionUnselected]}
             onPress={() => setTipoViaje("ida")}
@@ -75,7 +73,6 @@ const handleContinuar = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Opción Ida y Vuelta */}
           <TouchableOpacity
             style={[styles.optionButton, tipoViaje === "ida-vuelta" ? styles.optionSelected : styles.optionUnselected]}
             onPress={() => setTipoViaje("ida-vuelta")}
@@ -104,7 +101,6 @@ const handleContinuar = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Botón Continuar */}
           <TouchableOpacity
             style={[styles.continueButton, !tipoViaje && styles.continueButtonDisabled]}
             onPress={handleContinuar}
@@ -127,6 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 32,
+    justifyContent: "center",
   },
   card: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -181,7 +178,7 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     backgroundColor: "#4CAF50",
-    borderRadius: 16,
+    borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
     flexDirection: "row",

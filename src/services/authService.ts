@@ -23,7 +23,7 @@ export const login = async (email: string, password: string): Promise<string> =>
     const deviceToken = await getDeviceToken();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const response = await fetch(`${API_BASE_URL}/auth/login-mobile`, {
       method: 'POST',

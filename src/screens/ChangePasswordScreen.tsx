@@ -90,10 +90,8 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
         </TouchableOpacity>
       </View>
       
-      {/* Componentes adicionales (como PasswordRequirements) */}
       {children}
       
-      {/* Mensajes de error y éxito */}
       {error && <Text style={styles.errorText}>{error}</Text>}
       {successMessage && <Text style={styles.successText}>{successMessage}</Text>}
     </View>
@@ -230,14 +228,12 @@ export default function ChangePasswordScreen({
           bounces={true}
         >
           <View style={styles.cardContainer}>
-            {/* Header */}
             <View style={styles.headerContainer}>
               <Text style={styles.headerTitle}>Cambiar contraseña</Text>
               <View style={styles.placeholder} />
             </View>
 
             <View style={styles.formContainer}>
-              {/* Contraseña actual */}
               <PasswordInput
                 label="Contraseña actual"
                 placeholder="Contraseña actual"
@@ -248,7 +244,6 @@ export default function ChangePasswordScreen({
                 onToggleVisibility={() => togglePasswordVisibility('current')}
               />
 
-              {/* Nueva contraseña */}
               <PasswordInput
                 label="Nueva contraseña"
                 placeholder="Nueva contraseña"
@@ -264,7 +259,6 @@ export default function ChangePasswordScreen({
                 />
               </PasswordInput>
 
-              {/* Confirmar nueva contraseña */}
               <PasswordInput
                 label="Confirmar nueva contraseña"
                 placeholder="Confirmar nueva contraseña"
@@ -276,7 +270,6 @@ export default function ChangePasswordScreen({
                 onToggleVisibility={() => togglePasswordVisibility('confirm')}
               />
 
-              {/* Botón cambiar contraseña - ACTUALIZADO */}
               <TouchableOpacity 
                 style={[
                   styles.changeButton, 
@@ -319,11 +312,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -419,7 +411,7 @@ const styles = StyleSheet.create({
   changeButton: {
     backgroundColor: "#3B82F6",
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,

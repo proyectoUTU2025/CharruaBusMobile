@@ -10,8 +10,6 @@ import {
   ScrollView, 
   ImageBackground,
   Modal,
-  TouchableWithoutFeedback,
-  FlatList,
   ActivityIndicator
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
@@ -330,7 +328,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
           bounces={true}
         >
           <View style={styles.cardContainer}>
-            {/* Header */}
             <View style={styles.headerContainer}>
               <TouchableOpacity style={styles.backButton} onPress={onVolver}>
                 <Icon name="arrow-back" size={24} color="#374151" />
@@ -342,9 +339,7 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
               <View style={styles.placeholder} />
             </View>
 
-            {/* Form Container */}
             <View style={styles.formContainer}>
-              {/* Origen */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Origen</Text>
                 <TouchableOpacity onPress={() => setShowOrigenModal(true)}>
@@ -358,7 +353,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 {origenError ? <Text style={styles.errorText}>{origenError}</Text> : null}
               </View>
 
-              {/* Destino */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Destino</Text>
                 <TouchableOpacity 
@@ -385,7 +379,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 {destinoError ? <Text style={styles.errorText}>{destinoError}</Text> : null}
               </View>
 
-              {/* Fecha de ida */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Fecha de ida</Text>
                 <TouchableOpacity onPress={() => setShowDatePickerIda(true)}>
@@ -409,7 +402,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 />
               )}
 
-              {/* Fecha de vuelta */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Fecha de vuelta</Text>
                 <TouchableOpacity onPress={() => setShowDatePickerVuelta(true)}>
@@ -433,7 +425,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 />
               )}
 
-              {/* Número de pasajeros */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
                   Número de pasajeros
@@ -462,7 +453,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 </TouchableOpacity>
               </View>
 
-              {/* Información del viaje */}
               <View style={styles.infoContainer}>
                 <Text style={styles.infoTitle}>Resumen del viaje:</Text>
                 <View style={styles.infoRow}>
@@ -495,7 +485,6 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 </View>
               </View>
 
-              {/* Botón buscar */}
               <TouchableOpacity 
                 style={[
                   styles.searchButton,
@@ -505,154 +494,221 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
                 disabled={!(origenSeleccionado && destinoSeleccionado && fechaIda && fechaVuelta)}
                 activeOpacity={0.8}
               >
-                <Icon name="search" size={20} color="white" style={styles.searchIcon} />
+                <Icon name="search" size={20} color="white" />
                 <Text style={styles.searchButtonText}>Buscar Pasajes</Text>
               </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
 
-        {/* Modal para seleccionar origen */}
-        <Modal visible={showOrigenModal} transparent animationType="fade">
-          <TouchableWithoutFeedback onPress={() => setShowOrigenModal(false)}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback onPress={() => {}}>
-                <View style={styles.modalContentLarge}>
-                  <Text style={styles.modalTitle}>Seleccionar origen</Text>
-                  
-                  {/* Buscador */}
-                  <View style={styles.searchContainer}>
-                    <Icon name="search" size={20} color="#9CA3AF" />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder="Buscar ciudad..."
-                      placeholderTextColor="#9CA3AF"
-                      value={searchOrigen}
-                      onChangeText={setSearchOrigen}
-                    />
+        <Modal visible={showOrigenModal} transparent animationType="fade" presentationStyle="overFullScreen">
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowOrigenModal(false)}
+            />
+            <View style={styles.selectorModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Seleccionar origen</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowOrigenModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Icon name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar localidad..."
+                  value={searchOrigen}
+                  onChangeText={setSearchOrigen}
+                  placeholderTextColor="#9CA3AF"
+                />
+                <Icon name="search" size={20} color="#9CA3AF" />
+              </View>
+
+              <View style={styles.scrollContainer}>
+                {loadingLocalidades ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                    <Text style={styles.loadingText}>Cargando localidades...</Text>
                   </View>
-
-                  {loadingLocalidades ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color="#10B981" />
-                      <Text style={styles.loadingText}>Cargando localidades...</Text>
-                    </View>
-                  ) : (
-                    <FlatList
-                      data={filteredLocalidades}
-                      renderItem={renderLocalidadItem}
-                      keyExtractor={(item) => item.id.toString()}
-                      style={styles.localidadesList}
-                      showsVerticalScrollIndicator={true}
-                      ListEmptyComponent={
-                        <Text style={styles.emptyText}>
-                          No se encontraron localidades
-                        </Text>
-                      }
-                    />
-                  )}
-
-                  <TouchableOpacity 
-                    style={styles.closeButton}
-                    onPress={() => setShowOrigenModal(false)}
+                ) : (
+                  <ScrollView 
+                    style={styles.localidadesList} 
+                    contentContainerStyle={styles.localidadesListContent}
+                    showsVerticalScrollIndicator={true}
+                    bounces={true}
+                    keyboardShouldPersistTaps="handled"
                   >
-                    <Text style={styles.closeButtonText}>Cerrar</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableWithoutFeedback>
+                    {filteredLocalidades.length === 0 ? (
+                      <Text style={styles.noResultsText}>
+                        {searchOrigen ? 'No se encontraron localidades' : 'No hay localidades disponibles'}
+                      </Text>
+                    ) : (
+                      filteredLocalidades.map((localidad) => (
+                        <TouchableOpacity
+                          key={localidad.id}
+                          style={styles.localidadItem}
+                          onPress={() => selectOrigen(localidad)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.localidadText} numberOfLines={2}>
+                            {localidad.nombreConDepartamento}
+                          </Text>
+                          <Icon name="chevron-right" size={20} color="#9CA3AF" />
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+              </View>
+
+              <TouchableOpacity 
+                style={styles.closeModalButton}
+                onPress={() => setShowOrigenModal(false)}
+              >
+                <Text style={styles.closeModalButtonText}>Cerrar</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableWithoutFeedback>
+          </View>
         </Modal>
 
-        {/* Modal para seleccionar destino */}
-        <Modal visible={showDestinoModal} transparent animationType="fade">
-          <TouchableWithoutFeedback onPress={() => setShowDestinoModal(false)}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback onPress={() => {}}>
-                <View style={styles.modalContentLarge}>
-                  <Text style={styles.modalTitle}>Seleccionar destino</Text>
-                  
-                  {/* Buscador */}
-                  <View style={styles.searchContainer}>
-                    <Icon name="search" size={20} color="#9CA3AF" />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder="Buscar ciudad..."
-                      placeholderTextColor="#9CA3AF"
-                      value={searchDestino}
-                      onChangeText={setSearchDestino}
-                    />
+        <Modal visible={showDestinoModal} transparent animationType="fade" presentationStyle="overFullScreen">
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowDestinoModal(false)}
+            />
+            <View style={styles.selectorModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Seleccionar destino</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowDestinoModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Icon name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar localidad..."
+                  value={searchDestino}
+                  onChangeText={setSearchDestino}
+                  placeholderTextColor="#9CA3AF"
+                />
+                <Icon name="search" size={20} color="#9CA3AF" />
+              </View>
+
+              <View style={styles.scrollContainer}>
+                {loadingDestinos ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                    <Text style={styles.loadingText}>Cargando destinos...</Text>
                   </View>
-
-                  {loadingDestinos ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color="#10B981" />
-                      <Text style={styles.loadingText}>Cargando destinos...</Text>
-                    </View>
-                  ) : (
-                    <FlatList
-                      data={filteredDestinos}
-                      renderItem={renderDestinoItem}
-                      keyExtractor={(item) => item.id.toString()}
-                      style={styles.localidadesList}
-                      showsVerticalScrollIndicator={true}
-                      ListEmptyComponent={
-                        <Text style={styles.emptyText}>
-                          No se encontraron destinos disponibles
-                        </Text>
-                      }
-                    />
-                  )}
-
-                  <TouchableOpacity 
-                    style={styles.closeButton}
-                    onPress={() => setShowDestinoModal(false)}
+                ) : (
+                  <ScrollView 
+                    style={styles.localidadesList} 
+                    contentContainerStyle={styles.localidadesListContent}
+                    showsVerticalScrollIndicator={true}
+                    bounces={true}
+                    keyboardShouldPersistTaps="handled"
                   >
-                    <Text style={styles.closeButtonText}>Cerrar</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableWithoutFeedback>
+                    {filteredDestinos.length === 0 ? (
+                      <Text style={styles.noResultsText}>
+                        {searchDestino ? 'No se encontraron destinos' : 'No hay destinos disponibles'}
+                      </Text>
+                    ) : (
+                      filteredDestinos.map((destino) => (
+                        <TouchableOpacity
+                          key={destino.id}
+                          style={styles.localidadItem}
+                          onPress={() => selectDestino(destino)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.localidadText} numberOfLines={2}>
+                            {destino.nombreConDepartamento}
+                          </Text>
+                          <Icon name="chevron-right" size={20} color="#9CA3AF" />
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+              </View>
+
+              <TouchableOpacity 
+                style={styles.closeModalButton}
+                onPress={() => setShowDestinoModal(false)}
+              >
+                <Text style={styles.closeModalButtonText}>Cerrar</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableWithoutFeedback>
+          </View>
         </Modal>
 
-        {/* Modal para seleccionar pasajeros */}
-        <Modal visible={showPasajerosModal} transparent animationType="fade">
-          <TouchableWithoutFeedback onPress={() => setShowPasajerosModal(false)}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
+        <Modal visible={showPasajerosModal} transparent animationType="fade" presentationStyle="overFullScreen">
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowPasajerosModal(false)}
+            />
+            <View style={styles.pasajerosModal}>
+              <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Seleccionar pasajeros</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowPasajerosModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Icon name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.scrollContainer}>
                 {loadingConfig ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#10B981" />
+                    <ActivityIndicator size="small" color="#3B82F6" />
                     <Text style={styles.loadingText}>Cargando opciones...</Text>
                   </View>
                 ) : (
                   <ScrollView 
-                    style={styles.pasajerosList}
+                    style={styles.pasajerosList} 
+                    contentContainerStyle={styles.localidadesListContent}
                     showsVerticalScrollIndicator={true}
+                    bounces={true}
                   >
                     {opcionesPasajeros.map((opcion) => (
-                      <TouchableOpacity 
-                        key={opcion.value} 
-                        style={styles.modalOption} 
+                      <TouchableOpacity
+                        key={opcion.value}
+                        style={styles.localidadItem}
                         onPress={() => selectPasajeros(opcion.value, opcion.label)}
+                        activeOpacity={0.8}
                       >
-                        <Text style={styles.modalOptionText}>{opcion.label}</Text>
+                        <Text style={styles.localidadText}>
+                          {opcion.label}
+                        </Text>
+                        <Icon name="chevron-right" size={20} color="#9CA3AF" />
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
                 )}
-                
-                <TouchableOpacity 
-                  style={styles.closeButton}
-                  onPress={() => setShowPasajerosModal(false)}
-                >
-                  <Text style={styles.closeButtonText}>Cerrar</Text>
-                </TouchableOpacity>
               </View>
+
+              <TouchableOpacity 
+                style={styles.closeModalButton}
+                onPress={() => setShowPasajerosModal(false)}
+              >
+                <Text style={styles.closeModalButtonText}>Cerrar</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableWithoutFeedback>
+          </View>
         </Modal>
       </ImageBackground>
     </SafeAreaView>
@@ -674,12 +730,13 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
-    paddingBottom: 40,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 500,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -783,17 +840,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#374151",
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 8,
-  },
   infoContainer: {
     backgroundColor: "#ECFDF5",
     borderRadius: 8,
@@ -824,16 +870,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#9CA3AF",
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
     marginTop: 16,
   },
   searchButtonActive: {
     backgroundColor: "#10B981",
-  },
-  searchIcon: {
-    marginRight: 8,
   },
   searchButtonText: {
     fontSize: 18,
@@ -842,9 +885,148 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.32)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  selectorModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    maxHeight: '80%',
+    width: '100%',
+    maxWidth: 580,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    position: 'absolute',
+    top: '10%',
+    alignSelf: 'center',
+    overflow: 'hidden',
+    zIndex: 1001,
+  },
+  pasajerosModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    maxHeight: '60%',
+    width: '80%',
+    maxWidth: 400,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    position: 'absolute',
+    top: '20%',
+    alignSelf: 'center',
+    overflow: 'hidden',
+    zIndex: 1001,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  searchContainer: {
+    position: 'relative',
+    margin: 16,
+    marginBottom: 8,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#374151',
+    backgroundColor: 'white',
+  },
+  scrollContainer: {
+    flex: 1,
+    minHeight: 200,
+    maxHeight: 400,
+  },
+  localidadesList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  localidadesListContent: {
+    paddingBottom: 16,
+  },
+  localidadItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  localidadText: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+    lineHeight: 20,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingVertical: 32,
+    fontStyle: 'italic',
+  },
+  closeModalButton: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     alignItems: "center",
+    marginTop: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  closeModalButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#374151",
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 8,
+  },
+  pasajerosList: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   modalContent: {
     backgroundColor: "white",
@@ -859,13 +1041,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "90%",
     maxHeight: "80%",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 16,
-    textAlign: "center",
+    maxWidth: 600,
   },
   modalOption: {
     paddingVertical: 12,
@@ -877,48 +1053,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#374151",
   },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#374151",
-    marginLeft: 8,
-  },
-  localidadesList: {
-    maxHeight: 250,
-    minHeight: 100, 
-  },
   emptyText: {
     fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
     paddingVertical: 20,
-  },
-  closeButton: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#374151",
-  },
-  pasajerosList: {
-    maxHeight: 250,
-    minHeight: 100,
   },
 });

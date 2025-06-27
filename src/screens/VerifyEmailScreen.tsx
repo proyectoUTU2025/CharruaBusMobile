@@ -125,7 +125,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
           >
             <View style={styles.contentContainer}>
               <View style={styles.cardContainer}>
-                {/* Header */}
                 <View style={styles.headerContainer}>
                   <TouchableOpacity style={styles.backButton} onPress={handleBackToRegister}>
                     <Icon name="arrow-back" size={24} color="#374151" />
@@ -134,7 +133,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                   <View style={styles.placeholder} />
                 </View>
 
-                {/* Icon and messages */}
                 <View style={styles.iconContainer}>
                   <View style={styles.emailIconCircle}>
                     <Icon name="mail-outline" size={48} color="#3B82F6" />
@@ -146,7 +144,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                   <Text style={styles.emailText}>{email}</Text>
                 </View>
 
-                {/* Form */}
                 <View style={styles.formContainer}>
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Código de verificación</Text>
@@ -167,15 +164,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                     {codigoError ? <Text style={styles.errorText}>{codigoError}</Text> : null}
                   </View>
 
-                  {/* Resend section }
-                  <View style={styles.resendContainer}>
-                    <Text style={styles.resendText}>¿No recibiste el código?</Text>
-                    <TouchableOpacity onPress={handleReenviarCodigo}>
-                      <Text style={styles.resendLink}>Reenviar código</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {*/}
-                  {/* Verify button */}
                   <TouchableOpacity 
                     style={[
                       styles.verifyButton, 
@@ -343,7 +331,7 @@ const styles = StyleSheet.create({
   verifyButton: {
     backgroundColor: "#3B82F6",
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,

@@ -50,16 +50,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 32,
     alignItems: "center",
-    width: "100%",
-    maxWidth: 400,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    marginHorizontal: 8,
+    maxWidth: 600,
   },
   welcomeIcon: {
     width: 120,

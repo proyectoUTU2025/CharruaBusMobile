@@ -19,12 +19,10 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons"
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../types/navigationType'
-import { PasswordRequirement } from '../types/resetPasswordType'
 import { 
   validateEmail,
   validateCode,
   sanitizeCode,
-  validatePassword,
   validateConfirmPassword,
   validatePasswordRequirements,
   getPasswordRequirements,
@@ -319,6 +317,7 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Correo electrónico</Text>
                 <TextInput
+                  key={`email-input-${currentStep}`}
                   style={[styles.input, emailError ? styles.inputError : null]}
                   placeholder="Ingresa tu correo electrónico"
                   placeholderTextColor="#9CA3AF"
@@ -569,7 +568,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.cardContainer}>
-                {/* Header */}
                 <View style={styles.headerContainer}>
                   <TouchableOpacity 
                     style={styles.backButton} 
@@ -582,7 +580,6 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
                   <View style={styles.placeholder} />
                 </View>
 
-                {/* Contenido dinámico según el paso */}
                 {renderStepContent()}
               </View>
             </ScrollView>
@@ -615,11 +612,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    paddingTop: StatusBar.currentHeight || 42,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -799,7 +795,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: "#3B82F6",
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,

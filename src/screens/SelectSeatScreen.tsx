@@ -739,7 +739,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
           bounces={true}
         >
           <View style={styles.cardContainer}>
-            {/* Header */}
             <View style={styles.headerContainer}>
               <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
                 <Icon name="arrow-back" size={24} color="#374151" />
@@ -748,10 +747,8 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
               <View style={styles.placeholder} />
             </View>
 
-            {/* Progress indicator for round trip */}
             {renderRoundTripProgress()}
 
-            {/* Información del viaje */}
             <View style={styles.tripInfoContainer}>
               <View style={styles.tripInfoRow}>
                 <Icon name="directions-bus" size={20} color="#10B981" />
@@ -781,7 +778,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
               </View>
             </View>
 
-            {/* Panel de asientos seleccionados */}
             {asientosSeleccionados.length > 0 && (
               <View style={styles.selectedSeatsContainer}>
                 <Text style={styles.selectedSeatsTitle}>Asientos Seleccionados</Text>
@@ -798,12 +794,10 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
               </View>
             )}
 
-            {/* Vista del bus */}
             <View style={styles.busSection}>
               <Text style={styles.busSectionTitle}>Ómnibus</Text>
               <View style={styles.busContainer}>
                 <View style={styles.busShape}>
-                  {/* Volante del conductor */}
                   <View style={styles.volante}>
                     <Image 
                       source={require('../assets/Volante.png')} 
@@ -812,14 +806,12 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
                     <Text style={styles.conductorText}>Conductor</Text>
                   </View>
 
-                  {/* Asientos */}
                   <View style={styles.asientosContainer}>
                     {Array.from({ length: totalFilas }, (_, index) => index + 1).map(renderFilaAsientos)}
                   </View>
                 </View>
               </View>
 
-              {/* Leyenda de asientos */}
               <View style={styles.legendContainer}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendSeat, styles.asientoDisponible]} />
@@ -836,7 +828,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
               </View>
             </View>
 
-            {/* Desglose de precio y botón */}
             <View style={styles.footerSection}>
               {renderDesglosePrecio()}
               
@@ -872,12 +863,13 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
-    paddingBottom: 40,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
@@ -928,7 +920,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   retryButtonText: {
     fontSize: 16,
@@ -1073,11 +1065,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     minWidth: 'auto',
   },
-  volante: {
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    paddingLeft: 20,
-  },
+volante: {
+  alignItems: 'center',
+  marginBottom: 12,
+  paddingLeft: 14,
+  width: '100%',
+},
   volanteImage: {
     width: 40,
     height: 40,
@@ -1208,7 +1201,7 @@ const styles = StyleSheet.create({
   },
   finalizarButton: {
     backgroundColor: '#10B981',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },

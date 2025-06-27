@@ -769,7 +769,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
 
-      {/* Barra Superior */}
       <View style={styles.topAppBar}>
         <TouchableOpacity 
           style={styles.menuButton} 
@@ -797,10 +796,8 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Contenido Principal */}
       <View style={styles.mainContent}>{renderContent}</View>
 
-      {/* Barra Inferior de Navegación */}
       <View style={styles.navigationBar}>
         <TouchableOpacity
           key={`inicio-${currentActiveTab === "inicio"}`}
@@ -883,7 +880,6 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Menús Desplegables Optimizados */}
       <MenuDropdown 
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
@@ -1063,19 +1059,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#49454F',
   },
-  notificationsContainer: {
-    backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    maxHeight: 400,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
+notificationsContainer: {
+  backgroundColor: 'white',
+  marginHorizontal: 16,
+  marginTop: 8,
+  borderRadius: 12,
+  maxHeight: 400,
+  overflow: 'hidden',
+  elevation: 8,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  maxWidth: 500,
+  width: '100%',
+  alignSelf: 'center',
+},
   notificationsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
