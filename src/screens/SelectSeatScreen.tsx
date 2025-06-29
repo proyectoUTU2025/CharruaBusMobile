@@ -143,44 +143,45 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
 
   useEffect(() => {
     const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active' && wentToPayment) {
-        
-        setWentToPayment(false);
-        
-        if (tipoViaje === 'ida-vuelta' && currentState && currentState.currentStep !== 'select-trip-ida') {
+      if (nextAppState === 'active') {
+        if (wentToPayment) {
+          setWentToPayment(false);
           
-          const resetState: RoundTripState = {
-            ...currentState,
-            currentStep: 'select-trip-ida',
-            viajeIda: {
-              ...currentState.viajeIda!,
-              tripId: undefined,
-              trip: undefined,
-              asientosSeleccionados: undefined
-            },
-            viajeVuelta: {
-              ...currentState.viajeVuelta!,
-              tripId: undefined,
-              trip: undefined,
-              asientosSeleccionados: undefined
-            }
-          };
+          if (tipoViaje === 'ida-vuelta' && currentState && currentState.currentStep !== 'select-trip-ida') {
+            const resetState: RoundTripState = {
+              ...currentState,
+              currentStep: 'select-trip-ida',
+              viajeIda: {
+                ...currentState.viajeIda!,
+                tripId: undefined,
+                trip: undefined,
+                asientosSeleccionados: undefined
+              },
+              viajeVuelta: {
+                ...currentState.viajeVuelta!,
+                tripId: undefined,
+                trip: undefined,
+                asientosSeleccionados: undefined
+              }
+            };
 
-          setTimeout(() => {
-            if (navigation?.navigate) {
-
-              navigation.navigate({
-                origenSeleccionado: resetState.viajeIda!.origenSeleccionado,
-                destinoSeleccionado: resetState.viajeIda!.destinoSeleccionado,
-                fecha: resetState.viajeIda!.fecha,
-                date: resetState.viajeIda!.date,
-                pasajeros: resetState.viajeIda!.pasajeros,
-                tipoViaje: 'ida-vuelta',
-                roundTripState: resetState,
-                wentToPayment: true,
-              });
-            }
-          }, 500);
+            setTimeout(() => {
+              if (navigation?.navigate) {
+                navigation.navigate({
+                  origenSeleccionado: resetState.viajeIda!.origenSeleccionado,
+                  destinoSeleccionado: resetState.viajeIda!.destinoSeleccionado,
+                  fecha: resetState.viajeIda!.fecha,
+                  date: resetState.viajeIda!.date,
+                  pasajeros: resetState.viajeIda!.pasajeros,
+                  tipoViaje: 'ida-vuelta',
+                  roundTripState: resetState,
+                  wentToPayment: true,
+                });
+              }
+            }, 500);
+          } else {
+            loadTripDetails(false);
+          }
         } else {
           loadTripDetails(false);
         }
@@ -324,7 +325,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
   };
 
   const handleContinuar = async () => {
-    
     if (asientosSeleccionados.length === 0) {
       Alert.alert("Error", "Debes seleccionar al menos un asiento");
       return;
@@ -367,7 +367,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
   };
 
   const handleFinalizarCompra = async () => {
-    
     if (!user?.id) {
       Alert.alert("Error", "No se pudo identificar el usuario. Por favor, inicia sesión nuevamente.");
       return;
@@ -382,7 +381,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
       let payload;
 
       if (tipoViaje === 'ida-vuelta' && currentState) {
-
         if (!currentState.viajeIda?.asientosSeleccionados || currentState.viajeIda.asientosSeleccionados.length === 0) {
           Alert.alert("Error", "No hay asientos seleccionados para el viaje de ida.");
           return;
@@ -415,7 +413,6 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
           paradaDestinoVueltaId: currentState.viajeVuelta.destinoSeleccionado.id,
         };
       } else {
-
         payload = {
           viajeIdaId: tripId,
           viajeVueltaId: null,
@@ -446,15 +443,67 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
       await Linking.openURL(sessionUrl);
 
     } catch (error) {
-      console.error("Error al iniciar el pago:", error);
       
       let errorMessage = "Hubo un problema al procesar el pago. Intenta nuevamente.";
+      let shouldReloadSeats = false;
+      let isSeatsError = false;
       
       if (error instanceof Error) {
-        errorMessage = error.message;
+        const errorText = error.message;
+        
+        if (errorText.includes('no se pudieron reservar') || 
+            errorText.includes('asientos solicitados') ||
+            errorText.includes('asiento ya está ocupado') ||
+            errorText.includes('asiento no disponible')) {
+
+          isSeatsError = true;
+          
+          const reservedMatch = errorText.match(/reservar (\d+) de (\d+)/);
+          if (reservedMatch) {
+            const reserved = parseInt(reservedMatch[1]);
+            const requested = parseInt(reservedMatch[2]);
+            const notReserved = requested - reserved;
+            
+            if (reserved === 0) {
+              if(cantidadPasajeros==1)
+                errorMessage = `El asiento seleccionado ya está ocupado.`;
+              else if (cantidadPasajeros>1)
+                errorMessage = `Alguno de los asientos seleccionados ya fueron ocupados.`;
+            } else {
+              if (notReserved==1)
+                errorMessage = `Solo se pudieron reservar ${reserved} de ${requested} asientos. ${notReserved} asiento ya fue ocupado.`;
+              else if (notReserved>1)
+                errorMessage = `Solo se pudieron reservar ${reserved} de ${requested} asientos. ${notReserved} asientos ya fueron ocupados.`;
+            }
+          } else {
+            errorMessage = "Algunos de los asientos seleccionados ya están ocupados. La disponibilidad se actualizará automáticamente.";
+          }
+          
+          shouldReloadSeats = true;
+        } else {
+          errorMessage = errorText;
+        }
+      }
+
+      if (!isSeatsError) {
+        console.error("Error al iniciar el pago:", error);
       }
       
-      Alert.alert("Error", errorMessage);
+      Alert.alert(
+        "Error", 
+        errorMessage,
+        [
+          {
+            text: "Entendido",
+            onPress: () => {
+              if (shouldReloadSeats) {
+                setAsientosSeleccionados([]);
+                loadTripDetails(false);
+              }
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -684,6 +733,21 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
     );
   };
 
+  const renderRefreshButton = () => {
+    return (
+      <TouchableOpacity 
+        style={styles.refreshButton} 
+        onPress={() => {
+          setAsientosSeleccionados([]);
+          loadTripDetails(true);
+        }}
+      >
+        <Icon name="refresh" size={20} color="#10B981" />
+        <Text style={styles.refreshButtonText}>Actualizar disponibilidad</Text>
+      </TouchableOpacity>
+    );
+  };
+
   const totalFilas = asientos.length > 0 ? Math.ceil(Math.max(...asientos.map(a => a.numero)) / 4) : 1;
 
   if (loading || userLoading) {
@@ -796,6 +860,7 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
 
             <View style={styles.busSection}>
               <Text style={styles.busSectionTitle}>Ómnibus</Text>
+              {renderRefreshButton()}
               <View style={styles.busContainer}>
                 <View style={styles.busShape}>
                   <View style={styles.volante}>
@@ -1053,6 +1118,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
   },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0FDF4',
+    borderColor: '#10B981',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  refreshButtonText: {
+    fontSize: 14,
+    color: '#10B981',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
   busContainer: {
     alignItems: 'center',
   },
@@ -1065,12 +1148,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     minWidth: 'auto',
   },
-volante: {
-  alignItems: 'center',
-  marginBottom: 12,
-  paddingLeft: 14,
-  width: '100%',
-},
+  volante: {
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingLeft: 14,
+    width: '100%',
+  },
   volanteImage: {
     width: 40,
     height: 40,

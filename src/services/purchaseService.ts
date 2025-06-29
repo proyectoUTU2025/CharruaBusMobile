@@ -1,6 +1,7 @@
-import { PurchaseDetail, PurchaseDetailResponse, Purchase, PurchasesResponse, GetPurchasesParams } from '../types/purchaseType';
+import { PurchaseDetail, PurchaseDetailResponse, PurchasesResponse, GetPurchasesParams } from '../types/purchaseType';
 import { Linking, Alert } from 'react-native';
 import { API_BASE_URL } from '@env';
+
 
 export const getClientPurchases = async (
   token: string,
@@ -169,38 +170,17 @@ export const downloadPurchasePdf = async (
   purchaseId: number
 ): Promise<boolean> => {
   try {
-    
     const pdfUrl = `${API_BASE_URL}/compras/${purchaseId}/pdf?token=${encodeURIComponent(token)}`;
 
-    try {
-      const testResponse = await fetch(`${API_BASE_URL}/compras/${purchaseId}/pdf`, {
-        method: 'HEAD',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!testResponse.ok && testResponse.status !== 401) {
-        throw new Error('El servidor no responde o el archivo no está disponible');
-      }
-    } catch (error) {
-    }
-
-    const canOpen = await Linking.canOpenURL(pdfUrl);
+    await Linking.openURL(pdfUrl);
     
-    if (canOpen) {
-      await Linking.openURL(pdfUrl);
-      
-      Alert.alert(
-        'PDF Abierto',
-        'El PDF de la compra se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
-        [{ text: 'Entendido', style: 'default' }]
-      );
-      
-      return true;
-    } else {
-      throw new Error('No se puede abrir el navegador en este dispositivo');
-    }
+    Alert.alert(
+      'PDF Abierto',
+      'El PDF de la compra se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
+      [{ text: 'Entendido', style: 'default' }]
+    );
+    
+    return true;
 
   } catch (error) {
     console.error('Error abriendo PDF de compra:', error);
@@ -231,38 +211,17 @@ export const downloadTicketPdf = async (
   ticketId: number
 ): Promise<boolean> => {
   try {
-    
     const pdfUrl = `${API_BASE_URL}/pasajes/${ticketId}/pdf?token=${encodeURIComponent(token)}`;
 
-    try {
-      const testResponse = await fetch(`${API_BASE_URL}/pasajes/${ticketId}/pdf`, {
-        method: 'HEAD',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!testResponse.ok && testResponse.status !== 401) {
-        throw new Error('El servidor no responde o el archivo no está disponible');
-      }
-    } catch (error) {
-    }
-
-    const canOpen = await Linking.canOpenURL(pdfUrl);
+    await Linking.openURL(pdfUrl);
     
-    if (canOpen) {
-      await Linking.openURL(pdfUrl);
-      
-      Alert.alert(
-        'PDF Abierto',
-        'El PDF del pasaje se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
-        [{ text: 'Entendido', style: 'default' }]
-      );
-      
-      return true;
-    } else {
-      throw new Error('No se puede abrir el navegador en este dispositivo');
-    }
+    Alert.alert(
+      'PDF Abierto',
+      'El PDF del pasaje se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
+      [{ text: 'Entendido', style: 'default' }]
+    );
+    
+    return true;
 
   } catch (error) {
     console.error('Error abriendo PDF de pasaje:', error);

@@ -1,4 +1,4 @@
-import { Linking, Alert } from 'react-native';
+import { Linking, Alert  } from 'react-native';
 import { API_BASE_URL } from '@env';
 
 export interface Ticket {
@@ -211,28 +211,9 @@ export const downloadTicketPdf = async (
   try {
     const pdfUrl = `${API_BASE_URL}/pasajes/${ticketId}/pdf?token=${encodeURIComponent(token)}`;
 
-    try {
-      const testResponse = await fetch(`${API_BASE_URL}/pasajes/${ticketId}/pdf`, {
-        method: 'HEAD',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!testResponse.ok && testResponse.status !== 401) {
-        throw new Error('El servidor no responde o el archivo no está disponible');
-      }
-    } catch (error) {
-    }
-
-    const canOpen = await Linking.canOpenURL(pdfUrl);
+    await Linking.openURL(pdfUrl);
     
-    if (canOpen) {
-      await Linking.openURL(pdfUrl);      
-      return true;
-    } else {
-      throw new Error('No se puede abrir el navegador en este dispositivo');
-    }
+    return true;
 
   } catch (error) {
     console.error('Error abriendo PDF de pasaje:', error);

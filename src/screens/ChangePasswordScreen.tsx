@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -123,6 +123,13 @@ export default function ChangePasswordScreen({
     validateAll,
     setFieldError,
   } = usePasswordValidation();
+
+  // Revalidar confirmación cuando cambie la nueva contraseña
+  useEffect(() => {
+    if (state.confirmPassword && state.newPassword !== undefined) {
+      validateConfirmPassword(state.confirmPassword);
+    }
+  }, [state.newPassword]);
 
   const isFormValid = (): boolean => {
     if (!state.currentPassword || !state.newPassword || !state.confirmPassword) {

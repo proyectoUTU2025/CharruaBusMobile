@@ -481,12 +481,12 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
               <View style={styles.searchContainer}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar localidad..."
+                  placeholder="Buscar localidad"
                   value={searchOrigen}
                   onChangeText={setSearchOrigen}
                   placeholderTextColor="#9CA3AF"
                 />
-                <Icon name="search" size={20} color="#9CA3AF" />
+                <Icon name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
               </View>
 
               <View style={styles.scrollContainer}>
@@ -557,12 +557,12 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
               <View style={styles.searchContainer}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar localidad..."
-                  value={searchDestino}
-                  onChangeText={setSearchDestino}
+                  placeholder="Buscar localidad"
+                  value={searchOrigen}
+                  onChangeText={setSearchOrigen}
                   placeholderTextColor="#9CA3AF"
                 />
-                <Icon name="search" size={20} color="#9CA3AF" />
+                <Icon name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
               </View>
 
               <View style={styles.scrollContainer}>
@@ -917,11 +917,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 8,
-    paddingHorizontal: 40,
+    paddingLeft: 12,
+    paddingRight: 40,
     paddingVertical: 12,
     fontSize: 14,
     color: '#374151',
     backgroundColor: 'white',
+  },
+  searchIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+    zIndex: 1,
   },
   scrollContainer: {
     flex: 1,

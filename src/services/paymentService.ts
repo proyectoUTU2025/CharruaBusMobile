@@ -16,7 +16,9 @@ export async function crearSesionStripe(token: string, payload: any) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Error en crearSesionStripe:', errorText);
+    if (!errorText.includes('se pudieron reservar') && !errorText.includes('asientos solicitados')) {
+      console.error('Error en crearSesionStripe:', errorText);
+    }
     throw new Error(`Error en crearSesionStripe: ${response.status} - ${errorText}`);
   }
 

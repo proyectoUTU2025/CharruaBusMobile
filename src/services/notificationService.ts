@@ -35,7 +35,8 @@ export async function requestUserPermission(): Promise<void> {
       }
     }
 
-    const messaging = getMessaging(getApp());
+    const app = getApp();
+    const messaging = getMessaging(app);
     const authStatus = await requestPermission(messaging);
     
     const enabled =
@@ -52,7 +53,8 @@ export async function requestUserPermission(): Promise<void> {
 
 export async function getFCMToken(): Promise<string | null> {
   try {
-    const messaging = getMessaging(getApp());
+    const app = getApp();
+    const messaging = getMessaging(app);
     const fcmToken = await getToken(messaging);
 
     if (fcmToken) {
@@ -74,9 +76,25 @@ export function removeUnreadCountUpdateCallback(): void {
   unreadCountUpdateCallback = null;
 }
 
+export async function handleBackgroundNotification(remoteMessage: FirebaseMessagingTypes.RemoteMessage): Promise<void> {
+  try {
+    console.log('Procesando notificación en segundo plano:', remoteMessage);
+    
+    if (unreadCountUpdateCallback) {
+      unreadCountUpdateCallback();
+    }
+    
+    return Promise.resolve();
+  } catch (error) {
+    console.error('Error procesando notificación en segundo plano:', error);
+    return Promise.reject(error);
+  }
+}
+
 export function setupNotifications(onNotification: NotificationCallback): (() => void) {
   try {
-    const messaging = getMessaging(getApp());
+    const app = getApp();
+    const messaging = getMessaging(app);
 
     const unsubscribeForeground = onMessage(messaging, async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
       

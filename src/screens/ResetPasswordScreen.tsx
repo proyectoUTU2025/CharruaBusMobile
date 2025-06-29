@@ -430,7 +430,7 @@ const ResetPasswordScreen = ({ navigation, route }: Props) => {
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.expirationText}>El código expira en 10 minutos</Text>
+              <Text style={styles.expirationText}>El código expira en 2 horas</Text>
             </View>
           </>
         )

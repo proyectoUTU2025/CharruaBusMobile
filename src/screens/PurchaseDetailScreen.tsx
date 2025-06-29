@@ -26,6 +26,11 @@ import { PurchaseDetail, PurchaseScreenProps } from '../types/purchaseType';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
+const isStateProhibited = (estado: string) => {
+  const estadoUpper = estado.toUpperCase();
+  return estadoUpper === 'CANCELADA' || estadoUpper === 'PENDIENTE' || estadoUpper === 'REEMBOLSADA';
+};
+
 const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation }) => {
   const { purchaseId } = route.params;
   const { token } = useAuth();
@@ -153,6 +158,11 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
   const handleDownloadPurchasePdf = async () => {
     if (!token) {
       Alert.alert('Error', 'No hay token de autenticación');
+      return;
+    }
+
+    if (isStateProhibited(purchase?.estado || '')) {
+      Alert.alert('Error', 'No se puede descargar el PDF en el estado actual');
       return;
     }
 
@@ -480,11 +490,11 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                 <TouchableOpacity
                   style={[
                     styles.downloadButton, 
-                    (downloadingPurchase || purchase?.estado.toUpperCase() === 'CANCELADA') && styles.downloadButtonDisabled,
-                    purchase?.estado.toUpperCase() === 'CANCELADA' && styles.downloadButtonCanceled
+                    (downloadingPurchase || isStateProhibited(purchase?.estado || '')) && styles.downloadButtonDisabled,
+                    isStateProhibited(purchase?.estado || '') && styles.downloadButtonCanceled
                   ]}
-                  onPress={purchase?.estado.toUpperCase() === 'CANCELADA' ? undefined : handleDownloadPurchasePdf}
-                  disabled={downloadingPurchase || purchase?.estado.toUpperCase() === 'CANCELADA'}
+                  onPress={isStateProhibited(purchase?.estado || '') ? undefined : handleDownloadPurchasePdf}
+                  disabled={downloadingPurchase || isStateProhibited(purchase?.estado || '')}
                 >
                   {downloadingPurchase ? (
                     <ActivityIndicator size="small" color="#374151" />
@@ -492,7 +502,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
                     <Icon 
                       name="file-download" 
                       size={24} 
-                      color={purchase?.estado.toUpperCase() === 'CANCELADA' ? "#9E9E9E" : "#374151"} 
+                      color={isStateProhibited(purchase?.estado || '') ? "#9E9E9E" : "#374151"} 
                     />
                   )}
                 </TouchableOpacity>

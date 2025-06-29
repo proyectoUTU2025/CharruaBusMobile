@@ -178,7 +178,7 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                     </Text>
                   </TouchableOpacity>
 
-                  <Text style={styles.expirationText}>El código expira en 10 minutos</Text>
+                  <Text style={styles.expirationText}>El código expira en 2 horas</Text>
                 </View>
               </View>
             </View>
@@ -205,11 +205,13 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 16,
   },
   cardContainer: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 600,
+    alignSelf: "center",
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
     padding: 24,
