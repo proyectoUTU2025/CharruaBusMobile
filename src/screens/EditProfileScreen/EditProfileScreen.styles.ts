@@ -1,0 +1,195 @@
+import { StyleSheet } from 'react-native';
+import { scaleSize, scaleFontSize, getResponsivePadding, getMaxContainerWidth } from '../../utils/responsiveDimensions';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  cardContainer: {
+    width: "100%",
+    maxWidth: getMaxContainerWidth(),
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: scaleSize(16),
+    padding: getResponsivePadding(),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: scaleSize(8),
+    elevation: 8,
+  },
+  input: {
+    backgroundColor: "white",
+    height: scaleSize(50),
+    borderRadius: scaleSize(8),
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleFontSize(16),
+    color: "#1F2937",
+  },
+  saveButton: {
+    backgroundColor: "#3B82F6",
+    height: scaleSize(50),
+    borderRadius: scaleSize(12),
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: scaleSize(8),
+  },
+  backgroundImage: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollView: {
+    flex: 1,
+    width: "100%",
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#374151",
+    textAlign: "center",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#374151",
+    textAlign: "center",
+  },
+  placeholder: {
+    width: 40,
+  },
+  formContainer: {
+    width: "100%",
+  },
+  inputContainer: {
+    marginBottom: 16,
+    width: "100%",
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#4B5563",
+    marginBottom: 8,
+  },
+  inputError: {
+    borderColor: "#EF4444",
+    borderWidth: 2,
+  },
+  errorText: {
+    color: "#EF4444",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+    textAlign: "left",
+  },
+  successText: {
+    color: "#10B981",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+    fontWeight: "500",
+    textAlign: "left",
+  },
+  selectButton: {
+    backgroundColor: "white",
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectText: {
+    fontSize: 16,
+    color: "#1F2937",
+  },
+  selectPlaceholder: {
+    color: "#9CA3AF",
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    paddingHorizontal: 16,
+  },
+  inputText: {
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  placeholderText: {
+    color: '#9CA3AF',
+  },
+  saveButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  loadingButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  loadingButtonText: {
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    maxWidth: 300,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: "#374151",
+    textAlign: "center",
+  },
+});

@@ -1,0 +1,160 @@
+import { StyleSheet } from 'react-native';
+import { 
+  scaleSize, 
+  scaleFontSize, 
+  getResponsivePadding, 
+  getMaxContainerWidth,
+  getCardPadding,
+} from '../../utils/responsiveDimensions';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+  backgroundImage: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: getResponsivePadding(),
+  },
+  cardContainer: {
+    width: "100%",
+    maxWidth: getMaxContainerWidth(),
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: scaleSize(16),
+    padding: getCardPadding(),
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: scaleSize(8),
+    elevation: 8,
+  },
+  logoContainer: {
+    marginVertical: scaleSize(4),
+    alignItems: "center",
+  },
+  logoImage: {
+    width: scaleSize(180),
+    height: scaleSize(180),
+  },
+  welcomeText: {
+    fontSize: scaleFontSize(18),
+    color: "#374151",
+    marginBottom: scaleSize(24),
+    textAlign: "center",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    padding: scaleSize(12),
+    borderRadius: scaleSize(8),
+    marginBottom: scaleSize(16),
+    width: "100%",
+    borderLeftWidth: scaleSize(4),
+    borderLeftColor: "#EF4444",
+  },
+  generalErrorText: {
+    color: "#EF4444",
+    fontSize: scaleFontSize(14),
+    marginLeft: scaleSize(8),
+    flex: 1,
+  },
+  formContainer: {
+    width: "100%",
+  },
+  inputContainer: {
+    marginBottom: scaleSize(16),
+    width: "100%",
+  },
+  inputLabel: {
+    fontSize: scaleFontSize(14),
+    fontWeight: "500",
+    color: "#4B5563",
+    marginBottom: scaleSize(8),
+  },
+  input: {
+    backgroundColor: "white",
+    height: scaleSize(50),
+    borderRadius: scaleSize(8),
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleFontSize(16),
+    color: "#1F2937",
+  },
+  inputInvalid: {
+    borderColor: "#EF4444",
+  },
+  errorText: {
+    color: "#EF4444",
+    fontSize: scaleFontSize(12),
+    marginTop: scaleSize(4),
+    marginLeft: scaleSize(4),
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: scaleSize(8),
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    height: scaleSize(50),
+  },
+  passwordInput: {
+    flex: 1,
+    height: scaleSize(50),
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleFontSize(16),
+    color: "#1F2937",
+  },
+  eyeIcon: {
+    paddingHorizontal: scaleSize(12),
+  },
+  loginButton: {
+    backgroundColor: "#3B82F6",
+    height: scaleSize(50),
+    borderRadius: scaleSize(12),
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: scaleSize(8),
+    marginBottom: scaleSize(24),
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: scaleSize(2) },
+    shadowOpacity: 0.3,
+    shadowRadius: scaleSize(4),
+    elevation: 4,
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  loginButtonText: {
+    color: "white",
+    fontSize: scaleFontSize(16),
+    fontWeight: "600",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginLeft: scaleSize(8),
+  },
+  footerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  footerLink: {
+    color: "#3B82F6",
+    fontSize: scaleFontSize(14),
+    fontWeight: "500",
+  },
+  disabledLink: {
+    color: "#9CA3AF",
+  },
+});

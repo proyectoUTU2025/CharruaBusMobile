@@ -4,8 +4,7 @@ import {
   Text, 
   TouchableOpacity, 
   SafeAreaView, 
-  StatusBar, 
-  StyleSheet, 
+  StatusBar,
   Modal, 
   ScrollView, 
   ActivityIndicator,
@@ -15,27 +14,28 @@ import {
   AppStateStatus
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import MainScreen from '../screens/MainScreen';
-import { TripSelectionScreen } from '../screens/TripSelectionScreen';
-import ChangePasswordScreen from '../screens/ChangePasswordScreen';
-import PurchasesScreen from '../screens/PurchasesScreen';
-import TicketsScreen from '../screens/TicketsScreen';
+import MainScreen from '../screens/MainScreen/MainScreen';
+import { TripSelectionScreen } from '../screens/TripSelectionScreen/TripSelectionScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen/ChangePasswordScreen';
+import PurchasesScreen from '../screens/PurchasesScreen/PurchasesScreen';
+import TicketsScreen from '../screens/TicketsScreen/TicketsScreen';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from '../hooks/useUser';
 import { useNotifications } from '../context/NotificationContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { OneWayTripScreen } from '../screens/OneWayTripScreen';
-import { RoundTripScreen } from '../screens/RoundTripScreen';
-import { ViewTripsScreen } from '../screens/ViewTripsScreen';
-import { SelectSeatScreen } from '../screens/SelectSeatScreen';
+import { OneWayTripScreen } from '../screens/OneWayTripScreen/OneWayTripScreen';
+import { RoundTripScreen } from '../screens/RoundTripScreen/RoundTripScreen';
+import { ViewTripsScreen } from '../screens/ViewTripsScreen/ViewTripsScreen';
+import { SelectSeatScreen } from '../screens/SelectSeatScreen/SelectSeatScreen';
 import { RoundTripState } from '../types/roundTripType';
-import EditProfileScreen from '../screens/EditProfileScreen';
+import EditProfileScreen from '../screens/EditProfileScreen/EditProfileScreen';
 import { NavigationState, ViewTripsParams, RootStackParamList } from '../types/navigationType';
 import { 
   formatNotificationDate, 
   getNotificationIcon 
 } from '../services/notificationApiService';
+import { styles } from './BottomTabsNavigator.styles';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -906,314 +906,5 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  topAppBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#3B82F6',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  menuButton: {
-    padding: 8,
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  notificationButton: {
-    padding: 8,
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#F44336',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  mainContent: {
-    flex: 1,
-  },
-  navigationBar: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  navigationItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  navigationIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
-    minHeight: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  activeNavigationIndicator: {
-    backgroundColor: '#E0F2FE',
-    borderRadius: 12,
-  },
-  navigationLabel: {
-    fontSize: 10,
-    color: '#49454F',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  activeNavigationLabel: {
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-start',
-    paddingTop: 60,
-  },
-  menuContainer: {
-    backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    padding: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  menuHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarContainer: {
-    marginRight: 12,
-  },
-  avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E0F2FE',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userInfoContainer: {
-    flex: 1,
-  },
-  greetingText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  userEmailText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  menuIcon: {
-    marginRight: 16,
-  },
-  menuText: {
-    fontSize: 16,
-    color: '#49454F',
-  },
-notificationsContainer: {
-  backgroundColor: 'white',
-  marginHorizontal: 16,
-  marginTop: 8,
-  borderRadius: 12,
-  maxHeight: 400,
-  overflow: 'hidden',
-  elevation: 8,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  maxWidth: 500,
-  width: '100%',
-  alignSelf: 'center',
-},
-  notificationsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-  },
-  notificationsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  centerLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    minHeight: 200,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#49454F',
-    marginTop: 16,
-    fontWeight: '400',
-  },
-  notificationsList: {
-    maxHeight: 300,
-    paddingBottom: 0,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  unreadNotificationItem: {
-    backgroundColor: '#F0F9FF',
-  },
-  notificationIconContainer: {
-    position: 'relative',
-    marginRight: 12,
-    padding: 8,
-  },
-  unreadDot: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#3B82F6',
-  },
-  notificationContent: {
-    flex: 1,
-  },
-  notificationTitle: {
-    fontSize: 16,
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  unreadNotificationTitle: {
-    fontWeight: 'bold',
-  },
-  notificationMessage: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  notificationTime: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  emptyNotifications: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyNotificationsText: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: 16,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-    minHeight: 240,
-    justifyContent: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#F44336',
-    marginTop: 16,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-    fontWeight: '400',
-  },
-  retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 1,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-  },
-  loadingMoreContainer: {
-    paddingVertical: 20,
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  loadingMoreText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  noMoreNotificationsContainer: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  noMoreNotificationsText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontStyle: 'italic',
-  },
-  lastNotificationItem: {
-    borderBottomWidth: 0,
-  },
-});
 
 export default BottomTabsNavigator;
