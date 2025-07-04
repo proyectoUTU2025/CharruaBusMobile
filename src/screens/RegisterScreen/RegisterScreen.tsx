@@ -69,7 +69,7 @@ export default function RegisterScreen() {
   const [showTipoDocumentoModal, setShowTipoDocumentoModal] = useState(false)
   const [showSituacionModal, setShowSituacionModal] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [date, setDate] = useState<Date | undefined>(undefined)
+const [date, setDate] = useState<Date | undefined>(new Date())
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [passwordError, setPasswordError] = useState("")
@@ -263,7 +263,13 @@ export default function RegisterScreen() {
     }
     
     if (confirmPassword) {
-      validateConfirmPassword(confirmPassword);
+      if (confirmPassword !== pass) {
+        setConfirmPasswordError("Las contraseñas no coinciden");
+      } else if (passwordErrors.length > 0) {
+        setConfirmPasswordError("Primero complete los requisitos de la contraseña");
+      } else {
+        setConfirmPasswordError("");
+      }
     }
   };
 
@@ -455,6 +461,7 @@ export default function RegisterScreen() {
       };
 
       try {
+        console.log("Registrando usuario:", data);
         await registerUser(data);
         
         Alert.alert("Éxito", "Usuario registrado!");
@@ -646,7 +653,7 @@ export default function RegisterScreen() {
                      mode="date"
                      display="default"
                      onChange={onChangeDate}
-                     maximumDate={new Date()}
+                     maximumDate={new Date(Date.now() - 24 * 60 * 60 * 1000)}
                    />
                  )}
 

@@ -44,29 +44,17 @@ const PaymentSuccessScreen = ({ route, navigation }: any) => {
           console.error('No se recibió compraId en la respuesta:', result);
           throw new Error('No se recibió el ID de la compra');
         }
-        
-        Alert.alert(
-          '¡Pago exitoso!',
-          'Tu compra se procesó y confirmó correctamente.',
-          [
-            {
-              text: 'Cerrar',
-              onPress: () => {
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    { name: 'Main' },
-                    { 
-                      name: 'PurchaseDetail', 
-                      params: { purchaseId: compraId }
-                    }
-                  ],
-                });
-              }
+
+        navigation.reset({
+          index: 0,
+          routes: [
+            { name: 'Main' },
+            { 
+              name: 'PurchaseDetail', 
+              params: { purchaseId: compraId }
             }
           ],
-          { cancelable: false }
-        );
+        });
         
       } catch (error) {
         console.error('Error completo al confirmar compra:', error);

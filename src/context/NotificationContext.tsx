@@ -33,6 +33,7 @@ interface NotificationContextType {
   markAsRead: () => Promise<void>;
   refreshUnreadCount: () => Promise<void>;
   clearError: () => void;
+  clearNotifications: () => void;
   
   isRefreshing: boolean;
   isLoadingMore: boolean;
@@ -88,6 +89,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       console.error('Error obteniendo conteo de notificaciones:', err);
     }
   }, [token, clienteId]);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+    currentPageRef.current = 0;
+    totalPagesRef.current = 0;
+    setHasMoreNotifications(true);
+    setError(null);
+  }, []);
 
   const refreshNotifications = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current) return;
@@ -167,10 +176,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   useEffect(() => {
     if (token && clienteId) {
-      refreshNotifications();
       refreshUnreadCount();
     }
-  }, [token, clienteId, refreshNotifications, refreshUnreadCount]);
+  }, [token, clienteId, refreshUnreadCount]);
 
   useEffect(() => {
     if (token && clienteId) {
@@ -242,6 +250,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     markAsRead,
     refreshUnreadCount,
     clearError,
+    clearNotifications,
 
     isRefreshing,
     isLoadingMore,

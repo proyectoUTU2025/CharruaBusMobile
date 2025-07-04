@@ -332,6 +332,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     loadMoreNotifications,
     markAsRead,
     refreshUnreadCount,
+    clearNotifications,
     isRefreshing: contextIsRefreshing,
     isLoadingMore: contextIsLoadingMore,
   } = useNotifications();
@@ -433,14 +434,16 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
     if (!notificationsVisible) {
       setNotificationsVisible(true);
       try {
+        clearNotifications();
+        await refreshNotifications();
         await markAsRead();
       } catch (error) {
-        console.error('Error marcando notificaciones como leídas:', error);
+        console.error('Error cargando notificaciones:', error);
       }
     } else {
       setNotificationsVisible(false);
     }
-  }, [notificationsVisible, markAsRead]);
+  }, [notificationsVisible, clearNotifications, refreshNotifications, markAsRead]);
 
   const handleMenuItemPress = useCallback((action: string) => {
     setMenuVisible(false);

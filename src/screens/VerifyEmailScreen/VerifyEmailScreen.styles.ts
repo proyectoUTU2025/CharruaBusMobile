@@ -163,4 +163,28 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     textAlign: "center",
   },
+    resendText: {
+    fontSize: scaleFontSize(14),
+    color: "#6B7280",
+    marginBottom: scaleSize(8),
+  },
+  resendLink: {
+    fontSize: scaleFontSize(14),
+    color: "#3B82F6",
+    fontWeight: "500",
+  },
+  resendLinkDisabled: {
+    color: "#9CA3AF",
+  },
+    resendContainer: {
+    alignItems: "center",
+    marginBottom: scaleSize(24),
+  },
+    loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginLeft: scaleSize(8),
+  },
 });

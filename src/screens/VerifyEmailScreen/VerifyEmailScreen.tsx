@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -12,11 +12,12 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  ActivityIndicator,
 } from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../../types/navigationType';
-import { verifyEmailCode } from '../../services/authService'
+import { verifyEmailCode, resendVerificationCode } from '../../services/authService'
 import { styles } from './VerifyEmailScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VerifyEmail'>
@@ -31,6 +32,28 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
   const [codigo, setCodigo] = useState("")
   const [codigoError, setCodigoError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [canResend, setCanResend] = useState(true)
+  const [resendTimer, setResendTimer] = useState(0)
+
+  const startResendTimer = () => {
+    setCanResend(false)
+    setResendTimer(60)
+    
+    const timer = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          setCanResend(true)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => {
+    startResendTimer()
+  }, [])
 
   const handleBackToRegister = () => {
     navigation.goBack()
@@ -110,6 +133,29 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
     }
   }
 
+  const handleResendCode = async () => {
+    if (!canResend) return
+
+    console.log('Email que se va a enviar:', email)
+    console.log('Route params completos:', route.params)
+
+    setIsLoading(true)
+    
+    try {
+      const result = await resendVerificationCode(email)
+      
+      Alert.alert("Código reenviado", "Se ha enviado un nuevo código a tu correo")
+      setCodigo("")
+      setCodigoError("")
+      startResendTimer()
+      
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Error al reenviar código")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
@@ -162,6 +208,20 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                       Ingresa el código de 6 dígitos que enviamos a tu correo
                     </Text>
                     {codigoError ? <Text style={styles.errorText}>{codigoError}</Text> : null}
+                    <View style={styles.resendContainer}>
+                      <Text style={styles.resendText}>¿No recibiste el código?</Text>
+                      <TouchableOpacity 
+                        onPress={handleResendCode}
+                        disabled={!canResend || isLoading}
+                      >
+                        <Text style={[
+                          styles.resendLink, 
+                          (!canResend || isLoading) && styles.resendLinkDisabled
+                        ]}>
+                          {canResend ? "Reenviar código" : `Reenviar en ${resendTimer}s`}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   <TouchableOpacity 
@@ -173,9 +233,14 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
                     onPress={handleVerificar}
                     disabled={codigo.length !== 6 || isLoading}
                   >
-                    <Text style={styles.verifyButtonText}>
-                      {isLoading ? "Verificando..." : "Verificar"}
-                    </Text>
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color="white" />
+                        <Text style={[styles.verifyButtonText, styles.loadingText]}>Verificando...</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.verifyButtonText}>Verificar código</Text>
+                    )}
                   </TouchableOpacity>
 
                   <Text style={styles.expirationText}>El código expira en 2 horas</Text>

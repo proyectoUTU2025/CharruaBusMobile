@@ -160,6 +160,7 @@ export const styles = StyleSheet.create({
     borderRadius: scaleSize(12),
     padding: scaleSize(16),
     maxHeight: scaleSize(400),
+    minHeight: scaleSize(300),
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(4) },

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Linking, Alert } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { Linking } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { confirmarCompra, cancelarCompra } from '../services/paymentService';
 
@@ -73,29 +73,8 @@ export const DeepLinkHandler: React.FC<DeepLinkHandlerProps> = ({ children }) =>
           await confirmarCompra(token, sessionId);
         }
         
-        Alert.alert(
-          '¡Pago exitoso!',
-          'Tu compra se procesó correctamente. Te llevamos al inicio.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigateToHome()
-            }
-          ]
-        );
-        
       } catch (error) {
         console.error('Error al confirmar compra:', error);
-        Alert.alert(
-          '¡Pago exitoso!',
-          'Tu compra se procesó correctamente. Te llevamos al inicio.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigateToHome()
-            }
-          ]
-        );
       }
     };
 
