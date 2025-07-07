@@ -13,6 +13,7 @@ export interface SearchTripsParams {
   idLocalidadDestino: number;
   fechaViaje: string;
   cantidadPasajes: number;
+  fechaHoraDesde?: string;
   page?: number;
   size?: number;
   sort?: string[];

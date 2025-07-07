@@ -9,7 +9,7 @@ export const getNotifications = async (
 ): Promise<NotificationsPage> => {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/notificaciones?clienteId=${clienteId}&page=${page}&size=${size}`,
+      `${API_BASE_URL}/notificaciones/all?clienteId=${clienteId}&page=${page}&size=${size}`,
       {
         method: 'GET',
         headers: {

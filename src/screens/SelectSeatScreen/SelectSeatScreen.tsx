@@ -508,56 +508,61 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
     }
   };
 
-  const renderAsiento = (numeroAsiento: number) => {
-    const asiento = asientos.find((a) => a.numero === numeroAsiento);
-    
-    if (!asiento) {
-      return <View style={styles.asientoVacio} key={`vacio-${numeroAsiento}`} />;
-    }
+const renderAsiento = (numeroAsiento: number) => {
+  const asiento = asientos.find((a) => a.numero === numeroAsiento);
+  
+  if (!asiento) {
+    return <View style={styles.asientoVacio} key={`vacio-${numeroAsiento}`} />;
+  }
 
-    const estaSeleccionado = asientosSeleccionados.includes(numeroAsiento);
-    const estadoOriginal = asiento.estado;
-    
-    const estilosAsiento = [
-      styles.asiento,
-      estadoOriginal === "ocupado" && styles.asientoOcupado,
-      estadoOriginal === "reservado" && styles.asientoReservado,
-      estadoOriginal === "disponible" && estaSeleccionado && styles.asientoSeleccionado,
-      estadoOriginal === "disponible" && !estaSeleccionado && styles.asientoDisponible,
-    ].filter(Boolean);
+  const estaSeleccionado = asientosSeleccionados.includes(numeroAsiento);
+  const estadoOriginal = asiento.estado;
+  
+  const estilosAsiento = [
+    styles.asiento,
+    estadoOriginal === "ocupado" && styles.asientoOcupado,
+    estadoOriginal === "reservado" && styles.asientoReservado,
+    estadoOriginal === "disponible" && estaSeleccionado && styles.asientoSeleccionado,
+    estadoOriginal === "disponible" && !estaSeleccionado && styles.asientoDisponible,
+  ].filter(Boolean);
 
-    const estilosTexto = [
-      styles.numeroAsiento,
-      estadoOriginal === "disponible" && estaSeleccionado && styles.numeroAsientoSeleccionado,
-      (estadoOriginal === "ocupado" || estadoOriginal === "reservado") && styles.numeroAsientoGris,
-    ].filter(Boolean);
+  const estilosTexto = [
+    styles.numeroAsiento,
+    estadoOriginal === "disponible" && estaSeleccionado && styles.numeroAsientoSeleccionado,
+    (estadoOriginal === "ocupado" || estadoOriginal === "reservado") && styles.numeroAsientoGris,
+  ].filter(Boolean);
 
-    const puedeClicar = estadoOriginal === "disponible";
+  const puedeClicar = estadoOriginal === "disponible";
 
-    return (
-      <TouchableOpacity
-        key={`asiento-${asiento.id}-${numeroAsiento}`}
-        style={estilosAsiento}
-        onPress={() => {
-          if (puedeClicar) {
-            handleSeleccionarAsiento(numeroAsiento);
-          }
-        }}
-        disabled={!puedeClicar}
-      >
-        <Text style={estilosTexto}>
-          {numeroAsiento}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  return (
+    <TouchableOpacity
+      key={`asiento-${numeroAsiento}`}
+      style={estilosAsiento}
+      onPress={() => {
+        if (puedeClicar) {
+          handleSeleccionarAsiento(numeroAsiento);
+        }
+      }}
+      disabled={!puedeClicar}
+    >
+      <Text style={estilosTexto}>
+        {numeroAsiento}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
   const renderFilaAsientos = (fila: number) => {
     const asientosBase = (fila - 1) * 4;
     
     return (
       <View key={`fila-${fila}`} style={styles.fila}>
-        {[1, 2, 3, 4].map(i => renderAsiento(asientosBase + i))}
+        <View style={styles.filaNumber}>
+          <Text style={styles.filaNumberText}>{fila}</Text>
+        </View>
+        <View style={styles.filaSeats}>
+          {[1, 2, 3, 4].map(i => renderAsiento(asientosBase + i))}
+        </View>
       </View>
     );
   };
@@ -745,7 +750,7 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
           style={styles.backgroundImage}
         >
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#F3B600" />
+            <ActivityIndicator size="large" color="#3B82F6" />
             <Text style={styles.loadingText}>Cargando información del viaje...</Text>
           </View>
         </ImageBackground>
@@ -801,25 +806,25 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
 
             <View style={styles.tripInfoContainer}>
               <View style={styles.tripInfoRow}>
-                <Icon name="directions-bus" size={20} color="#F3B600" />
+                <Icon name="directions-bus" size={20} color="#10B981" />
                 <Text style={styles.tripInfoText}>
                   {origenSeleccionado.nombreConDepartamento} → {destinoSeleccionado.nombreConDepartamento}
                 </Text>
               </View>
               <View style={styles.tripInfoRow}>
-                <Icon name="event" size={20} color="#F3B600" />
+                <Icon name="event" size={20} color="#10B981" />
                 <Text style={styles.tripInfoText}>Salida: {formatDateTime(tripDetails.fechaHoraSalida).split(' ')[0]}</Text>
-                <Icon name="access-time" size={20} color="#F3B600" />
+                <Icon name="access-time" size={20} color="#10B981" />
                 <Text style={styles.tripInfoText}>{formatDateTime(tripDetails.fechaHoraSalida).split(' ')[1]}</Text>
               </View>
               <View style={styles.tripInfoRow}>
-                <Icon name="event" size={20} color="#F3B600" />
+                <Icon name="event" size={20} color="#10B981" />
                 <Text style={styles.tripInfoText}>Llegada: {formatDateTime(tripDetails.fechaHoraLlegada).split(' ')[0]}</Text>
-                <Icon name="access-time" size={20} color="#F3B600" />
+                <Icon name="access-time" size={20} color="#10B981" />
                 <Text style={styles.tripInfoText}>{formatDateTime(tripDetails.fechaHoraLlegada).split(' ')[1]}</Text>
               </View>
               <View style={styles.tripInfoRow}>
-                <Icon name="group" size={20} color="#F3B600" />
+                <Icon name="group" size={20} color="#10B981" />
                 <Text style={styles.tripInfoText}>
                   {cantidadPasajeros - asientosSeleccionados.length === 0
                     ? 'Asientos seleccionados'
@@ -845,20 +850,26 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
             )}
 
             <View style={styles.busSection}>
-              <View style={styles.busContainer}>
                 <View style={styles.busShape}>
-                  <View style={styles.volante}>
-                    <Image 
-                      source={require('../../assets/Volante.png')} 
-                      style={styles.volanteImage}
-                    />
-                    <Text style={styles.conductorText}>Conductor</Text>
+                  <View style={styles.conductorHeader}>
+                    <View style={styles.volante}>
+                      <Icon name="radio-button-unchecked" size={24} color="#F3B600" />
+                      <Text style={styles.conductorText}>CONDUCTOR</Text>
+                    </View>
+                    <View style={styles.puertaIndicator}>
+                      <Icon name="exit-to-app" size={12} color="#FFFFFF" />
+                      <Text style={styles.puertaText}>Puerta</Text>
+                    </View>
                   </View>
 
                   <View style={styles.asientosContainer}>
                     {Array.from({ length: totalFilas }, (_, index) => index + 1).map(renderFilaAsientos)}
                   </View>
-                </View>
+
+                  <View style={styles.busFooter}>
+                    <Icon name="warning" size={16} color="#EF4444" />
+                    <Text style={styles.emergencyText}>Salida de Emergencia</Text>
+                  </View>
               </View>
 
               <View style={styles.legendContainer}>

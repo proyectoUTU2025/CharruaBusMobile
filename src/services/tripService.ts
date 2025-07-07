@@ -1,10 +1,8 @@
 import {
-  Trip,
   SearchTripsParams,
   SearchTripsResponse,
   TripStop,
   TripDetails,
-  PaginatedResponse,
   TripDetailsResponse
 } from '../types/tripType';
 import { API_BASE_URL } from '@env';
@@ -21,6 +19,7 @@ export const searchTrips = async (
       cantidadPasajes: params.cantidadPasajes.toString(),
       page: (params.page || 0).toString(),
       size: (params.size || 10).toString(),
+      ...(params.fechaHoraDesde && { fechaHoraDesde: params.fechaHoraDesde }),
     });
 
     if (params.sort && params.sort.length > 0) {

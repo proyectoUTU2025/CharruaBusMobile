@@ -204,7 +204,7 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
       setFechaIda(formatDate(selectedDate))
       setFechaIdaError("")
       
-      if (dateVuelta && selectedDate >= dateVuelta) {
+      if (dateVuelta && selectedDate > dateVuelta) {
         setDateVuelta(undefined)
         setFechaVuelta("")
         setFechaVueltaError("")
@@ -249,8 +249,8 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
       hasErrors = true
     }
 
-    if (dateIda && dateVuelta && dateVuelta <= dateIda) {
-      setFechaVueltaError("La fecha de vuelta debe ser posterior a la fecha de ida")
+    if (dateIda && dateVuelta && dateVuelta < dateIda) {
+      setFechaVueltaError("La fecha de vuelta no puede ser anterior a la fecha de ida")
       hasErrors = true
     }
 
@@ -417,11 +417,11 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
 
               {showDatePickerVuelta && (
                 <DateTimePicker
-                  value={dateVuelta || (dateIda ? new Date(dateIda.getTime() + 24 * 60 * 60 * 1000) : new Date())}
+                  value={dateVuelta || dateIda || new Date()}
                   mode="date"
                   display="default"
                   onChange={onChangeDateVuelta}
-                  minimumDate={dateIda ? new Date(dateIda.getTime() + 24 * 60 * 60 * 1000) : new Date()}
+                  minimumDate={dateIda || new Date()}
                 />
               )}
 
@@ -456,29 +456,29 @@ export function RoundTripScreen({ onVolver, onNavigateToViewTrips, initialData }
               <View style={styles.infoContainer}>
                 <Text style={styles.infoTitle}>Resumen del viaje:</Text>
                 <View style={styles.infoRow}>
-                  <Icon name="info" size={16} color="#F3B600" />
+                  <Icon name="info" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>Tipo: Ida y vuelta</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="route" size={16} color="#F3B600" />
+                  <Icon name="route" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Ruta: {origen || "___"} → {destino || "___"}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="event" size={16} color="#F3B600" />
+                  <Icon name="event" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Fecha de ida: {fechaIda || "No seleccionada"}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="event" size={16} color="#F3B600" />
+                  <Icon name="event" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Fecha de vuelta: {fechaVuelta || "No seleccionada"}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="people" size={16} color="#F3B600" />
+                  <Icon name="people" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Pasajeros: {getPasajerosLabel()}
                   </Text>

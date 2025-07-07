@@ -170,9 +170,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
       setDownloadingPurchase(true);
       const success = await downloadPurchasePdf(token, purchaseId);
       
-      if (success) {
-        Alert.alert('Éxito', 'El PDF de la compra se está descargando');
-      } else {
+      if (!success) {
         Alert.alert('Error', 'No se pudo descargar el PDF de la compra');
       }
     } catch (error) {
@@ -194,9 +192,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
       setDownloadingTickets(prev => ({ ...prev, [ticketId]: true }));
       const success = await downloadTicketPdf(token, ticketId);
       
-      if (success) {
-        Alert.alert('Éxito', 'El PDF del pasaje se está descargando');
-      } else {
+      if (!success) {
         Alert.alert('Error', 'No se pudo descargar el PDF del pasaje');
       }
     } catch (error) {

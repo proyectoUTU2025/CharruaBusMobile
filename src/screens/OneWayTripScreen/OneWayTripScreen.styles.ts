@@ -139,17 +139,17 @@ export const styles = StyleSheet.create({
     color: "#374151",
   },
   infoContainer: {
-    backgroundColor: "#FBF6EE",
+    backgroundColor: "#ECFDF5",
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#F3B600",
+    borderColor: "#10B981",
     marginTop: 8,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#F3B600",
+    color: "#10B981",
     marginBottom: 12,
   },
   infoRow: {
@@ -159,12 +159,12 @@ export const styles = StyleSheet.create({
   },
   infoItem: {
     fontSize: 14,
-    color: "#F3B600",
+    color: "#10B981",
     marginLeft: 8,
     flex: 1,
   },
   searchButtonActive: {
-    backgroundColor: "#F3B600",
+    backgroundColor: "#3B82F6",
   },
   modalOverlay: {
     flex: 1,

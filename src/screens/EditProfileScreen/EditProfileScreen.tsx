@@ -45,6 +45,7 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [showDocumentValidation, setShowDocumentValidation] = useState(false)
 
   const tiposDocumento = ["CEDULA", "PASAPORTE", "OTRO"]
   const situacionesLaborales = ["ESTUDIANTE", "JUBILADO", "OTRO"]
@@ -52,6 +53,24 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   useEffect(() => {
     initializeUserData()
   }, [])
+
+  const isFormValid = () => {
+    const hasRequiredFields = nombre.trim() !== "" && 
+                            apellido.trim() !== "" && 
+                            tipoDocumento !== "" && 
+                            documento.trim() !== "" && 
+                            date !== undefined && 
+                            situacionLaboral !== ""
+    
+    const hasNoErrors = nombreError === "" && 
+                      apellidoError === "" && 
+                      tipoDocumentoError === "" && 
+                      documentoError === "" && 
+                      fechaError === "" && 
+                      situacionLaboralError === ""
+    
+    return hasRequiredFields && hasNoErrors
+  }
 
   const initializeUserData = async () => {
     if (!token) {
@@ -180,6 +199,7 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   }
 
   const validateDocumento = (value: string) => {
+    setShowDocumentValidation(true)
     if (tipoDocumento === "CEDULA") {
       const onlyNumbers = value.replace(/\D/g, '')
       
@@ -341,6 +361,7 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
       const result = await updateUserProfile(token!, userId, updateData)
 
       if (result.success) {
+        setShowDocumentValidation(false)
         Alert.alert(
           "Perfil actualizado",
           result.message,
@@ -409,9 +430,9 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   const renderDocumentoValidation = () => {
     if (documentoError) {
       return <Text style={styles.errorText}>{documentoError}</Text>
-    } else if (tipoDocumento === "CEDULA" && documento.length === 8 && validarCedulaUruguaya(documento)) {
+    } else if (showDocumentValidation && tipoDocumento === "CEDULA" && documento.length === 8 && validarCedulaUruguaya(documento)) {
       return <Text style={styles.successText}>✓ Cédula válida</Text>
-    } else if (tipoDocumento === "PASAPORTE" && documento.length === 8 && /^[A-Z][0-9]{7}$/.test(documento)) {
+    } else if (showDocumentValidation && tipoDocumento === "PASAPORTE" && documento.length === 8 && /^[A-Z][0-9]{7}$/.test(documento)) {
       return <Text style={styles.successText}>✓ Pasaporte válido</Text>
     }
     return null
@@ -545,10 +566,13 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
               </View>
 
               <TouchableOpacity 
-                style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} 
+                style={[
+                  styles.saveButton, 
+                  (isLoading || !isFormValid()) && styles.saveButtonDisabled
+                ]} 
                 activeOpacity={0.8} 
                 onPress={handleSaveChanges}
-                disabled={isLoading}
+                disabled={isLoading || !isFormValid()}
               >
                 {isLoading ? (
                   <View style={styles.loadingButtonContainer}>

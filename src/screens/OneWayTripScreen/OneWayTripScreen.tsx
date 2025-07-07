@@ -419,23 +419,23 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
               <View style={styles.infoContainer}>
                 <Text style={styles.infoTitle}>Resumen del viaje:</Text>
                 <View style={styles.infoRow}>
-                  <Icon name="info" size={16} color="#F3B600" />
+                  <Icon name="info" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>Tipo: Solo ida</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="route" size={16} color="#F3B600" />
+                  <Icon name="route" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Ruta: {origen || "___"} → {destino || "___"}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="event" size={16} color="#F3B600" />
+                  <Icon name="event" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Fecha: {fecha || "No seleccionada"}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Icon name="people" size={16} color="#F3B600" />
+                  <Icon name="people" size={16} color="#10B981" />
                   <Text style={styles.infoItem}>
                     Pasajeros: {getPasajerosLabel()}
                   </Text>

@@ -26,7 +26,7 @@ const LoadingScreen = () => {
               resizeMode="contain"
             />
           </View>
-          <ActivityIndicator size="large" color="#F3B600" style={styles.loader} />
+          <ActivityIndicator size="large" color="#3B82F6" style={styles.loader} />
         </View>
       </ImageBackground>
     </SafeAreaView>

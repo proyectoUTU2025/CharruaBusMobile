@@ -55,7 +55,7 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
   },
   selectButton: {
-    backgroundColor: '#F3B600',
+    backgroundColor: '#3B82F6',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: scaleSize(16),
@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   progressStepCompleted: {
-    backgroundColor: '#F3B600',
+    backgroundColor: '#10B981',
   },
   progressStepText: {
     fontSize: scaleFontSize(14),
@@ -325,7 +325,7 @@ export const styles = StyleSheet.create({
     marginBottom: scaleSize(24),
   },
   retryButton: {
-    backgroundColor: '#F3B600',
+    backgroundColor: '#3B82F6',
     paddingHorizontal: scaleSize(24),
     paddingVertical: scaleSize(12),
     borderRadius: scaleSize(8),

@@ -133,17 +133,17 @@ export const styles = StyleSheet.create({
     color: "#374151",
   },
   infoContainer: {
-    backgroundColor: "#FBF6EE",
+    backgroundColor: "#ECFDF5",
     borderRadius: scaleSize(8),
     padding: scaleSize(16),
     borderWidth: 1,
-    borderColor: "#F3B600",
+    borderColor: "#10B981",
     marginTop: scaleSize(8),
   },
   infoTitle: {
     fontSize: scaleFontSize(16),
     fontWeight: "600",
-    color: "#F3B600",
+    color: "#10B981",
     marginBottom: scaleSize(12),
   },
   infoRow: {
@@ -153,7 +153,7 @@ export const styles = StyleSheet.create({
   },
   infoItem: {
     fontSize: scaleFontSize(14),
-    color: "#F3B600",
+    color: "#10B981",
     marginLeft: scaleSize(8),
     flex: 1,
   },
@@ -168,7 +168,7 @@ export const styles = StyleSheet.create({
     marginTop: scaleSize(16),
   },
   searchButtonActive: {
-    backgroundColor: "#F3B600",
+    backgroundColor: "#3B82F6",
   },
   searchButtonText: {
     fontSize: scaleFontSize(18),

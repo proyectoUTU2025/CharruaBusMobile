@@ -71,7 +71,7 @@ export const styles = StyleSheet.create({
     color: "#666",
   },
   continueButton: {
-    backgroundColor: "#F3B600",
+    backgroundColor: "#10B981",
     borderRadius: scaleSize(12),
     paddingVertical: scaleSize(16),
     paddingHorizontal: scaleSize(24),

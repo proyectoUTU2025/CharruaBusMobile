@@ -2,6 +2,179 @@ import { StyleSheet } from 'react-native';
 import { scaleSize, scaleFontSize, getResponsivePadding, getMaxContainerWidth } from '../../utils/responsiveDimensions';
 
 export const styles = StyleSheet.create({
+
+  conductorHeader: {
+    backgroundColor: '#374151',
+    borderTopLeftRadius: scaleSize(16),
+    borderTopRightRadius: scaleSize(16),
+    paddingVertical: scaleSize(12),
+    paddingHorizontal: scaleSize(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: -scaleSize(15),
+    marginTop: -scaleSize(16),
+    marginBottom: scaleSize(16),
+  },
+  volante: {
+    alignItems: 'center',
+    marginLeft: scaleSize(6),
+    flexDirection: 'row',
+  },
+  puertaIndicator: {
+    backgroundColor: '#10B981',
+    borderRadius: scaleSize(4),
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleSize(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  busShape: {
+    borderWidth: 2,
+    borderColor: '#374151',
+    borderRadius: scaleSize(20),
+    padding: scaleSize(12),
+    backgroundColor: '#F3F4F6',
+    alignSelf: 'center',
+    width: '100%', 
+    maxWidth: scaleSize(304),
+    position: 'relative',
+  },
+  asientosContainer: {
+    gap: scaleSize(6),
+    width: '100%',
+    paddingHorizontal: scaleSize(4),
+  },
+  fila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: scaleSize(6),
+    marginBottom: scaleSize(6),
+    paddingHorizontal: scaleSize(4),
+  },
+  asiento: {
+    width: scaleSize(36),
+    height: scaleSize(36),
+    borderRadius: scaleSize(6),
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: scaleSize(1),
+    borderWidth: 1,
+  },
+  asientoVacio: {
+    width: scaleSize(36),
+    height: scaleSize(36),
+    margin: scaleSize(1),
+  },
+  filaNumber: {
+    width: scaleSize(20),
+    height: scaleSize(20),
+    backgroundColor: '#6B7280',
+    borderRadius: scaleSize(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scaleSize(8),
+  },
+  filaNumberText: {
+    fontSize: scaleFontSize(10),
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  numeroAsiento: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  conductorText: {
+    fontSize: scaleFontSize(12),
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginLeft: scaleSize(8),
+  },
+  puertaText: {
+    fontSize: scaleFontSize(12),
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: scaleSize(4),
+  },
+  filaSeats: {
+    flexDirection: 'row',
+    gap: scaleSize(8),
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  asientoDisponible: {
+    borderColor: '#10B981',
+    backgroundColor: '#10B981',
+  },
+  asientoSeleccionado: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#3B82F6',
+  },
+  asientoOcupado: {
+    borderColor: '#9CA3AF',
+    backgroundColor: '#9CA3AF',
+  },
+  asientoReservado: {
+    borderColor: '#9CA3AF',
+    backgroundColor: '#9CA3AF',
+  },
+  numeroAsientoSeleccionado: {
+    color: '#FFFFFF',
+  },
+  numeroAsientoGris: {
+    color: '#FFFFFF',
+  },
+  busFooter: {
+    backgroundColor: '#374151',
+    borderBottomLeftRadius: scaleSize(16),
+    borderBottomRightRadius: scaleSize(16),
+    paddingVertical: scaleSize(12),
+    paddingHorizontal: scaleSize(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: -scaleSize(15),
+    marginBottom: -scaleSize(16),
+    marginTop: scaleSize(16),
+  },
+  emergencyText: {
+    fontSize: scaleFontSize(12),
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginLeft: scaleSize(8),
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: scaleSize(20),
+    paddingHorizontal: scaleSize(16),
+    gap: scaleSize(20),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(8),
+    paddingVertical: scaleSize(12),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(8),
+  },
+  legendSeat: {
+    width: scaleSize(20),
+    height: scaleSize(20),
+    borderWidth: 2,
+    borderRadius: scaleSize(4),
+  },
+  legendText: {
+    fontSize: scaleFontSize(12),
+    color: '#374151',
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
   },
@@ -18,31 +191,8 @@ export const styles = StyleSheet.create({
     elevation: 8,
     alignSelf: 'center',
   },
-  busShape: {
-    borderWidth: 2,
-    borderColor: '#374151',
-    borderRadius: scaleSize(20),
-    padding: scaleSize(14),
-    backgroundColor: '#F9FAFB',
-    alignSelf: 'center',
-    minWidth: 'auto',
-  },
-  asiento: {
-    width: scaleSize(36),
-    height: scaleSize(36),
-    borderWidth: 2,
-    borderRadius: scaleSize(8),
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  numeroAsiento: {
-    fontSize: scaleFontSize(12),
-    fontWeight: '600',
-    color: '#374151',
-  },
   finalizarButton: {
-    backgroundColor: '#F3B600',
+    backgroundColor: '#3B82F6',
     borderRadius: scaleSize(12),
     paddingVertical: scaleSize(16),
     alignItems: 'center',
@@ -98,7 +248,7 @@ export const styles = StyleSheet.create({
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#F3B600',
+    backgroundColor: '#3B82F6',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
@@ -151,7 +301,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   progressStepCompleted: {
-    backgroundColor: '#F3B600',
+    backgroundColor: '#10B981',
   },
   progressStepText: {
     fontSize: 14,
@@ -171,11 +321,11 @@ export const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   tripInfoContainer: {
-    backgroundColor: "#FBF6EE",
+    backgroundColor: "#ECFDF5",
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#F3B600",
+    borderColor: "#10B981",
     marginBottom: 20,
   },
   tripInfoRow: {
@@ -185,7 +335,7 @@ export const styles = StyleSheet.create({
   },
   tripInfoText: {
     fontSize: 14,
-    color: '#F3B600',
+    color: '#10B981',
     marginLeft: 8,
     flex: 1,
   },
@@ -239,7 +389,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F0FDF4',
-    borderColor: '#F3B600',
+    borderColor: '#3B82F6',
     borderWidth: 1,
     borderRadius: 8,
     paddingVertical: 12,
@@ -248,65 +398,9 @@ export const styles = StyleSheet.create({
   },
   refreshButtonText: {
     fontSize: 14,
-    color: '#F3B600',
+    color: '#3B82F6',
     fontWeight: '600',
     marginLeft: 8,
-  },
-  busContainer: {
-    alignItems: 'center',
-  },
-  volante: {
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingLeft: 14,
-    width: '100%',
-  },
-  volanteImage: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
-  },
-  conductorText: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  asientosContainer: {
-    gap: 8,
-  },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  asientoDisponible: {
-    borderColor: '#4285F4',
-    backgroundColor: 'white',
-  },
-  asientoSeleccionado: {
-    borderColor: '#F3B600',
-    backgroundColor: '#F3B600',
-  },
-  asientoOcupado: {
-    borderColor: '#9CA3AF',
-    backgroundColor: '#F3F4F6',
-  },
-  asientoReservado: {
-    borderColor: '#9CA3AF',
-    backgroundColor: '#F3F4F6',
-  },
-  asientoVacio: {
-    width: 36,
-    height: 36,
-  },
-  numeroAsientoSeleccionado: {
-    color: 'white',
-  },
-  numeroAsientoGris: {
-    color: '#6B7280',
   },
   footerSection: {
     borderTopWidth: 1,
@@ -377,27 +471,5 @@ export const styles = StyleSheet.create({
   },
   finalizarButtonDisabled: {
     backgroundColor: '#9CA3AF',
-  },
-  legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 16,
-    paddingHorizontal: 16,
-    gap: 16,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  legendSeat: {
-    width: 16,
-    height: 16,
-    borderWidth: 1,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#6B7280',
   },
 });

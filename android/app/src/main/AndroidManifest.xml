@@ -37,10 +37,13 @@
         android:name=".MainActivity"
         android:label="@string/app_name"
         android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
-        android:launchMode="singleTask"
+        android:launchMode="singleInstancePerTask"
         android:windowSoftInputMode="adjustResize"
         android:exported="true"
-        android:screenOrientation="portrait">
+        android:screenOrientation="portrait"
+        android:taskAffinity=""
+        android:documentLaunchMode="never"
+        android:excludeFromRecents="false">
 
         <!-- Punto de entrada de la app -->
         <intent-filter>

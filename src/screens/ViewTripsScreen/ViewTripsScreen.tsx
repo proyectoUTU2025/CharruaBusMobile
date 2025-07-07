@@ -61,6 +61,12 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
     return price.toFixed(2);
   };
 
+  const esMismoDia = (fecha1: string, fecha2: string): boolean => {
+    const date1 = new Date(fecha1);
+    const date2 = new Date(fecha2);
+    return date1.toDateString() === date2.toDateString();
+  };
+
   const getCurrentSearchData = () => {
     if (tipoViaje === 'ida-vuelta' && currentState) {
       if (currentState.currentStep === 'select-trip-ida') {
@@ -228,6 +234,19 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
         size: 10,
         sort: ['fechaHoraSalida,ASC'],
       };
+      
+      if (tipoViaje === 'ida-vuelta' && 
+        currentState && 
+        currentState.currentStep === 'select-trip-vuelta' &&
+        currentState.viajeIda?.trip?.fechaHoraLlegada) {
+      
+      const fechaIda = formatDateForAPI(currentState.viajeIda.date);
+      const fechaVuelta = fechaParaAPI;
+      
+      if (esMismoDia(fechaIda, fechaVuelta)) {
+        searchParams.fechaHoraDesde = currentState.viajeIda.trip.fechaHoraLlegada;
+      }
+    }
 
       const response = await searchTrips(token, searchParams);
       
@@ -460,7 +479,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
       >
         {loadingMore ? (
           <View style={styles.loadMoreContent}>
-            <ActivityIndicator size="small" color="#F3B600" />
+            <ActivityIndicator size="small" color="#3B82F6" />
             <Text style={styles.loadMoreText}>Cargando más...</Text>
           </View>
         ) : (
@@ -607,7 +626,7 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
         >
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#F3B600" />
+              <ActivityIndicator size="large" color="#3B82F6" />
               <Text style={styles.loadingText}>Buscando viajes disponibles...</Text>
             </View>
           ) : error && trips.length === 0 ? (
