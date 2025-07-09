@@ -198,8 +198,20 @@ const AppNavigator = () => {
       >
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="Main" component={BottomTabsNavigator} />
-            <Stack.Screen name="TripSelection" component={BottomTabsNavigator} />
+            <Stack.Screen 
+              name="Main" 
+              component={BottomTabsNavigator}
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen 
+              name="TripSelection" 
+              component={BottomTabsNavigator}
+              options={{
+                gestureEnabled: false,
+              }}
+            />
             <Stack.Screen name="OneWayTrip" component={OneWayTripScreen} />
             <Stack.Screen name="ViewTrips" component={ViewTripsScreen} />
             <Stack.Screen name="SelectSeat" component={SelectSeatScreen} />

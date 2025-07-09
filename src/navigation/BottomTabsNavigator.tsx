@@ -36,6 +36,7 @@ import {
   getNotificationIcon 
 } from '../services/notificationApiService';
 import { styles } from './BottomTabsNavigator.styles';
+import { BackHandler } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -636,6 +637,25 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
       setNavigationState({ type: 'tab' });
     }
   }, [navigationState]);
+
+  useEffect(() => {
+  const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+    if (navigationState.type !== 'tab') {
+      goBack();
+      return true;
+    }
+    
+    if (navigationState.type === 'tab' && activeTab !== 'inicio') {
+      setActiveTab('inicio');
+      activeTabRef.current = 'inicio';
+      return true;
+    }
+    
+    return false;
+  });
+
+  return () => backHandler.remove();
+}, [navigationState.type, activeTab, goBack]);
 
   const renderContent = useMemo(() => {
     switch (navigationState.type) {
