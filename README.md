@@ -32,7 +32,7 @@ Antes de clonar y ejecutar este proyecto, asegurate de tener instalados los sigu
 
 ```cmd
 npx react-native doctor
-```
+````
 
 ## Clonar el repositorio
 
