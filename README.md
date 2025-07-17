@@ -33,14 +33,32 @@ npx react-native doctor
 
 ## Clonar el repositorio
 
-```cmd
+```
+cmd
 git clone https://github.com/proyectoUTU2025/CharruaBusMobile.git
 cd CharruaBusMobile
 ```
 
 ## Instalar las dependencias del proyecto
 ```
+cmd
 npm install
+```
+
+## Configuracion del archivo .env
+
+Ajustar API_BASE_URL
+
+Si se usa el emulador, es necesario indicar la ip del pc donde se corre el back (Ejemplo: API_BASE_URL=http://192.168.1.170:8080)
+
+En caso de usar un emulador se puede utilizar localhost (Ejemplo: API_BASE_URL=http://localhost:8080)
+
+Para el caso de estar deployada en algun sitio indicar usar mismo la url del sitio (Ejemplo: API_BASE_URL=https://charruabusbackend-production.up.railway.app)
+
+## Visibilidad del back para red local (En caso de no tener el back deployado)
+```
+cmd
+netsh advfirewall firewall add rule name="Spring Boot Dev" dir=in action=allow protocol=TCP localport=8080
 ```
 ## 📱 Ejecutar la app en Android
 
@@ -57,20 +75,24 @@ adb devices
 
 ### Comando para ejecutar
 ```
+cmd
 npx react-native run-android
 ```
 ### Para especificar un dispositivo específico
 #### Para buscar un dispositivo
 ```
+cmd
 adb device
 ```
 #### Ejecutar en el DISPOSITIVO elegido
 ```
+cmd
 npx react-native run-android --device DISPOSITIVO
 ```
 
 ## 🏗️ Generar APK
 ```
+cmd
 cd android
 ./gradlew clean
 ./gradlew assembleRelease
