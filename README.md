@@ -29,12 +29,14 @@ Antes de clonar y ejecutar este proyecto, asegurate de tener instalados los sigu
 > ANDROID_HOME=C:\Users\<TU_USUARIO>\AppData\Local\Android\Sdk
 
 ### Verificar el entorno
+
+```cmd
 npx react-native doctor
+```
 
 ## Clonar el repositorio
 
-```
-cmd
+```cmd
 git clone https://github.com/proyectoUTU2025/CharruaBusMobile.git
 cd CharruaBusMobile
 ```
@@ -151,8 +153,8 @@ src
 ```
 
 ## Instalar las dependencias del proyecto
-```
-cmd
+
+```cmd
 npm install
 ```
 
@@ -167,8 +169,8 @@ En caso de usar un emulador se puede utilizar localhost (Ejemplo: API_BASE_URL=h
 Para el caso de estar deployada en algun sitio indicar usar mismo la url del sitio (Ejemplo: API_BASE_URL=https://charruabusbackend-production.up.railway.app)
 
 ## Visibilidad del back para red local (En caso de no tener el back deployado)
-```
-cmd
+
+```cmd
 netsh advfirewall firewall add rule name="Spring Boot Dev" dir=in action=allow protocol=TCP localport=8080
 ```
 ## 📱 Ejecutar la app en Android
@@ -185,25 +187,25 @@ Asegurate de tener al menos un dispositivo/emulador encendido antes de ejecutar 
 adb devices
 
 ### Comando para ejecutar
-```
-cmd
+
+```cmd
 npx react-native run-android
 ```
 ### Para especificar un dispositivo específico
 #### Para buscar un dispositivo
-```
-cmd
+
+```cmd
 adb device
 ```
 #### Ejecutar en el DISPOSITIVO elegido
-```
-cmd
+
+```cmd
 npx react-native run-android --device DISPOSITIVO
 ```
 
 ## 🏗️ Generar APK
-```
-cmd
+
+```cmd
 cd android
 ./gradlew clean
 ./gradlew assembleRelease
