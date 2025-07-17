@@ -1,4 +1,3 @@
-// App.tsx - Actualizado con NotificationProvider
 import React, { useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/context/AuthContext';
@@ -15,14 +14,7 @@ const App = () => {
     const initializeNotifications = async () => {
       try {
         await requestUserPermission();
-        
-        // El setupNotifications ahora maneja automáticamente 
-        // la actualización del conteo cuando llegan notificaciones en primer plano
         const unsubscribe = setupNotifications((remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-          console.log('Notificación procesada:', remoteMessage);
-          
-          // Ya no mostramos alertas aquí, solo logeamos para debug
-          // El conteo se actualiza automáticamente via el NotificationContext
         });
 
         return unsubscribe;

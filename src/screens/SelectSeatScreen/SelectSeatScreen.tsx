@@ -3,14 +3,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   StatusBar,
   SafeAreaView,
   ScrollView,
   Alert,
   ActivityIndicator,
   ImageBackground,
-  Image,
   Linking,
   AppState,
 } from 'react-native';
@@ -32,7 +30,7 @@ import { UserApiResponse } from '../../types/userType';
 import { styles } from './SelectSeatScreen.styles';
 
 export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectSeatScreenProps & { onWentToPayment?: () => void }) {
-  const { token } = useAuth();
+  const { token, handleUnauthorized } = useAuth();
   const { user, loading: userLoading } = useUser();
   const { tripId, origenSeleccionado, destinoSeleccionado, fecha, pasajeros, trip, tipoViaje, roundTripState } = route.params;
 
@@ -117,11 +115,14 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
       });
 
       setAsientos(asientosLocales);
-      
       setAsientosSeleccionados([]);
       
     } catch (error) {
-      console.error('Error loading trip details:', error);
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
+      }
+
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar detalles del viaje';
       setError(errorMessage);
       
@@ -130,8 +131,14 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
           'Error',
           errorMessage,
           [
-            { text: 'Reintentar', onPress: () => loadTripDetails(true) },
-            { text: 'Volver', onPress: () => navigation?.goBack() }
+            { 
+              text: 'Reintentar', 
+              onPress: () => loadTripDetails(true) 
+            },
+            { 
+              text: 'Volver', 
+              onPress: () => navigation?.goBack() 
+            }
           ]
         );
       }
@@ -206,6 +213,10 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
         const userData = await getUserById(token, user.id);
         setUserApiData(userData);
       } catch (error) {
+        if (error instanceof Error && error.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
         console.error('Error cargando datos del usuario:', error);
       } finally {
         setLoadingUserData(false);
@@ -213,7 +224,7 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
     };
 
     loadUserData();
-  }, [token, user?.id]);
+  }, [token, user?.id, handleUnauthorized]);
 
   useEffect(() => {
     const cargarConfiguraciones = async () => {
@@ -232,6 +243,10 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
         setConfiguracionesCargadas(true);
         
       } catch (error) {
+        if (error instanceof Error && error.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
         console.error('Error cargando configuraciones:', error);
         setConfiguracionesCargadas(true);
       }
@@ -382,7 +397,8 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
       let payload;
 
       if (tipoViaje === 'ida-vuelta' && currentState) {
-        if (!currentState.viajeIda?.asientosSeleccionados || currentState.viajeIda.asientosSeleccionados.length === 0) {
+        if (!currentState.viajeIda?.asientosSeleccionados || 
+            currentState.viajeIda.asientosSeleccionados.length === 0) {
           Alert.alert("Error", "No hay asientos seleccionados para el viaje de ida.");
           return;
         }
@@ -444,6 +460,10 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
       await Linking.openURL(sessionUrl);
 
     } catch (error) {
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
+      }
       
       let errorMessage = "Hubo un problema al procesar el pago. Intenta nuevamente.";
       let shouldReloadSeats = false;
@@ -466,15 +486,17 @@ export function SelectSeatScreen({ route, navigation, onWentToPayment }: SelectS
             const notReserved = requested - reserved;
             
             if (reserved === 0) {
-              if(cantidadPasajeros==1)
+              if(cantidadPasajeros === 1) {
                 errorMessage = `El asiento seleccionado ya está ocupado.`;
-              else if (cantidadPasajeros>1)
+              } else {
                 errorMessage = `Alguno de los asientos seleccionados ya fueron ocupados.`;
+              }
             } else {
-              if (notReserved==1)
+              if (notReserved === 1) {
                 errorMessage = `Solo se pudieron reservar ${reserved} de ${requested} asientos. ${notReserved} asiento ya fue ocupado.`;
-              else if (notReserved>1)
+              } else {
                 errorMessage = `Solo se pudieron reservar ${reserved} de ${requested} asientos. ${notReserved} asientos ya fueron ocupados.`;
+              }
             }
           } else {
             errorMessage = "Algunos de los asientos seleccionados ya están ocupados. La disponibilidad se actualizará automáticamente.";

@@ -32,7 +32,7 @@ declare global {
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTripScreenProps) => {
-  const { token } = useAuth()
+  const { token, handleUnauthorized } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   
   const [origen, setOrigen] = useState("")
@@ -91,8 +91,11 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
         setOpcionesPasajeros(opciones);
         
       } catch (error) {
+        if (error instanceof Error && error.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
         console.error('Error cargando límite de pasajes:', error);
-
         const opcionesDefault = [
           { label: "1 pasajero", value: "1" },
           { label: "2 pasajeros", value: "2" },
@@ -111,41 +114,49 @@ export const OneWayTripScreen = ({ onGoBack, onNavigateToViewTrips }: OneWayTrip
 
   useEffect(() => {
     const cargarLocalidades = async () => {
-      if (!token) return
+      if (!token) return;
 
       try {
-        setLoadingLocalidades(true)
-        const localidadesData = await getOrigenesPosibles(token)
-        setLocalidades(localidadesData)
-        setFilteredLocalidades(localidadesData)
+        setLoadingLocalidades(true);
+        const localidadesData = await getOrigenesPosibles(token);
+        setLocalidades(localidadesData);
+        setFilteredLocalidades(localidadesData);
       } catch (error) {
-        console.error('Error cargando localidades:', error)
+        if (error instanceof Error && error.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
+        console.error('Error cargando localidades:', error);
       } finally {
-        setLoadingLocalidades(false)
+        setLoadingLocalidades(false);
       }
-    }
+    };
 
-    cargarLocalidades()
-  }, [token])
+    cargarLocalidades();
+  }, [token]);
 
   useEffect(() => {
     const cargarDestinos = async () => {
-      if (!token || !origenSeleccionado) return
+      if (!token || !origenSeleccionado) return;
 
       try {
-        setLoadingDestinos(true)
-        const destinosData = await getDestinosPosibles(token, origenSeleccionado.id)
-        setDestinos(destinosData)
-        setFilteredDestinos(destinosData)
+        setLoadingDestinos(true);
+        const destinosData = await getDestinosPosibles(token, origenSeleccionado.id);
+        setDestinos(destinosData);
+        setFilteredDestinos(destinosData);
       } catch (error) {
-        console.error('Error cargando destinos:', error)
+        if (error instanceof Error && error.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
+        console.error('Error cargando destinos:', error);
       } finally {
-        setLoadingDestinos(false)
+        setLoadingDestinos(false);
       }
-    }
+    };
 
-    cargarDestinos()
-  }, [token, origenSeleccionado])
+    cargarDestinos();
+  }, [token, origenSeleccionado]);
 
   useEffect(() => {
     if (searchOrigen.trim() === "") {

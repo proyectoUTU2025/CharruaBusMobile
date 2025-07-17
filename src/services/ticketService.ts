@@ -1,5 +1,6 @@
 import { Linking, Alert  } from 'react-native';
 import { API_BASE_URL } from '@env';
+import { fetchWithInterceptor } from '../utils/httpInterceptor';
 
 export interface Ticket {
   id: number;
@@ -103,7 +104,7 @@ export const getClientTickets = async (
 
     const url = `${API_BASE_URL}/pasajes/cliente/${clienteId}?${queryParams}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithInterceptor(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -112,12 +113,7 @@ export const getClientTickets = async (
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a esta información');
       } else if (response.status === 404) {
         throw new Error('No se encontraron pasajes para este cliente');
@@ -131,13 +127,14 @@ export const getClientTickets = async (
     const result: TicketsResponse = await response.json();
     
     if (!result.content || !Array.isArray(result.content)) {
-      console.error('Estructura de respuesta inesperada:', result);
       throw new Error('Respuesta del servidor con formato incorrecto');
     }
     
     return result;
   } catch (error) {
-    console.error('Error en getClientTickets:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
@@ -156,7 +153,7 @@ export const getTicketDetail = async (
   ticketId: number
 ): Promise<TicketDetail> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/pasajes/${ticketId}`, {
+    const response = await fetchWithInterceptor(`${API_BASE_URL}/pasajes/${ticketId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -165,12 +162,7 @@ export const getTicketDetail = async (
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a esta información');
       } else if (response.status === 404) {
         throw new Error('Pasaje no encontrado');
@@ -184,13 +176,14 @@ export const getTicketDetail = async (
     const result: TicketDetailResponse = await response.json();
     
     if (!result.data || !result.data.id) {
-      console.error('Estructura de respuesta inesperada:', result);
       throw new Error('Respuesta del servidor con formato incorrecto');
     }
     
     return result.data;
   } catch (error) {
-    console.error('Error en getTicketDetail:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
@@ -210,13 +203,20 @@ export const downloadTicketPdf = async (
 ): Promise<boolean> => {
   try {
     const pdfUrl = `${API_BASE_URL}/pasajes/${ticketId}/pdf?token=${encodeURIComponent(token)}`;
-
     await Linking.openURL(pdfUrl);
+    
+    Alert.alert(
+      'PDF Abierto',
+      'El PDF del pasaje se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
+      [{ text: 'Entendido', style: 'default' }]
+    );
     
     return true;
 
   } catch (error) {
-    console.error('Error abriendo PDF de pasaje:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     let errorMessage = 'Error desconocido';
     if (error instanceof Error) {
@@ -250,7 +250,6 @@ export const formatTicketDateTime = (dateTimeString: string): string => {
       minute: '2-digit',
     });
   } catch (error) {
-    console.error('Error formateando fecha:', error);
     return dateTimeString;
   }
 };
@@ -264,7 +263,6 @@ export const formatTicketDate = (dateTimeString: string): string => {
       day: '2-digit',
     });
   } catch (error) {
-    console.error('Error formateando fecha:', error);
     return dateTimeString;
   }
 };
@@ -277,7 +275,6 @@ export const formatTicketTime = (dateTimeString: string): string => {
       minute: '2-digit',
     });
   } catch (error) {
-    console.error('Error formateando hora:', error);
     return dateTimeString;
   }
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   StatusBar,
   SafeAreaView,
   ScrollView,
@@ -27,7 +26,7 @@ import { Trip, SearchTripsParams } from '../../types/tripType';
 import { styles } from './ViewTripsScreen.styles';
 
 export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreenProps) {
-  const { token } = useAuth();
+  const { token, handleUnauthorized } = useAuth();
   const { 
     origenSeleccionado, 
     destinoSeleccionado, 
@@ -240,13 +239,13 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
         currentState.currentStep === 'select-trip-vuelta' &&
         currentState.viajeIda?.trip?.fechaHoraLlegada) {
       
-      const fechaIda = formatDateForAPI(currentState.viajeIda.date);
-      const fechaVuelta = fechaParaAPI;
-      
-      if (esMismoDia(fechaIda, fechaVuelta)) {
-        searchParams.fechaHoraDesde = currentState.viajeIda.trip.fechaHoraLlegada;
+        const fechaIda = formatDateForAPI(currentState.viajeIda.date);
+        const fechaVuelta = fechaParaAPI;
+        
+        if (esMismoDia(fechaIda, fechaVuelta)) {
+          searchParams.fechaHoraDesde = currentState.viajeIda.trip.fechaHoraLlegada;
+        }
       }
-    }
 
       const response = await searchTrips(token, searchParams);
       
@@ -266,11 +265,11 @@ export function ViewTripsScreen({ route, navigation, onGoBack }: ViewTripsScreen
       }
 
     } catch (error) {
-      console.error('Error completo al buscar viajes:', error);
+      setTrips([]);
       
-      if (error instanceof Error) {
-        console.error('Message:', error.message);
-        console.error('Stack:', error.stack);
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Error al buscar viajes';

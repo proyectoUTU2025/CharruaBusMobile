@@ -461,7 +461,6 @@ const [date, setDate] = useState<Date | undefined>(new Date())
       };
 
       try {
-        console.log("Registrando usuario:", data);
         await registerUser(data);
         
         Alert.alert("Éxito", "Usuario registrado!");

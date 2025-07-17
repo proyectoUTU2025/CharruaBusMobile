@@ -23,7 +23,12 @@ import { EditProfileScreenProps } from '../../types/userType';
 import { styles } from './EditProfileScreen.styles';
 
 
-export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditProfileScreenProps) {
+export default function EditProfileScreen({ 
+  onGoBack, 
+  onSuccess, 
+  token,
+  handleUnauthorized 
+}: EditProfileScreenProps) {
   
   const [nombre, setNombre] = useState("")
   const [nombreError, setNombreError] = useState("")
@@ -91,40 +96,38 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
   }
 
   const loadUserData = async (userIdToLoad: string) => {
-    setIsLoadingUser(true)
+    setIsLoadingUser(true);
     try {
-      
       const userData = await getCurrentUserProfile(token, userIdToLoad);
       
-      setNombre(userData.nombre || "")
-      setApellido(userData.apellido || "")
-      setDocumento(userData.documento || "")
-      setTipoDocumento(userData.tipoDocumento || "")
-      setSituacionLaboral(userData.situacionLaboral || "")
+      setNombre(userData.nombre || "");
+      setApellido(userData.apellido || "");
+      setDocumento(userData.documento || "");
+      setTipoDocumento(userData.tipoDocumento || "");
+      setSituacionLaboral(userData.situacionLaboral || "");
       
       if (userData.fechaNacimiento) {
         try {
-          const fecha = new Date(userData.fechaNacimiento)
+          const fecha = new Date(userData.fechaNacimiento);
           if (!isNaN(fecha.getTime())) {
-            setDate(fecha)
-            setFechaNacimiento(formatDate(fecha))
-          } else {
-            console.warn('Fecha de nacimiento inválida:', userData.fechaNacimiento);
+            setDate(fecha);
+            setFechaNacimiento(formatDate(fecha));
           }
         } catch (dateError) {
           console.warn('Error procesando fecha de nacimiento:', dateError);
         }
       }
       
-    } catch (error: any) {
-      console.error("Error loading user data:", error)
-      
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
+      }
+
       let errorMessage = "No se pudieron cargar los datos del usuario";
       
-      if (error.message) {
-        if (error.message.includes('Token de autenticación inválido')) {
-          errorMessage = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
-        } else if (error.message.includes('Usuario no encontrado')) {
+      if (error instanceof Error) {
+        if (error.message.includes('Usuario no encontrado')) {
           errorMessage = "No se encontraron los datos de tu perfil.";
         } else if (error.message.includes('Error de conexión')) {
           errorMessage = "Error de conexión. Verifica tu internet y vuelve a intentar.";
@@ -151,9 +154,9 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
         ]
       );
     } finally {
-      setIsLoadingUser(false)
+      setIsLoadingUser(false);
     }
-  }
+  };
 
   const calcularDigitoVerificador = (cedula: string): number => {
     if (cedula.length < 7) return -1
@@ -347,7 +350,7 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
 
     if (hasErrors) return
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const updateData = {
         nombre: nombre.trim(),
@@ -356,32 +359,40 @@ export default function EditProfileScreen({ onGoBack, onSuccess, token }: EditPr
         tipoDocumento,
         fechaNacimiento: date?.toISOString().split('T')[0] || '',
         situacionLaboral,
-      }
+      };
 
-      const result = await updateUserProfile(token!, userId, updateData)
+      const result = await updateUserProfile(token!, userId, updateData);
 
       if (result.success) {
-        setShowDocumentValidation(false)
+        setShowDocumentValidation(false);
         Alert.alert(
           "Perfil actualizado",
           result.message,
           [{ text: "OK", onPress: onSuccess }]
-        )
+        );
       } else {
+        if (result.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
+
         if (result.message.includes('documento ya existe')) {
-          setDocumentoError("Ya existe un usuario con este documento")
+          setDocumentoError("Ya existe un usuario con este documento");
         } else {
-          Alert.alert("Error", result.message)
+          Alert.alert("Error", result.message);
         }
       }
 
-    } catch (error: any) {
-      console.error("Error updating profile:", error)
-      Alert.alert("Error", "No se pudieron guardar los cambios")
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
+      }
+      Alert.alert("Error", "No se pudieron guardar los cambios");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const renderDocumentoInput = () => {
     if (tipoDocumento === "CEDULA") {

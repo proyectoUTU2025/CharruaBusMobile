@@ -54,9 +54,13 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
       const ticketData = await getTicketDetail(token, ticketId);
       setTicket(ticketData);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-      console.error('Error cargando detalle de pasaje:', err);
+      setTicket(null);
+      if (err instanceof Error && err.message === 'Sesión expirada') {
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        setError(errorMessage);
+        console.error('Error cargando detalle de pasaje:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,9 +80,12 @@ const TicketDetailScreen: React.FC<TicketScreenProps> = ({ route, navigation }) 
         Alert.alert('Error', 'No se pudo descargar el PDF del pasaje');
       }
     } catch (error) {
-      console.error('Error descargando PDF de pasaje:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        } else {
+          console.error('Error descargando PDF de pasaje:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+          Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+        }
     } finally {
       setDownloadingPdf(false);
     }

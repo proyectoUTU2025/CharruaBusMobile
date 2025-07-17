@@ -1,7 +1,14 @@
-import { PurchaseDetail, PurchaseDetailResponse, PurchasesResponse, GetPurchasesParams } from '../types/purchaseType';
 import { Linking, Alert } from 'react-native';
 import { API_BASE_URL } from '@env';
-
+import { fetchWithInterceptor } from '../utils/httpInterceptor';
+import { 
+  PurchaseDetail, 
+  PurchaseDetailResponse, 
+  PurchasesResponse, 
+  GetPurchasesParams,
+  Purchase,
+  PurchaseTicket 
+} from '../types/purchaseType';
 
 export const getClientPurchases = async (
   token: string,
@@ -9,7 +16,6 @@ export const getClientPurchases = async (
   params?: Omit<GetPurchasesParams, 'clienteId'>
 ): Promise<PurchasesResponse> => {
   try {
-    
     const queryParams = new URLSearchParams({
       page: (params?.page || 0).toString(),
       size: (params?.size || 10).toString(),
@@ -47,7 +53,7 @@ export const getClientPurchases = async (
 
     const url = `${API_BASE_URL}/compras/cliente/${clienteId}?${queryParams}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithInterceptor(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -56,42 +62,14 @@ export const getClientPurchases = async (
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
-        throw new Error('No tienes permisos para acceder a esta información');
-      } else if (response.status === 404) {
-        throw new Error('No se encontraron compras para este cliente');
-      } else if (response.status >= 500) {
-        throw new Error('Error del servidor. Inténtalo más tarde.');
-      } else {
-        throw new Error(`Error al obtener compras: ${response.status}`);
-      }
+      throw new Error(`Error al obtener compras: ${response.status}`);
     }
 
     const result: PurchasesResponse = await response.json();
-    
-    if (!result.content || !Array.isArray(result.content)) {
-      console.error('Estructura de respuesta inesperada:', result);
-      throw new Error('Respuesta del servidor con formato incorrecto');
-    }
-    
     return result;
+    
   } catch (error) {
-    console.error('Error en getClientPurchases:', error);
-    
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
-    }
-    
-    if (error instanceof Error) {
-      throw error;
-    }
-    
-    throw new Error('Error inesperado al obtener compras.');
+    throw error;
   }
 };
 
@@ -100,8 +78,7 @@ export const getPurchaseDetail = async (
   purchaseId: number
 ): Promise<PurchaseDetail> => {
   try {
-    
-    const response = await fetch(`${API_BASE_URL}/compras/${purchaseId}`, {
+    const response = await fetchWithInterceptor(`${API_BASE_URL}/compras/${purchaseId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -113,9 +90,7 @@ export const getPurchaseDetail = async (
       const errorText = await response.text();
       console.error('Error response:', errorText);
       
-      if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a esta información');
       } else if (response.status === 404) {
         throw new Error('Compra no encontrada');
@@ -129,13 +104,14 @@ export const getPurchaseDetail = async (
     const result: PurchaseDetailResponse = await response.json();
     
     if (!result.data || !result.data.id) {
-      console.error('Estructura de respuesta inesperada:', result);
       throw new Error('Respuesta del servidor con formato incorrecto');
     }
     
     return result.data;
   } catch (error) {
-    console.error('Error en getPurchaseDetail:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
@@ -151,7 +127,7 @@ export const getPurchaseDetail = async (
 
 const validateServerResponse = async (url: string, token: string): Promise<boolean> => {
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithInterceptor(url, {
       method: 'HEAD',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -171,7 +147,6 @@ export const downloadPurchasePdf = async (
 ): Promise<boolean> => {
   try {
     const pdfUrl = `${API_BASE_URL}/compras/${purchaseId}/pdf?token=${encodeURIComponent(token)}`;
-
     await Linking.openURL(pdfUrl);
     
     Alert.alert(
@@ -183,6 +158,11 @@ export const downloadPurchasePdf = async (
     return true;
 
   } catch (error) {
+
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
+    
     console.error('Error abriendo PDF de compra:', error);
     
     let errorMessage = 'Error desconocido';
@@ -212,19 +192,15 @@ export const downloadTicketPdf = async (
 ): Promise<boolean> => {
   try {
     const pdfUrl = `${API_BASE_URL}/pasajes/${ticketId}/pdf?token=${encodeURIComponent(token)}`;
-
     await Linking.openURL(pdfUrl);
-    
-    Alert.alert(
-      'PDF Abierto',
-      'El PDF del pasaje se está abriendo en tu navegador. Desde allí podrás verlo y descargarlo si deseas.',
-      [{ text: 'Entendido', style: 'default' }]
-    );
     
     return true;
 
   } catch (error) {
-    console.error('Error abriendo PDF de pasaje:', error);
+    
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     let errorMessage = 'Error desconocido';
     if (error instanceof Error) {
@@ -233,7 +209,7 @@ export const downloadTicketPdf = async (
     
     Alert.alert(
       'Error',
-      `No se pudo abrir el PDF del pasaje: ${errorMessage}`,
+      `No se pudo abrir el PDF: ${errorMessage}`,
       [
         {
           text: 'Reintentar',

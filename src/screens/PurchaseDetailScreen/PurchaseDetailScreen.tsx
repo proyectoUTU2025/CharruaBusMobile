@@ -78,7 +78,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
       case 'PENDIENTE':
         return 'schedule';
       case 'PARCIALMENTE_REEMBOLSADA':
-        return 'partial-refund';
+        return 'rule';
       case 'REEMBOLSADA':
         return 'refresh';
       case 'CANCELADA':
@@ -145,15 +145,20 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
       }
 
       const purchaseData = await getPurchaseDetail(token, purchaseId);
-      setPurchase(purchaseData);
+        setPurchase(purchaseData);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-      console.error('Error cargando detalle de compra:', err);
+      setPurchase(null);
+      if (err instanceof Error && err.message === 'Sesión expirada') {
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        setError(errorMessage);
+        console.error('Error cargando detalle de compra:', err);
+      }
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleDownloadPurchasePdf = async () => {
     if (!token) {
@@ -174,9 +179,12 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
         Alert.alert('Error', 'No se pudo descargar el PDF de la compra');
       }
     } catch (error) {
-      console.error('Error descargando PDF de compra:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+      } else {
+        console.error('Error descargando PDF de compra:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+      }
     } finally {
       setDownloadingPurchase(false);
     }
@@ -196,9 +204,12 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
         Alert.alert('Error', 'No se pudo descargar el PDF del pasaje');
       }
     } catch (error) {
-      console.error('Error descargando PDF de pasaje:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+      } else {
+        console.error('Error descargando PDF de pasaje:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        Alert.alert('Error', `No se pudo descargar el PDF: ${errorMessage}`);
+      }
     } finally {
       setDownloadingTickets(prev => ({ ...prev, [ticketId]: false }));
     }
@@ -275,7 +286,7 @@ const PurchaseDetailScreen: React.FC<PurchaseScreenProps> = ({ route, navigation
               color="white" 
             />
             <Text style={styles.statusText}>
-              {purchase.estado}
+              {purchase.estado === 'PARCIALMENTE_REEMBOLSADA' ? 'PARCIALMENTE REEMBOLSADA' : purchase.estado}
             </Text>
           </View>
           <Text style={styles.purchaseId}>#{purchase.id}</Text>

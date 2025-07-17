@@ -20,36 +20,33 @@ export const getNotifications = async (
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
       if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+        throw new Error('Sesión expirada');
+      }
+      
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a las notificaciones');
       } else if (response.status === 404) {
         throw new Error('Cliente no encontrado');
       } else if (response.status >= 500) {
         throw new Error('Error del servidor. Inténtalo más tarde.');
-      } else {
-        throw new Error(`Error al obtener notificaciones: ${response.status}`);
       }
+      
+      throw new Error(`Error al obtener notificaciones: ${response.status}`);
     }
 
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error en getNotifications:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
     }
     
-    if (error instanceof Error) {
-      throw error;
-    }
-    
-    throw new Error('Error inesperado al obtener notificaciones.');
+    throw error;
   }
 };
 
@@ -70,36 +67,33 @@ export const getUnreadNotificationsCount = async (
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
       if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+        throw new Error('Sesión expirada');
+      }
+      
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a las notificaciones');
       } else if (response.status === 404) {
         throw new Error('Cliente no encontrado');
       } else if (response.status >= 500) {
         throw new Error('Error del servidor. Inténtalo más tarde.');
-      } else {
-        throw new Error(`Error al obtener conteo de notificaciones: ${response.status}`);
       }
+      
+      throw new Error(`Error al obtener conteo de notificaciones: ${response.status}`);
     }
 
     const result: NotificationsCountResponse = await response.json();
     return result.data;
   } catch (error) {
-    console.error('Error en getUnreadNotificationsCount:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
     }
     
-    if (error instanceof Error) {
-      throw error;
-    }
-    
-    throw new Error('Error inesperado al obtener conteo de notificaciones.');
+    throw error;
   }
 };
 
@@ -120,35 +114,30 @@ export const markAllNotificationsAsRead = async (
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
       if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+        throw new Error('Sesión expirada');
+      }
+      
+      if (response.status === 403) {
         throw new Error('No tienes permisos para marcar notificaciones como leídas');
       } else if (response.status === 404) {
         throw new Error('Cliente no encontrado');
       } else if (response.status >= 500) {
         throw new Error('Error del servidor. Inténtalo más tarde.');
-      } else {
-        throw new Error(`Error al marcar notificaciones como leídas: ${response.status}`);
       }
+      
+      throw new Error(`Error al marcar notificaciones como leídas: ${response.status}`);
     }
-
-    return;
   } catch (error) {
-    console.error('Error en markAllNotificationsAsRead:', error);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
     }
     
-    if (error instanceof Error) {
-      throw error;
-    }
-    
-    throw new Error('Error inesperado al marcar notificaciones como leídas.');
+    throw error;
   }
 };
 

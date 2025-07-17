@@ -1,29 +1,28 @@
 import { API_BASE_URL } from '@env';
 
 export async function crearSesionStripe(token: string, payload: any) {
-  const payloadLimpio = {
-    ...payload,
-  };
-
   const response = await fetch(`${API_BASE_URL}/compras`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(payloadLimpio),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Sesión expirada');
+    }
+
     const errorText = await response.text();
     if (!errorText.includes('se pudieron reservar') && !errorText.includes('asientos solicitados')) {
       console.error('Error en crearSesionStripe:', errorText);
     }
-    throw new Error(`Error en crearSesionStripe: ${response.status} - ${errorText}`);
+    throw new Error(errorText);
   }
 
   const result = await response.json();
-  
   return result;
 }
 

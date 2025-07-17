@@ -16,8 +16,11 @@ const getConfiguracionByNombre = async (token: string, nombreConfig: string): Pr
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Sesión expirada');
+      }
+      
       if (response.status === 404) {
-        console.warn(`Configuración '${nombreConfig}' no encontrada`);
         return null;
       }
       throw new Error(`Error al obtener configuración ${nombreConfig}: ${response.status}`);
@@ -26,8 +29,7 @@ const getConfiguracionByNombre = async (token: string, nombreConfig: string): Pr
     const result: ConfiguracionIndividualResponse = await response.json();
     return result.data || null;
   } catch (error) {
-    console.error(`Error obteniendo configuración ${nombreConfig}:`, error);
-    return null;
+    throw error;
   }
 };
 
@@ -55,13 +57,24 @@ export const getConfiguracionValor = async (
     return valorPorDefecto;
     
   } catch (error) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     console.error(`Error obteniendo configuración ${nombreConfig}:`, error);
     return valorPorDefecto;
   }
 };
 
 export const getLimitePasajes = async (token: string): Promise<number> => {
-  return await getConfiguracionValor(token, 'limite_pasajes', 4);
+  try {
+    return await getConfiguracionValor(token, 'limite_pasajes', 4);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
+    console.error('Error obteniendo límite de pasajes:', error);
+    return 4;
+  }
 };
 
 export const getDescuentoJubilado = async (token: string): Promise<number> => {

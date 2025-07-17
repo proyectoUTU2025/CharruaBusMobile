@@ -3,7 +3,6 @@ import { API_BASE_URL } from '@env';
 
 export const getOrigenesPosibles = async (authToken: string): Promise<Localidad[]> => {
   try {
-
     const response = await fetch(`${API_BASE_URL}/localidades/origenes-posibles`, {
       method: 'GET',
       headers: {
@@ -12,14 +11,12 @@ export const getOrigenesPosibles = async (authToken: string): Promise<Localidad[
       },
     });
 
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
       if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+        throw new Error('Sesión expirada');
+      }
+      
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a esta información');
       } else if (response.status >= 500) {
         throw new Error('Error del servidor. Inténtalo más tarde.');
@@ -29,9 +26,12 @@ export const getOrigenesPosibles = async (authToken: string): Promise<Localidad[
     }
 
     const result = await response.json();
-    
     return result || [];
   } catch (error) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
+    
     console.error('Error en getOrigenesPosibles:', error);
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -48,7 +48,6 @@ export const getOrigenesPosibles = async (authToken: string): Promise<Localidad[
 
 export const getDestinosPosibles = async (authToken: string, idLocalidadOrigen: number): Promise<Localidad[]> => {
   try {
-    
     const response = await fetch(`${API_BASE_URL}/localidades/destinos-posibles/${idLocalidadOrigen}`, {
       method: 'GET',
       headers: {
@@ -58,12 +57,11 @@ export const getDestinosPosibles = async (authToken: string, idLocalidadOrigen: 
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response (destinos):', errorText);
-      
       if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
-      } else if (response.status === 403) {
+        throw new Error('Sesión expirada');
+      }
+      
+      if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a esta información');
       } else if (response.status >= 500) {
         throw new Error('Error del servidor. Inténtalo más tarde.');
@@ -73,9 +71,12 @@ export const getDestinosPosibles = async (authToken: string, idLocalidadOrigen: 
     }
 
     const result = await response.json();
-    
     return result || [];
   } catch (error) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
+    
     console.error('Error en getDestinosPosibles:', error);
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -178,10 +179,9 @@ export const getAllLocalidadesSimple = async (authToken: string): Promise<Locali
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
+
       if (response.status === 401) {
-        throw new Error('Token de autenticación inválido');
+        throw new Error('Sesión expirada'); // <-- Para coherencia
       } else if (response.status === 403) {
         throw new Error('No tienes permisos para acceder a esta información');
       } else if (response.status >= 500) {
@@ -192,24 +192,20 @@ export const getAllLocalidadesSimple = async (authToken: string): Promise<Locali
     }
 
     const result: Localidad[] = await response.json();
-    
     if (!Array.isArray(result)) {
-      console.error('Estructura de respuesta inesperada:', result);
       throw new Error('Respuesta del servidor con formato incorrecto');
     }
-    
     return result;
   } catch (error) {
-    console.error('Error en getAllLocalidadesSimple:', error);
-    
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Error de conexión. Verifica tu internet y que el servidor esté funcionando.');
     }
-    
     if (error instanceof Error) {
       throw error;
     }
-    
     throw new Error('Error inesperado al obtener localidades.');
   }
 };

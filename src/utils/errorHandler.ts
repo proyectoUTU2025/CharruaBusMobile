@@ -39,7 +39,9 @@ class CustomErrorHandler {
         'contraseñas no coinciden',
         'Error inesperado al cambiar la contraseña',
         'No tienes autorización',
-        'Acceso denegado'
+        'Acceso denegado',
+        'Sesión expirada',
+        'Error cargando compras'
     ];
 
     if (error && error.message && typeof error.message === 'string') {

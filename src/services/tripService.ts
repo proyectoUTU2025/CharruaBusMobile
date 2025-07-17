@@ -40,6 +40,10 @@ export const searchTrips = async (
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Sesión expirada');
+      }
+      
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `Error HTTP: ${response.status}`);
     }
@@ -64,10 +68,7 @@ export const searchTrips = async (
     
     return result;
   } catch (error) {
-    console.error('Error completo:', error);
-    throw error instanceof Error
-      ? error
-      : new Error('Error desconocido al buscar viajes');
+    throw error instanceof Error ? error : new Error('Error desconocido al buscar viajes');
   }
 };
 
@@ -84,22 +85,30 @@ export const getTripDetails = async (
       },
     });
 
-    const responseText = await response.text();
     if (!response.ok) {
-      let errorMessage = `Error ${response.status}: ${response.statusText}`;
+      if (response.status === 401) {
+        throw new Error('Sesión expirada');
+      }
+      
+      const errorText = await response.text();
+      let errorMessage = `Error ${response.status}`;
       
       try {
-        const errorData = JSON.parse(responseText);
+        const errorData = JSON.parse(errorText);
         errorMessage = errorData.message || errorMessage;
       } catch (e) {
+        errorMessage = errorText || errorMessage;
       }
       
       throw new Error(errorMessage);
     }
 
-    const data: TripDetailsResponse = JSON.parse(responseText);
+    const data: TripDetailsResponse = await response.json();
     return data.data;
   } catch (error) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     throw error instanceof Error
       ? error
       : new Error('Error desconocido al obtener detalles del viaje');

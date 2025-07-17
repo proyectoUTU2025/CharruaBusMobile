@@ -102,12 +102,14 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
 interface ChangePasswordScreenProps {
   onSuccess: () => void;
   token: string;
+  handleUnauthorized: () => void;
 }
 
 export default function ChangePasswordScreen({  
   onSuccess, 
-  token 
-}: ChangePasswordScreenProps) {
+  token,
+  handleUnauthorized
+}: ChangePasswordScreenProps & { handleUnauthorized: () => void }) {
   const [loading, setLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
@@ -186,10 +188,18 @@ export default function ChangePasswordScreen({
           [{ text: "Aceptar", onPress: onSuccess }]
         );
       } else {
+        if (result.message === 'Sesión expirada') {
+          handleUnauthorized();
+          return;
+        }
         handlePasswordChangeError(result.message);
       }
       
     } catch (error: any) {
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
+      }
       const errorMessage = error?.message || 'Error desconocido';
       handlePasswordChangeError(errorMessage);
     } finally {

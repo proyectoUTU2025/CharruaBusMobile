@@ -34,7 +34,7 @@ export interface PurchaseTicket {
   descuento: number;
   subtotal: number;
   montoReintegrado: number;
-  estadoPasaje: 'COMPLETADA' | 'PENDIENTE' | 'CANCELADA' | 'REEMBOLSADA' | 'PARCIALMENTE_REEMBOLSADA';
+  estadoPasaje: 'COMPLETADA' | 'PENDIENTE' | 'CANCELADA' | 'REEMBOLSADA' | 'PARCIALMENTE REEMBOLSADA';
 }
 
 export interface PurchaseDetailResponse {

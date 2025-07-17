@@ -136,9 +136,6 @@ export default function VerificarCorreoScreen({ navigation, route }: Props) {
   const handleResendCode = async () => {
     if (!canResend) return
 
-    console.log('Email que se va a enviar:', email)
-    console.log('Route params completos:', route.params)
-
     setIsLoading(true)
     
     try {

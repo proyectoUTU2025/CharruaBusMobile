@@ -29,6 +29,7 @@ export interface EditProfileScreenProps {
   onGoBack: () => void;
   onSuccess: () => void;
   token: string;
+  handleUnauthorized: () => void;
 }
 
 export interface UpdateUserProfileData {

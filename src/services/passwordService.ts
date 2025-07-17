@@ -15,6 +15,10 @@ export const changePassword = async (
       body: JSON.stringify(data),
     });
 
+    if (response.status === 401) {
+      throw new Error('Sesión expirada');
+    }
+
     const responseText = await response.text();
     let result;
     
@@ -43,6 +47,10 @@ export const changePassword = async (
     };
     
   } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
+
     if (error instanceof Error) {
       return {
         success: false,

@@ -22,6 +22,10 @@ export const updateUserProfile = async (
 
     clearTimeout(timeoutId);
 
+    if (response.status === 401) {
+      throw new Error('Sesión expirada');
+    }
+
     let result;
     try {
       result = await response.json();
@@ -40,8 +44,6 @@ export const updateUserProfile = async (
         } else {
           errorMessage = result.message || 'Datos inválidos para actualizar perfil';
         }
-      } else if (response.status === 401) {
-        errorMessage = 'No tienes autorización para realizar esta acción';
       } else if (response.status === 403) {
         errorMessage = 'No tienes permisos para editar este perfil';
       } else if (response.status === 404) {
@@ -52,11 +54,7 @@ export const updateUserProfile = async (
         errorMessage = result.message || 'Error al actualizar perfil';
       }
 
-      console.error('Error al actualizar perfil:', errorMessage);
-      return {
-        success: false,
-        message: errorMessage
-      };
+      throw new Error(errorMessage);
     }
 
     return {
@@ -65,24 +63,12 @@ export const updateUserProfile = async (
       data: result.data
     };
 
-  } catch (error: unknown) {
-    console.error('Error completo al actualizar perfil:', error);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      throw error;
+    }
     
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        return {
-          success: false,
-          message: 'La petición tardó demasiado. Verifica tu conexión a internet'
-        };
-      }
-
-      if (error.message.includes('fetch') || error.message.includes('Network request failed')) {
-        return {
-          success: false,
-          message: 'Error de conexión. Verifica tu internet y que el servidor esté disponible'
-        };
-      }
-
       return {
         success: false,
         message: error.message
@@ -112,12 +98,14 @@ export const getCurrentUserProfile = async (token: string, userId: string): Prom
 
     clearTimeout(timeoutId);
 
+    if (response.status === 401) {
+      throw new Error('Sesión expirada');
+    }
+
     if (!response.ok) {
       let errorMessage = 'Error al obtener perfil';
       
-      if (response.status === 401) {
-        errorMessage = 'Token de autenticación inválido';
-      } else if (response.status === 403) {
+      if (response.status === 403) {
         errorMessage = 'No tienes permisos para acceder a esta información';
       } else if (response.status === 404) {
         errorMessage = 'Usuario no encontrado';
@@ -125,7 +113,6 @@ export const getCurrentUserProfile = async (token: string, userId: string): Prom
         errorMessage = 'Error del servidor. Inténtalo más tarde';
       }
       
-      console.error('Error en la respuesta:', errorMessage);
       throw new Error(errorMessage);
     }
 
@@ -136,26 +123,14 @@ export const getCurrentUserProfile = async (token: string, userId: string): Prom
     } else if (result.id) {
       return result as UserProfileData;
     } else {
-      console.error('Estructura de respuesta inesperada:', result);
       throw new Error('Estructura de respuesta inválida');
     }
     
   } catch (error) {
-    console.error('Error completo al obtener perfil:', error);
-    
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new Error('La petición tardó demasiado. Verifica tu conexión');
-      }
-      
-      if (error.message.includes('fetch') || error.message.includes('Network request failed')) {
-        throw new Error('Error de conexión. Verifica tu internet');
-      }
-      
+    if (error instanceof Error && error.message === 'Sesión expirada') {
       throw error;
     }
-    
-    throw new Error('Error inesperado al obtener perfil');
+    throw error;
   }
 };
 

@@ -7,6 +7,8 @@ export type AuthContextType = {
   error: string | null;
   clearError: () => void;
   isAuthLoading: boolean;
+  handleUnauthorized: () => void;
+  forceLogout: () => Promise<void>;
 };
 
 export type RegisterData = {
@@ -18,4 +20,16 @@ export type RegisterData = {
   documento: string;
   tipoDocumento: string;
   situacionLaboral: string;
+};
+
+export type UnauthorizedHandlerState = {
+  isHandling: boolean;
+  lastHandled: number | null;
+  pendingLogout: boolean;
+};
+
+export type ApiError = {
+  status: number;
+  message: string;
+  isAuthError?: boolean;
 };

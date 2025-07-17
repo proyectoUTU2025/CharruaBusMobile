@@ -27,14 +27,12 @@ interface NotificationContextType {
   loading: boolean;
   error: string | null;
   hasMoreNotifications: boolean;
-  
   refreshNotifications: () => Promise<void>;
   loadMoreNotifications: () => Promise<void>;
   markAsRead: () => Promise<void>;
   refreshUnreadCount: () => Promise<void>;
   clearError: () => void;
   clearNotifications: () => void;
-  
   isRefreshing: boolean;
   isLoadingMore: boolean;
 }
@@ -46,7 +44,7 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const { token } = useAuth();
+  const { token, handleUnauthorized } = useAuth();
   const { user } = useUser();
   
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -54,18 +52,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMoreNotifications, setHasMoreNotifications] = useState(true);
-  
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   const currentPageRef = useRef(0);
   const totalPagesRef = useRef(0);
   const isLoadingRef = useRef(false);
-  
   const unreadCountIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const backgroundUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clienteId = user?.id ? parseInt(user.id.toString()) : null;
+
+  const handleError = useCallback((error: unknown) => {
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+      handleUnauthorized();
+      return true;
+    }
+    return false;
+  }, [handleUnauthorized]);
 
   const clearIntervals = useCallback(() => {
     if (unreadCountIntervalRef.current) {
@@ -85,10 +89,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const count = await getUnreadNotificationsCount(token, clienteId);
       setUnreadCount(count);
       setError(null);
-    } catch (err) {
-      console.error('Error obteniendo conteo de notificaciones:', err);
+    } catch (error) {
+      if (!handleError(error)) {
+        setError('Error al obtener conteo de notificaciones');
+      }
     }
-  }, [token, clienteId]);
+  }, [token, clienteId, handleError]);
 
   const clearNotifications = useCallback(() => {
     setNotifications([]);
@@ -108,22 +114,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       isLoadingRef.current = true;
 
       const result = await getNotifications(token, clienteId, 0, 10);
-      
       setNotifications(result.content);
       currentPageRef.current = 0;
       totalPagesRef.current = result.page.totalPages;
       setHasMoreNotifications(result.page.totalPages > 1);
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar notificaciones';
-      setError(errorMessage);
-      console.error('Error en refreshNotifications:', err);
+    } catch (error) {
+      if (!handleError(error)) {
+        setError('Error al cargar notificaciones');
+      }
     } finally {
       setLoading(false);
       setIsRefreshing(false);
       isLoadingRef.current = false;
     }
-  }, [token, clienteId]);
+  }, [token, clienteId, handleError]);
 
   const loadMoreNotifications = useCallback(async () => {
     if (!token || !clienteId || isLoadingRef.current || !hasMoreNotifications) return;
@@ -138,37 +142,31 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       
       setNotifications(prev => [...prev, ...result.content]);
       currentPageRef.current = nextPage;
-      
       setHasMoreNotifications(nextPage < result.page.totalPages - 1);
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar más notificaciones';
-      setError(errorMessage);
-      console.error('Error en loadMoreNotifications:', err);
+    } catch (error) {
+      if (!handleError(error)) {
+        setError('Error al cargar más notificaciones');
+      }
     } finally {
       setIsLoadingMore(false);
       isLoadingRef.current = false;
     }
-  }, [token, clienteId, hasMoreNotifications]);
+  }, [token, clienteId, hasMoreNotifications, handleError]);
 
   const markAsRead = useCallback(async () => {
     if (!token || !clienteId) return;
 
     try {
       await markAllNotificationsAsRead(token, clienteId);
-      
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, leido: true }))
-      );
+      setNotifications(prev => prev.map(notification => ({ ...notification, leido: true })));
       setUnreadCount(0);
       setError(null);
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al marcar notificaciones como leídas';
-      setError(errorMessage);
-      console.error('Error en markAsRead:', err);
+    } catch (error) {
+      if (!handleError(error)) {
+        setError('Error al marcar notificaciones como leídas');
+      }
     }
-  }, [token, clienteId]);
+  }, [token, clienteId, handleError]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -184,7 +182,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (token && clienteId) {
       setUnreadCountUpdateCallback(() => {
         refreshUnreadCount();
-        
         if (notifications.length <= 10) {
           backgroundUpdateTimeoutRef.current = setTimeout(() => {
             refreshNotifications();
@@ -237,21 +234,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
   }, [clearIntervals]);
 
-  const value: NotificationContextType = {
-
+  const value = {
     notifications,
     unreadCount,
     loading,
     error,
     hasMoreNotifications,
-    
     refreshNotifications,
     loadMoreNotifications,
     markAsRead,
     refreshUnreadCount,
     clearError,
     clearNotifications,
-
     isRefreshing,
     isLoadingMore,
   };

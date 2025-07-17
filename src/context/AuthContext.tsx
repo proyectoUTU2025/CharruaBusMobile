@@ -8,19 +8,10 @@ import React, {
 } from 'react';
 import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Alert } from 'react-native';
 import { login as loginService, logout as logoutService } from '../services/authService';
-
-type AuthContextType = {
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  token: string | null;
-  loading: boolean;
-  error: string | null;
-  clearError: () => void;
-  isAuthLoading: boolean;
-};
+import { AuthContextType, UnauthorizedHandlerState } from '../types/authType';
+import { initializeHttpInterceptor } from '../utils/httpInterceptor';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -29,6 +20,12 @@ const KEYCHAIN_OPTIONS: Keychain.Options = {
   service: KEYCHAIN_SERVICE,
   accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE,
   authenticationPrompt: 'Autentícate para acceder a tu sesión',
+};
+
+const unauthorizedHandlerState: UnauthorizedHandlerState = {
+  isHandling: false,
+  lastHandled: null,
+  pendingLogout: false
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -146,6 +143,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const handleUnauthorized = () => {
+    if (unauthorizedHandlerState.isHandling) {
+      return;
+    }
+
+    const now = Date.now();
+    if (
+      unauthorizedHandlerState.lastHandled && 
+      now - unauthorizedHandlerState.lastHandled < 5000
+    ) {
+      return;
+    }
+
+    unauthorizedHandlerState.isHandling = true;
+    unauthorizedHandlerState.lastHandled = now;
+
+    Alert.alert(
+      'Tu sesión ha expirado',
+      'Por favor, inicia sesión nuevamente.',
+      [
+        {
+          text: 'Aceptar',
+          onPress: async () => {
+            try {
+              await forceLogout();
+            } finally {
+              unauthorizedHandlerState.isHandling = false;
+            }
+          },
+        },
+      ],
+      {
+        cancelable: false,
+        onDismiss: () => {
+          unauthorizedHandlerState.isHandling = false;
+        },
+      }
+    );
+  };
+
+  const forceLogout = async () => {
+    if (unauthorizedHandlerState.pendingLogout) {
+      return;
+    }
+
+    unauthorizedHandlerState.pendingLogout = true;
+    try {
+      stopHeartbeat();
+      await removeTokenSecurely();
+      setToken(null);
+      setError(null);
+    } catch (error) {
+      console.error('Error en forceLogout:', error);
+    } finally {
+      unauthorizedHandlerState.pendingLogout = false;
+    }
+  };
+
   const login = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
@@ -157,6 +212,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(newToken);
       
       startHeartbeat();
+      unauthorizedHandlerState.isHandling = false;
+      unauthorizedHandlerState.lastHandled = null;
+      unauthorizedHandlerState.pendingLogout = false;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error en login';
       setError(errorMessage);
@@ -171,7 +229,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       stopHeartbeat();
       
       const currentToken = token || await getTokenSecurely();
-      await logoutService(currentToken || undefined);
+      if (currentToken) {
+        try {
+          await logoutService(currentToken);
+        } catch (error) {
+          console.error('Error en llamada a logout service:', error);
+        }
+      }
       
       await removeTokenSecurely();
       setToken(null);
@@ -215,51 +279,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const checkToken = async () => {
-    try {
-      const hasSecureToken = await AsyncStorage.getItem('hasSecureToken');
-      const sessionActive = await AsyncStorage.getItem('sessionActive');
-      const lastHeartbeat = await AsyncStorage.getItem('appHeartbeat');
-      
-      const hasAnyToken = hasSecureToken === 'true' || await AsyncStorage.getItem('authToken');
-      
-      if (hasAnyToken && sessionActive === 'true') {
-        if (lastHeartbeat) {
-          const lastTime = parseInt(lastHeartbeat);
-          const timeSinceHeartbeat = Date.now() - lastTime;
-          
-          if (timeSinceHeartbeat > 15000) {
-            await removeTokenSecurely();
-            setToken(null);
-            setIsAuthLoading(false);
-            return;
-          }
-        }
+const checkToken = async () => {
+  try {
+    const hasSecureToken = await AsyncStorage.getItem('hasSecureToken');
+    const sessionActive = await AsyncStorage.getItem('sessionActive');
+    const lastHeartbeat = await AsyncStorage.getItem('appHeartbeat');
+
+    const hasAnyToken = hasSecureToken === 'true' || await AsyncStorage.getItem('authToken');
+    
+    if (hasAnyToken && sessionActive === 'true') {
+      if (lastHeartbeat) {
+        const lastTime = parseInt(lastHeartbeat);
+        const timeSinceHeartbeat = Date.now() - lastTime;
         
-        const storedToken = await getTokenSecurely();
-        if (storedToken) {
-          setToken(storedToken);
-          startHeartbeat();
-        } else {
+        if (timeSinceHeartbeat > 15000) {
           await removeTokenSecurely();
           setToken(null);
+          setIsAuthLoading(false);
+          return;
         }
+      }
+      
+      const storedToken = await getTokenSecurely();
+      
+      if (storedToken) {
+        setToken(storedToken);
+        startHeartbeat();
       } else {
         await removeTokenSecurely();
         setToken(null);
       }
-    } catch (error) {
-      console.error('Error verificando token almacenado:', error);
-      try {
-        await removeTokenSecurely();
-      } catch (removeError) {
-        console.error('Error removiendo token corrupto:', removeError);
-      }
+    } else {
+      await removeTokenSecurely();
       setToken(null);
-    } finally {
-      setIsAuthLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Error en checkToken:', error);
+    try {
+      await removeTokenSecurely();
+    } catch (removeError) {
+      console.error('Error removiendo token corrupto:', removeError);
+    }
+    setToken(null);
+  } finally {
+    setIsAuthLoading(false);
+  }
+};
+
+useEffect(() => {
+  checkToken();
+}, []);
 
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
@@ -296,9 +365,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  useEffect(() => {
-    checkToken();
-  }, []);
+useEffect(() => {
+    if (token) {
+      initializeHttpInterceptor({
+        isAuthenticated: !!token,
+        token,
+        isAuthLoading,
+        handleUnauthorized,
+        forceLogout,
+        login,
+        logout,
+        error,
+        loading,
+        clearError
+      });
+    }
+  }, [token, isAuthLoading, error, loading]);
 
   return (
     <AuthContext.Provider
@@ -310,7 +392,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         error,
         clearError,
-        isAuthLoading
+        isAuthLoading,
+        handleUnauthorized,
+        forceLogout
       }}
     >
       {children}

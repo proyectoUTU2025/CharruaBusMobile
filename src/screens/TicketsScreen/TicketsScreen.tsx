@@ -35,6 +35,7 @@ import { styles } from './TicketsScreen.styles';
 
 const TicketsScreen: React.FC<TicketsScreenProps> = ({ 
   onNavigateToTicketDetail,
+  handleUnauthorized
 }) => {
   const { token, isAuthLoading } = useAuth();
   const { user, loading: userLoading } = useUser();
@@ -127,7 +128,10 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
       const result = await getAllLocalidadesSimple(token);
       setLocalidades(result);
     } catch (error) {
-      console.error('Error cargando localidades:', error);
+      if (error instanceof Error && error.message === 'Sesión expirada') {
+        handleUnauthorized();
+        return;
+      }
       Alert.alert('Error', 'No se pudieron cargar las localidades');
     } finally {
       setLoadingLocalidades(false);
@@ -294,9 +298,9 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
   }, [showFilterModal]);
 
   const loadTickets = async (page = 0, isRefresh = false, isLoadMore = false) => {
-    if (isAuthLoading) {
-      return;
-    }
+  if (isAuthLoading || userLoading || !token || !user?.id) {
+    return;
+  }
 
     if (!token) {
       console.error('No hay token disponible');
@@ -326,31 +330,16 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
       }
       setError(null);
 
-      const apiParams: any = {
+      const apiParams = {
         page,
         size: 10,
         sort: ['viajeAsiento.viaje.fechaHoraSalida,DESC'],
+        estados: appliedFilters.estados,
+        fechaDesde: appliedFilters.fechaDesde ? formatDateForAPI(appliedFilters.fechaDesde, false) : undefined,
+        fechaHasta: appliedFilters.fechaHasta ? formatDateForAPI(appliedFilters.fechaHasta, true) : undefined,
+        origenId: appliedFilters.origenId,
+        destinoId: appliedFilters.destinoId
       };
-
-      if (appliedFilters.estados.length > 0) {
-        apiParams.estados = appliedFilters.estados;
-      }
-
-      if (appliedFilters.fechaDesde) {
-        apiParams.fechaDesde = formatDateForAPI(appliedFilters.fechaDesde, false);
-      }
-
-      if (appliedFilters.fechaHasta) {
-        apiParams.fechaHasta = formatDateForAPI(appliedFilters.fechaHasta, true);
-      }
-
-      if (appliedFilters.origenId) {
-        apiParams.origenId = appliedFilters.origenId;
-      }
-
-      if (appliedFilters.destinoId) {
-        apiParams.destinoId = appliedFilters.destinoId;
-      }
 
       const response = await getClientTickets(token, parseInt(user.id), apiParams);
 
@@ -367,18 +356,20 @@ const TicketsScreen: React.FC<TicketsScreenProps> = ({
       setHasMore(response.page.number < response.page.totalPages - 1);
 
     } catch (error) {
-      console.error('Error cargando pasajes:', error);
+    setTickets([]);
+    if (error instanceof Error && error.message === 'Sesión expirada') {
+    } else {
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar pasajes';
       setError(errorMessage);
-      
       if (!isLoadMore) {
         Alert.alert('Error', errorMessage);
       }
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
     }
+  } finally {
+    setLoading(false);
+    setLoadingMore(false);
+    setRefreshing(false);
+  }
   };
 
   const handleRefresh = () => {

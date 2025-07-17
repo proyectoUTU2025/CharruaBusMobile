@@ -1,4 +1,3 @@
-// utils/responsiveTheme.ts
 import { StyleSheet } from 'react-native';
 import { 
   scaleSize, 
@@ -9,7 +8,6 @@ import {
   DEVICE_INFO 
 } from './responsiveDimensions';
 
-// Colores (mantener los mismos que funcionan en tablet)
 export const COLORS = {
   primary: '#3B82F6',
   secondary: '#f4cb20',
@@ -34,9 +32,7 @@ export const COLORS = {
   background: 'rgba(255, 255, 255, 0.95)',
 };
 
-// Tipografía responsiva basada en la tablet
 export const TYPOGRAPHY = {
-  // Tamaños que funcionan bien en tablet, escalados para otros dispositivos
   fontSize: {
     xs: scaleFontSize(10),
     sm: scaleFontSize(12),
@@ -62,7 +58,6 @@ export const TYPOGRAPHY = {
   },
 };
 
-// Espaciado responsivo
 export const SPACING = {
   xs: scaleSize(4),
   sm: scaleSize(8),
@@ -75,7 +70,6 @@ export const SPACING = {
   '5xl': scaleSize(48),
 };
 
-// Bordes responsivos
 export const BORDERS = {
   radius: {
     sm: scaleSize(4),
@@ -93,7 +87,6 @@ export const BORDERS = {
   },
 };
 
-// Sombras responsivas
 export const SHADOWS = {
   small: {
     shadowColor: COLORS.gray[900],
@@ -120,9 +113,7 @@ export const SHADOWS = {
   },
 };
 
-// Factory para crear estilos responsivos
 export const createResponsiveStyleSheet = () => StyleSheet.create({
-  // Contenedores base
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
@@ -150,7 +141,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     padding: getResponsivePadding(),
   },
   
-  // Card principal (funciona perfecto en tablet)
   cardContainer: {
     width: '100%',
     maxWidth: getMaxContainerWidth(),
@@ -161,7 +151,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     alignSelf: 'center',
   },
   
-  // Headers
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -189,7 +178,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     width: scaleSize(40),
   },
   
-  // Formularios
   formContainer: {
     width: '100%',
   },
@@ -237,7 +225,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Botones
   primaryButton: {
     backgroundColor: COLORS.primary,
     height: scaleSize(50),
@@ -275,7 +262,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Contenedores especiales
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -290,7 +276,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Cards secundarios
   card: {
     backgroundColor: COLORS.white,
     borderRadius: BORDERS.radius.lg,
@@ -299,7 +284,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     ...SHADOWS.small,
   },
   
-  // Modales
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -316,7 +300,6 @@ export const createResponsiveStyleSheet = () => StyleSheet.create({
     maxHeight: '80%',
   },
   
-  // Estados específicos según dispositivo
   adaptiveText: {
     fontSize: DEVICE_INFO.isPhone ? TYPOGRAPHY.fontSize.sm : TYPOGRAPHY.fontSize.base,
     color: COLORS.gray[600],

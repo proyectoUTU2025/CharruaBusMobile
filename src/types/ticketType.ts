@@ -44,6 +44,7 @@ export interface DownloadTicketPdfParams {
 
 export interface TicketsScreenProps {
   onNavigateToTicketDetail: (ticketId: number) => void;
+  handleUnauthorized: () => void;
 }
 
 export interface FilterParams {

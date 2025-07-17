@@ -108,7 +108,7 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
       case 'PENDIENTE':
         return 'schedule';
       case 'PARCIALMENTE_REEMBOLSADA':
-        return 'partial-refund';
+        return 'rule';
       case 'REEMBOLSADA':
         return 'refresh';
       case 'CANCELADA':
@@ -389,18 +389,19 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
       setHasMore(response.page.number < response.page.totalPages - 1);
 
     } catch (error) {
-      console.error('Error cargando compras:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al cargar compras';
-      setError(errorMessage);
-      
-      if (!isLoadMore) {
-        Alert.alert('Error', errorMessage);
+        setPurchases([]);
+        if (error instanceof Error && error.message !== 'Sesión expirada') {
+          const errorMessage = error instanceof Error ? error.message : 'Error al cargar compras';
+          setError(errorMessage);
+          if (!isLoadMore) {
+            Alert.alert('Error', errorMessage);
+          }
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
       }
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
   };
 
   const handleRefresh = () => {
@@ -481,7 +482,7 @@ const PurchasesScreen: React.FC<PurchasesScreenProps> = ({
           <View style={[styles.statusChip, { backgroundColor: surfaceColor }]}>
             <Icon name={estadoIcon} size={16} color={estadoColor} />
             <Text style={[styles.statusText, { color: estadoColor }]}>
-              {purchase.estado}
+              {purchase.estado === 'PARCIALMENTE_REEMBOLSADA' ? 'PARCIALMENTE REEMBOLSADA' : purchase.estado}
             </Text>
           </View>
         </View>

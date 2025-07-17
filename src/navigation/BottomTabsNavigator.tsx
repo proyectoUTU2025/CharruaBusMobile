@@ -312,7 +312,7 @@ const NotificationsDropdown = React.memo<{
 const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
   const initialTab = route?.params?.initialTab || 'inicio';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { logout, token } = useAuth();
+  const { logout, token, handleUnauthorized } = useAuth();
   const { user, loading: userLoading } = useUser();
   
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -668,6 +668,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
               setNavigationState({ type: 'tab' });
             }}
             token={token || ''}
+            handleUnauthorized={handleUnauthorized}
           />
         );
       case 'editProfile':
@@ -680,6 +681,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
               setNavigationState({ type: 'tab' });
             }}
             token={token || ''}
+            handleUnauthorized={handleUnauthorized}
           />
         );
       case 'viewTrips':
@@ -757,6 +759,7 @@ const BottomTabsNavigator: React.FC<BottomTabsNavigatorProps> = ({ route }) => {
             return (
               <TicketsScreen 
                 onNavigateToTicketDetail={navigateToTicketDetail}
+                handleUnauthorized={handleUnauthorized} // Añadir esta prop
               />
             );
           default:

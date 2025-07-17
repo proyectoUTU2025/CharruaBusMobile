@@ -10,23 +10,11 @@ const messaging = getMessaging(app);
 
 setBackgroundMessageHandler(messaging, async remoteMessage => {
   try {
-    console.log('Notificación en segundo plano recibida:', remoteMessage);
-    
     await handleBackgroundNotification(remoteMessage);
-    
-    console.log('Notificación en segundo plano procesada exitosamente');
     
   } catch (error) {
     console.error('Error en el manejador de segundo plano:', error);
     
-    if (remoteMessage) {
-      console.log('Datos de la notificación que falló:', {
-        messageId: remoteMessage.messageId,
-        from: remoteMessage.from,
-        data: remoteMessage.data,
-        notification: remoteMessage.notification
-      });
-    }
   }
 });
 
