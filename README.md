@@ -1,97 +1,216 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 🚌 CharruaBus App - React Native Android
 
-# Getting Started
+Aplicación móvil de venta de pasajes de ómnibus desarrollada con **React Native CLI**, enfocada exclusivamente en la plataforma **Android**.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## 📦 Requisitos previos
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Antes de clonar y ejecutar este proyecto, asegurate de tener instalados los siguientes programas en **Windows**:
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### 🔧 Herramientas necesarias:
 
-```sh
-# Using npm
-npm start
+| Herramienta | Versión | Descripción |
+|------------|---------|-------------|
+| [Node.js](https://nodejs.org/) | `v18.20.8 o superior` | Entorno de ejecución JavaScript |
+| [Java JDK](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html) | `21 o superior` | Requerido para compilar Android |
+| [Android Studio](https://developer.android.com/studio) | `14.1.3.2024 o superior` | Para emuladores y SDKs de Android |
+| [Git](https://git-scm.com/) | `Última` | Para clonar el repositorio |
+| [React Native CLI](https://reactnative.dev/docs/environment-setup) | `Global` | ```npm install -g react-native-cli``` |
 
-# OR using Yarn
-yarn start
+---
+
+## ⚙️ Configuración del entorno en Windows
+
+### Configurar las variables de entorno (solo la primera vez)
+
+> JAVA_HOME=C:\Program Files\Java\jdk-21
+
+> ANDROID_HOME=C:\Users\<TU_USUARIO>\AppData\Local\Android\Sdk
+
+### Verificar el entorno
+
+```
+npx react-native doctor
+````
+
+## Clonar el repositorio
+
+```
+git clone https://github.com/proyectoUTU2025/CharruaBusMobile.git
+cd CharruaBusMobile
 ```
 
-## Step 2: Build and run your app
+## 📁 Estructura de carpetas
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```
+src
+├───assets
+│   ├───background.png
+│   ├───backgroundLoading.png
+│   ├───CharruaBusLogo-SinTexto.png
+│   ├───CharruaBusLogo.png
+│   └───CharruaBusLogoSinFondo.png
+├───components
+│   └───DeepLinkHandler.tsx
+├───context
+│   ├───AuthContext.tsx
+│   └───NotificationContext.tsx
+├───hooks
+│   ├───useNotifications.ts
+│   ├───usePasswordValidation.ts
+│   └───useUser.tsx
+├───navigation
+│   ├───AppNavigator.tsx
+│   ├───BottomTabsNavigator.styles.ts
+│   └───BottomTabsNavigator.tsx
+├───screens
+│   ├───ChangePasswordScreen
+│   │   ├───ChangePasswordScreen.styles.ts
+│   │   └───ChangePasswordScreen.tsx
+│   ├───EditProfileScreen
+│   │   ├───EditProfileScreen.styles.ts
+│   │   └───EditProfileScreen.tsx
+│   ├───LoadingScreen
+│   │   ├───LoadingScreen.styles.ts
+│   │   └───LoadingScreen.tsx
+│   ├───LoginScreen
+│   │   ├───LoginScreen.styles.ts
+│   │   └───LoginScreen.tsx
+│   ├───MainScreen
+│   │   ├───MainScreen.styles.ts
+│   │   └───MainScreen.tsx
+│   ├───OneWayTripScreen
+│   │   ├───OneWayTripScreen.styles.ts
+│   │   └───OneWayTripScreen.tsx
+│   ├───PurchaseDetailScreen
+│   │   ├───PurchaseDetailScreen.styles.ts
+│   │   └───PurchaseDetailScreen.tsx
+│   ├───PurchasesScreen
+│   │   ├───PurchasesScreen.styles.ts
+│   │   └───PurchasesScreen.tsx
+│   ├───RegisterScreen
+│   │   ├───RegisterScreen.styles.ts
+│   │   └───RegisterScreen.tsx
+│   ├───ResetPasswordScreen
+│   │   ├───ResetPasswordScreen.styles.ts
+│   │   └───ResetPasswordScreen.tsx
+│   ├───RoundTripScreen
+│   │   ├───RoundTripScreen.styles.ts
+│   │   └───RoundTripScreen.tsx
+│   ├───SelectSeatScreen
+│   │   ├───SelectSeatScreen.styles.ts
+│   │   └───SelectSeatScreen.tsx
+│   ├───TicketDetailScreen
+│   │   ├───TicketDetailScreen.styles.ts
+│   │   └───TicketDetailScreen.tsx
+│   ├───TicketsScreen
+│   │   ├───TicketsScreen.styles.ts
+│   │   └───TicketsScreen.tsx
+│   ├───TripSelectionScreen
+│   │   ├───TripSelectionScreen.styles.ts
+│   │   └───TripSelectionScreen.tsx
+│   ├───VerifyEmailScreen
+│   │   ├───VerifyEmailScreen.styles.ts
+│   │   └───VerifyEmailScreen.tsx
+│   └───ViewTripsScreen
+│       ├───ViewTripsScreen.styles.ts
+│       └───ViewTripsScreen.tsx
+├───services
+│   ├───authService.ts
+│   ├───configService.ts
+│   ├───locationService.ts
+│   ├───notificationApiService.ts
+│   ├───notificationService.ts
+│   ├───passwordService.ts
+│   ├───paymentService.ts
+│   ├───purchaseService.ts
+│   ├───resetPasswordService.ts
+│   ├───ticketService.ts
+│   ├───tripService.ts
+│   ├───updateUserService.ts
+│   └───userService.ts
+├───types
+│   ├───authType.ts
+│   ├───configType.ts
+│   ├───locationType.ts
+│   ├───navigationType.ts
+│   ├───notificationType.ts
+│   ├───passwordType.ts
+│   ├───purchaseType.ts
+│   ├───resetPasswordType.ts
+│   ├───roundTripType.ts
+│   ├───screenPropsType.ts
+│   ├───ticketType.ts
+│   ├───tripType.ts
+│   └───userType.ts
+└───utils
+    ├───errorHandler.ts
+    ├───httpInterceptor.ts
+    ├───notificationUtils.ts
+    ├───responsiveDimensions.ts
+    └───responsiveTheme.ts
 ```
 
-### iOS
+## Instalar las dependencias del proyecto
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```
+npm install
 ```
 
-Then, and every time you update your native dependencies, run:
+## Configuracion del archivo .env
 
-```sh
-bundle exec pod install
+Ajustar API_BASE_URL
+
+Si se usa el emulador, es necesario indicar la ip del pc donde se corre el back (Ejemplo: API_BASE_URL=http://192.168.1.170:8080)
+
+En caso de usar un emulador se puede utilizar localhost (Ejemplo: API_BASE_URL=http://localhost:8080)
+
+Para el caso de estar deployada en algun sitio indicar usar mismo la url del sitio (Ejemplo: API_BASE_URL=https://charruabusbackend-production.up.railway.app)
+
+## Visibilidad del back para red local (En caso de no tener el back deployado)
+
+```
+netsh advfirewall firewall add rule name="Spring Boot Dev" dir=in action=allow protocol=TCP localport=8080
+```
+## 📱 Ejecutar la app en Android
+
+Podés ejecutar la app en:
+
+- 📱 Un celular Android real con Depuración USB activada.
+
+- 🖥️ Un emulador Android creado desde Android Studio.
+
+Asegurate de tener al menos un dispositivo/emulador encendido antes de ejecutar el siguiente comando.
+
+### Verifica que el dispositivo esté disponible
+
+```
+adb device
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### Comando para ejecutar
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+```
+npx react-native run-android
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Para especificar un dispositivo específico
+#### Ejecutar en el DISPOSITIVO elegido
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```
+npx react-native run-android --device DISPOSITIVO
+```
 
-## Step 3: Modify your app
+## 🏗️ Generar APK
 
-Now that you have successfully run the app, let's make changes!
+```
+cd android
+./gradlew clean
+./gradlew assembleRelease
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 📲 Descargar APK
+También podés descargar el APK listo para instalar desde la siguiente URL:
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+🔗 [CharruaBus.apk](https://drive.google.com/drive/folders/1lRBGEulAuHHkOxDK27c1-69uHx6SsU99?usp=sharing)
