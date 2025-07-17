@@ -39,6 +39,117 @@ git clone https://github.com/proyectoUTU2025/CharruaBusMobile.git
 cd CharruaBusMobile
 ```
 
+## 📁 Estructura de carpetas
+
+```
+src
+├───assets
+│   ├───background.png
+│   ├───backgroundLoading.png
+│   ├───CharruaBusLogo-SinTexto.png
+│   ├───CharruaBusLogo.png
+│   └───CharruaBusLogoSinFondo.png
+├───components
+│   └───DeepLinkHandler.tsx
+├───context
+│   ├───AuthContext.tsx
+│   └───NotificationContext.tsx
+├───hooks
+│   ├───useNotifications.ts
+│   ├───usePasswordValidation.ts
+│   └───useUser.tsx
+├───navigation
+│   ├───AppNavigator.tsx
+│   ├───BottomTabsNavigator.styles.ts
+│   └───BottomTabsNavigator.tsx
+├───screens
+│   ├───ChangePasswordScreen
+│   │   ├───ChangePasswordScreen.styles.ts
+│   │   └───ChangePasswordScreen.tsx
+│   ├───EditProfileScreen
+│   │   ├───EditProfileScreen.styles.ts
+│   │   └───EditProfileScreen.tsx
+│   ├───LoadingScreen
+│   │   ├───LoadingScreen.styles.ts
+│   │   └───LoadingScreen.tsx
+│   ├───LoginScreen
+│   │   ├───LoginScreen.styles.ts
+│   │   └───LoginScreen.tsx
+│   ├───MainScreen
+│   │   ├───MainScreen.styles.ts
+│   │   └───MainScreen.tsx
+│   ├───OneWayTripScreen
+│   │   ├───OneWayTripScreen.styles.ts
+│   │   └───OneWayTripScreen.tsx
+│   ├───PurchaseDetailScreen
+│   │   ├───PurchaseDetailScreen.styles.ts
+│   │   └───PurchaseDetailScreen.tsx
+│   ├───PurchasesScreen
+│   │   ├───PurchasesScreen.styles.ts
+│   │   └───PurchasesScreen.tsx
+│   ├───RegisterScreen
+│   │   ├───RegisterScreen.styles.ts
+│   │   └───RegisterScreen.tsx
+│   ├───ResetPasswordScreen
+│   │   ├───ResetPasswordScreen.styles.ts
+│   │   └───ResetPasswordScreen.tsx
+│   ├───RoundTripScreen
+│   │   ├───RoundTripScreen.styles.ts
+│   │   └───RoundTripScreen.tsx
+│   ├───SelectSeatScreen
+│   │   ├───SelectSeatScreen.styles.ts
+│   │   └───SelectSeatScreen.tsx
+│   ├───TicketDetailScreen
+│   │   ├───TicketDetailScreen.styles.ts
+│   │   └───TicketDetailScreen.tsx
+│   ├───TicketsScreen
+│   │   ├───TicketsScreen.styles.ts
+│   │   └───TicketsScreen.tsx
+│   ├───TripSelectionScreen
+│   │   ├───TripSelectionScreen.styles.ts
+│   │   └───TripSelectionScreen.tsx
+│   ├───VerifyEmailScreen
+│   │   ├───VerifyEmailScreen.styles.ts
+│   │   └───VerifyEmailScreen.tsx
+│   └───ViewTripsScreen
+│       ├───ViewTripsScreen.styles.ts
+│       └───ViewTripsScreen.tsx
+├───services
+│   ├───authService.ts
+│   ├───configService.ts
+│   ├───locationService.ts
+│   ├───notificationApiService.ts
+│   ├───notificationService.ts
+│   ├───passwordService.ts
+│   ├───paymentService.ts
+│   ├───purchaseService.ts
+│   ├───resetPasswordService.ts
+│   ├───ticketService.ts
+│   ├───tripService.ts
+│   ├───updateUserService.ts
+│   └───userService.ts
+├───types
+│   ├───authType.ts
+│   ├───configType.ts
+│   ├───locationType.ts
+│   ├───navigationType.ts
+│   ├───notificationType.ts
+│   ├───passwordType.ts
+│   ├───purchaseType.ts
+│   ├───resetPasswordType.ts
+│   ├───roundTripType.ts
+│   ├───screenPropsType.ts
+│   ├───ticketType.ts
+│   ├───tripType.ts
+│   └───userType.ts
+└───utils
+    ├───errorHandler.ts
+    ├───httpInterceptor.ts
+    ├───notificationUtils.ts
+    ├───responsiveDimensions.ts
+    └───responsiveTheme.ts
+```
+
 ## Instalar las dependencias del proyecto
 ```
 cmd
