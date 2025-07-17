@@ -213,4 +213,4 @@ cd android
 ## 📲 Descargar APK
 También podés descargar el APK listo para instalar desde la siguiente URL:
 
-🔗 [CharruaBus.apk](https://drive.google.com/uc?export=download&id=1yekRl0MtEzKw166p0UkX6WCDPPtW-7C6)
+🔗 [CharruaBus.apk]([https://drive.google.com/uc?export=download&id=1yekRl0MtEzKw166p0UkX6WCDPPtW-7C6](https://drive.google.com/drive/folders/1lRBGEulAuHHkOxDK27c1-69uHx6SsU99?usp=sharing))
